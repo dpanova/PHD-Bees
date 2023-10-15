@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 
+from Annotation_data_enhancements import lines_df
 
 #this simulates if we greb the files from the directory
 file_name = 'CF003 - Active - Day - (214).wav'
@@ -20,72 +21,22 @@ plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 plt.show()
 #%%
-import pandas as pd
-import math
-
-with open('beeAnnotations.mlf') as f:
-    lines = f.readlines()
 
 
-lines_df = pd.DataFrame(lines)
-
-lines_df['all']=lines_df[0].apply(lambda x:x.split('\t'))
-
-def split_list(row, column_name):
-    return pd.Series(row[column_name])
-
-lines_df=lines_df.apply(lambda x:split_list(x,'all'), axis=1)
-
-lines_df.rename(columns={0:'start',1:'end',2:'label'},inplace=True)
 
 
-# then remove the /n rows and null rows
 
-#lines_df['end'].apply(lambda x: if isnull()]
 
-def file_name_extract(row, column_name1, column_name2):
-    if pd.isnull(row[column_name2]):
-        label = row[column_name1]
-    else:
-        label = math.nan
-    return label
 
-lines_df['file name'] = lines_df.apply(lambda x: file_name_extract(x, 'start','end'), axis=1)
-lines_df['file name'].ffill(inplace=True)
-#remove empty rows
-lines_df = lines_df[(lines_df['file name'] != '.\n') & (~lines_df['end'].isna())]
 
-#remove new line character
-lines_df['file name'] = lines_df['file name'].str.replace('\n','')
-lines_df['label'] = lines_df['label'].str.replace('\n','')
-
-#change data types
-lines_df['start'] = lines_df['start'].astype(float)
-lines_df['end'] = lines_df['end'].astype(float)
 
 #%%
 
 #adding event labels
 
-#adding event labels
-lines_df['missing queen'] = lines_df['file name'].str.lower().str.contains('|'.join(['missing queen', 'no_queen']))
-lines_df['queen'] = (lines_df['file name'].str.lower().str.contains('queenbee')) & (~lines_df['file name'].str.lower().str.contains('no'))
-lines_df['active day'] = lines_df['file name'].str.lower().str.contains('active - day')
-lines_df['swarming'] = lines_df['file name'].str.lower().str.contains('swarming')
-
-#distirbution across files
-lines_df[['missing queen','queen','active day','swarming','file name']].groupby(['missing queen','queen','active day','swarming'],as_index=False).nunique()
-#data is balanced for missing queen and queen, we have 15 active days files and only 2 swarming, we don't have inactive days data
-
-#let us see in terms of overall seconds since files do not have equal distribution
-lines_df['duration'] = lines_df['end'] - lines_df['start']
-lines_df[['missing queen','queen','active day','swarming','duration']].groupby(['missing queen','queen','active day','swarming'],as_index=False).sum()
-#in terms of hours of recording no qeen and queen are somewhat balanced
 
 
-#maybe let us see what is the distribution in terms of bee and nobee
-lines_df[['label','duration']].groupby('label',as_index=False).sum()
-#not balanced at all
+#
 
 #%%
 from pydub import AudioSegment
@@ -107,8 +58,8 @@ to_label_df.reset_index(inplace=True)
 
 #if we will use FT for feature engineering, then we need to split the data into bee and no bee parts so that FT is performed on all
 
-start_time = to_label_df.loc[0,'start'] * 1000 #note: package splits in miliseconds
-end_time = to_label_df.loc[0,'end'] * 1000 #note: package splits in miliseconds
+start_time = to_label_df.loc[0,'start'] * 1000 #note: package splits in milliseconds
+end_time = to_label_df.loc[0,'end'] * 1000 #note: package splits in milliseconds
 bee_label = to_label_df.loc[0,'label']
 inx = to_label_df.loc[0,'index']
 wav = AudioSegment.from_wav('data/'+file_name)
@@ -119,7 +70,7 @@ new_wav.export('data/bee/'+new_wav_name, format="wav")
 
 
 #%%
-#let us do FT on that splitted file
+#let us do FT on that split file
 # we need to read the wav file with the spacy library
 
 from numpy import fft as fft
@@ -133,7 +84,7 @@ plt.xlabel('k')
 plt.ylabel('Amplitude')
 plt.show()
 
-# the fourier is symetrical due to the real and imaginary soultion. only interested in first real solution
+# the fourier is symmetrical due to the real and imaginary solution. only interested in first real solution
 n = len(data)
 fourier = fourier[0:int((n / 2))]
 
@@ -141,7 +92,7 @@ fourier = fourier[0:int((n / 2))]
 fourier = fourier / float(n)
 
 # calculate the frequency at each point in Hz
-freqArray = np.arange(0, (n / 2), 1.0) * (rate * 1.0 / n);
+freqArray = np.arange(0, (n / 2), 1.0) * (rate * 1.0 / n)
 
 plt.figure(1, figsize=(8, 6))
 plt.plot(freqArray / 1000, 10 * np.log10(fourier), color='#ff7f00', linewidth=0.02)
