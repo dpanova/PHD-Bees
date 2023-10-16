@@ -27,37 +27,36 @@ for file in dir_list:
 bee_folder = 'data/bee/'
 no_bee_folder = 'data/nobee/'
 
-# here i need to loop over all files and print if there is no file
-f = extension_files_list[0]
+# loop over all files in the list of files
+for f in extension_files_list:
 
-if f.__contains__('.wav'):
-    wav_flag = True
-    dir_file = f.replace('.wav', '')
-else:
-    wav_flag = False
-    dir_file = f.replace('.mp3', '')
-
-
-to_label_df = annotation_df[annotation_df['file name'] == dir_file]
-if len(to_label_df) == 0:
-    print('no such file')
-# to_label_df.reset_index(inplace=True) , i don't think i need this since we need traceability
-
-# iterate over one recording. split accordingly and save the resulting files
-for inx, row in to_label_df.iterrows():
-    start_time = row['start'] * 1000 # note: package splits in milliseconds
-    end_time = row['end'] * 1000 # note: package splits in milliseconds
-    bee_label = row['label']
-    if wav_flag:
-        recording = AudioSegment.from_wav('data/' + f)
+    if f.__contains__('.wav'):
+        wav_flag = True
+        dir_file = f.replace('.wav', '')
     else:
-        recording = AudioSegment.from_mp3('data/' + f)
-    new_recording = recording[start_time:end_time]
-    new_recording_name = bee_label + '_index' + str(inx) + '.wav'
-    if bee_label == 'bee':
-        new_recording.export(bee_folder + new_recording_name, format="wav")
-    else:
-        new_recording.export(no_bee_folder + new_recording_name, format="wav")
+        wav_flag = False
+        dir_file = f.replace('.mp3', '')
+
+    to_label_df = annotation_df[annotation_df['file name'] == dir_file]
+    if len(to_label_df) == 0:
+        print('no such file')
+    # to_label_df.reset_index(inplace=True) , i don't think i need this since we need traceability
+
+    # iterate over one recording. split accordingly and save the resulting files
+    for inx, row in to_label_df.iterrows():
+        start_time = row['start'] * 1000 # note: package splits in milliseconds
+        end_time = row['end'] * 1000 # note: package splits in milliseconds
+        bee_label = row['label']
+        if wav_flag:
+            recording = AudioSegment.from_wav('data/' + f)
+        else:
+            recording = AudioSegment.from_mp3('data/' + f)
+        new_recording = recording[start_time:end_time]
+        new_recording_name = bee_label + '_index' + str(inx) + '.wav'
+        if bee_label == 'bee':
+            new_recording.export(bee_folder + new_recording_name, format="wav")
+        else:
+            new_recording.export(no_bee_folder + new_recording_name, format="wav")
 
 
 
