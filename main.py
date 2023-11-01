@@ -38,36 +38,6 @@ plt.show()
 
 #
 
-#%%
-from pydub import AudioSegment
-
-# TODO:
-# 1. split each file into those segments from lines_df
-# 2. need to understand how to add the label
-# 3. apply FT to each file
-# 4. decide how to split the test/train/validation data
-# 5. research on classification model
-#Note: we need to think about it - should we first train on bee and no-bee? so that we can define when we can hear bees at all?
-# then we can do another model for the hive events, yes, that seems like a reasonable approach
-
-#remove the wav ending
-file_name_updated = file_name.replace('.wav','')
-lines_df.reset_index(inplace=True)
-to_label_df = lines_df[lines_df['file name']==file_name_updated]
-to_label_df.reset_index(inplace=True)
-
-#if we will use FT for feature engineering, then we need to split the data into bee and no bee parts so that FT is performed on all
-
-start_time = to_label_df.loc[0,'start'] * 1000 #note: package splits in milliseconds
-end_time = to_label_df.loc[0,'end'] * 1000 #note: package splits in milliseconds
-bee_label = to_label_df.loc[0,'label']
-inx = to_label_df.loc[0,'index']
-wav = AudioSegment.from_wav('data/'+file_name)
-new_wav = wav[start_time:end_time]
-
-new_wav_name = bee_label+'_index'+str(inx)+'.wav'
-new_wav.export('data/bee/'+new_wav_name, format="wav")
-
 
 #%%
 #let us do FT on that split file

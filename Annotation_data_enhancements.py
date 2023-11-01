@@ -72,3 +72,5 @@ lines_df[['missing queen', 'queen', 'active day', 'swarming', 'duration']].group
 # maybe let us see what is the distribution in terms of bee and no-bee
 lines_df[['label', 'duration']].groupby('label', as_index=False).sum()
 # not balanced at all
+
+# TODO: define healthy hive state
