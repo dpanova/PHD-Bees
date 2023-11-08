@@ -94,7 +94,9 @@ set(diff_index).difference(set(inspect_index))
 
 # ok, this looks to be the issue - the naming convention of a few of the files in the directory is different than those
 # in the annotation file. The check if not working as expected since it is printing the issue in a bunch of files
-
+# At this point we will remove those files from the analysis since it is not clear how to transform them to music files
+# at a later stage we may contact the authors of the data https://filext.com/file-extension/LAB We did try connecting
+# using Sonic vizualizer but it is not opening .lab files
 
 for i in inspect_files:
     print(i)
