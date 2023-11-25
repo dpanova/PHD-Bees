@@ -12,7 +12,7 @@
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
-from scipy.fft import fft, fftfreq
+from scipy.fft import fft, rfftfreq
 import librosa
 import numpy as np
 #%%
@@ -47,8 +47,15 @@ nobee_files = os.listdir(no_bee_folder)
 X_train = pd.DataFrame()
 
 #%%
+len(X_train_index)
+X_train_part1 = X_train_index.iloc[:10,:]
+
+
+
+
+#%%
 # transform the train set with fft and store it to a DF
-for train_index,row in X_train_index.iterrows():
+for train_index,row in X_train_part1.iterrows():
     print(train_index)
     # get the necessary indices
     file_index = row['index'] # this index is necessary to ensure we have the correct file name
@@ -93,14 +100,78 @@ for train_index,row in X_train_index.iterrows():
         print('lab exception file')
 X_train.to_csv('X_train.csv', index=False)
 #%%
-for train_index,row in X_train_index.iterrows():
-    print(train_index)
-    # get the necessary indices
-    file_index = row['index']  # this index is necessary to ensure we have the correct file name
-    print(file_index)
-    label = y_train.loc[train_index, 'label']
-    print(label)
+# it looks like only 53 out of 100 have been transformed
+# we need to change the file to get the index as the first argument
+# we need to check why fft does not provide the same len vector
+# all of them are not read correctly - why?
+
+# different sampling rates - different fft vector lengths
+
+# we will investigate the two usecases
+train_index1 = 0
+train_index2 = 7
+# get the necessary indices
+
+file_index1 = X_train_index.loc[train_index1,] # this index is necessary to ensure we have the correct file name
+file_index2 = X_train_index.loc[train_index2,]
+
+label1 = y_train.loc[train_index1,'label']
+label2 = y_train.loc[train_index2,'label']
+# locate the correct file
 
 
-# need to add column names and check if all rows have the same column count
+file_name1 = [x for x in bee_files if x.find('index'+str(file_index1[0])+'.wav') != -1][0]
+file_name1 = bee_folder+file_name1
+file_name2 = [x for x in bee_files if x.find('index' + str(file_index2[0]) + '.wav') != -1][0]
+file_name2 = bee_folder+file_name2
 
+
+# file 1
+samples1, sample_rate1 = librosa.load(file_name1, sr=None, mono=True, offset = 0.0, duration=None)
+len(samples1) #496125
+sample_rate1 #44100
+duration_of_sound1 = len(samples1)/sample_rate1 #11.25
+annotation_duration1 = annotation_df.loc[annotation_df['index']==file_index1[0], :]['duration'][train_index1] # this could be the issue itself, it was substracting the whole table
+
+duration_of_sound==annotation_duration
+
+
+fft_file1 = fft(samples1).tolist()
+fft_file_real1 = [x.real for x in fft_file1]
+len(fft_file_real1) #496125, the same number as the samples
+
+# let us do the same for sample 2
+
+samples2, sample_rate2 = librosa.load(file_name2, sr=None, mono=True, offset = 0.0, duration=None)
+len(samples2) #220500
+sample_rate2 #44100
+duration_of_sound2 = len(samples2)/sample_rate2 #5.0
+annotation_duration2 = annotation_df.loc[annotation_df['index']==file_index2[0], :]['duration'][train_index2]
+# this could be the issue itself, it was substracting the whole table
+# also the index is to be highlighted
+
+duration_of_sound==annotation_duration
+
+
+fft_file2 = fft(samples2).tolist()
+fft_file_real2 = [x.real for x in fft_file2]
+len(fft_file_real2) #220500, the same number as the samples
+
+N1 = len(samples1)
+fft_frq1 = rfftfreq(N1, d = 1.0/sample_rate1)
+len(fft_frq1) #248063
+
+N2 = len(samples2)
+fft_frq2 = rfftfreq(N2, d = 1.0/sample_rate2)
+len(fft_frq2) #248063
+
+# what if we apply window length and calculate the fft? so that we have the same length of the array?
+
+from scipy import signal
+window = signal.windows.hann(51)
+a = fft(samples1*np.hanning(len(samples1))) #adding hann window function
+
+# need to understand the difference between FFT and fast hartley transformation
+import ducc0
+from ducc0 import  fft as fftd
+fftd()
