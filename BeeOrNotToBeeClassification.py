@@ -167,11 +167,29 @@ len(fft_frq2) #248063
 
 # what if we apply window length and calculate the fft? so that we have the same length of the array?
 
-from scipy import signal
-window = signal.windows.hann(51)
-a = fft(samples1*np.hanning(len(samples1))) #adding hann window function
+def dht(x: np.array):
+    """ Compute the DHT for a sequence x of length n using the FFT.
+    """
+    X = np.fft.fft(x)
+    X = np.real(X) - np.imag(X)
+    return X
 
-# need to understand the difference between FFT and fast hartley transformation
-import ducc0
-from ducc0 import  fft as fftd
-fftd()
+# TODO
+# a = fft(samples1*np.hanning(len(samples1))) #adding hann window function
+
+a = dht(samples1)
+freqs = np.fft.fftfreq(len(samples1), sample_rate1)
+
+# we can split the data into 128 bins
+#
+# The output from the FHT is a series of frequency ‘bins’, the value of each bin represents the intensity of the input signal within the range of frequencies the bin represents.
+
+
+
+# # need to understand the difference between FFT and fast hartley transformation
+# import ducc0
+# from ducc0 import  fft as fftd
+# fftd()
+
+#%%
+
