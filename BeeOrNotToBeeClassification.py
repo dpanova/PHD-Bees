@@ -192,4 +192,139 @@ freqs = np.fft.fftfreq(len(samples1), sample_rate1)
 # fftd()
 
 #%%
+# following the example in this notebook https://raghavchhetri.github.io/scattered.dimes/2021/07/21/Fourier-Transforms-in-Python
+from scipy.fft import fft, ifft, fftn, ifftn, fftshift, ifftshift, fftfreq, rfft, irfft, rfftfreq
+import matplotlib.pyplot as plt
+X = fft(samples1)
+freq = fftfreq(len(X),(1/sample_rate1))
+powerspect = 2*np.abs(X)/len(X)
+# denoice - cutoff all frequencies with small power
+cutoff = 0
+powerspect = powerspect * (powerspect > cutoff)
+X = X * (powerspect > cutoff) # Zero small Fourier coefficients
+t = np.arange(0,duration_of_sound1,(1/sample_rate1))
 
+plt.figure(figsize=(9, 7))
+plt.subplot(311)
+plt.plot(t, samples1, 'k', label='original')
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.legend()
+
+plt.subplot(312)
+plt.title('frq')
+# plt.stem(freq, np.abs(X),'c', markerfmt=" ", basefmt="-b")
+plt.stem(freq, powerspect, 'c', markerfmt=" ", basefmt="-b")
+plt.xlabel('Freq (Hz)')
+plt.ylabel('FFT Amplitude')
+plt.xlim(-2000, 2000)
+plt.subplot(313)
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+#%% define the function in a separate piece of code
+
+def fft_powerspectrum_plot(x, t, dt, npnts, freq_show, method=2, denoise=False, cutoff=0):
+    '''
+    - plot original signal
+    - compute FFT and power spectrum (power per frequency)
+    - plot power spectrum
+    - plot recovered signal after fft-> ifft
+
+    x:         1D signal
+    t:         time vector
+    dt:        sampling interval
+    npnts:     number of time points
+    freq_show: upper range of frequency to plot
+    method:    1/2/3
+    denoise:   filter out noise
+    cutoff:    denoise below the cutoff amplitude
+
+    Call: plot_signal_fftamplitude(x, t, dt, npnts, 200, method=1, denoise=True, cutoff=3)
+    '''
+    if method == 1:
+        X = fft(x)
+        n = np.arange(npnts)
+        T = npnts * dt
+        freq = n / T
+        title = 'Frequency mirroring above Nyquist'
+    elif method == 2:
+        X = fft(x)
+        freq = fftfreq(npnts, dt)
+        title = 'Frequency mirroring about zero'
+    elif method == 3:
+        X = rfft(x)
+        freq = rfftfreq(npnts, dt)
+        title = 'No mirroring: only positive frequencies'
+
+    powerspect = 2 * np.abs(X) / npnts
+    # Note: Normalized as 2*np.abs(X)/npnts instead of simply np.abs(X)
+    # returns the actual amplitude values of the sine and cosine functions
+    # instead of some arbitrarily-scaled values
+
+    if denoise:
+        powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
+        X = X * (powerspect > cutoff)  # Zero small Fourier coefficients
+        # To further zero out a peak at zero frequency -- occurs if noise is 'rand' instead of 'randn'
+        # powerspect = powerspect * (powerspect < 10)
+        # X = X * (powerspect < 10)
+
+    # PLOT
+    plt.figure(figsize=(9, 7))
+    plt.subplot(311)
+    plt.plot(t, x, 'k', label='original')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.legend()
+
+    plt.subplot(312)
+    plt.title(title)
+    # plt.stem(freq, np.abs(X),'c', markerfmt=" ", basefmt="-b")
+    plt.stem(freq, powerspect, 'c', markerfmt=" ", basefmt="-b")
+    plt.xlabel('Freq (Hz)')
+    plt.ylabel('FFT Amplitude')
+    if method == 2:
+        plt.xlim(-freq_show, freq_show)
+    else:
+        plt.xlim(0, freq_show)
+
+    plt.subplot(313)
+    if method == 3:
+        plt.plot(t, irfft(X), 'k--', label='recovered')
+    else:
+        plt.plot(t, ifft(X), 'k--', label='recovered')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+    print('Number of time points:', npnts, 'points')
+    print('Number of points in frequency range:', len(freq), 'points')
+    print('Frequency range:', min(freq), max(freq), 'Hz')
+    return freq, powerspect
+#%%
+srate = sample_rate1
+dt = 1/srate
+duration = duration_of_sound1
+t = np.arange(0,duration,dt)
+npnts  = len(t)
+x = samples1
+
+freq, powerspect = fft_powerspectrum_plot(x, t, dt, npnts, 2000, 1, denoise=True)
+#%%
+# let us split the freq into 128 buckets
+
+bins = np.linspace(0.0, 2000.0, 128 )
+b0 = bins[0]
+b1 = bins[1]
+index = ([0]+[i for i, e in enumerate(freq) if e < b1])[-1]
+# index = ([0]+[i for i, e in enumerate(listIWantToCheck[:indexOfLastThree]) if e < 2])[-1] + 1
+p = sum(powerspect[:index])/len(powerspect[:index])
+
+freq
