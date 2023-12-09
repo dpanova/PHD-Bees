@@ -329,6 +329,4 @@ p = sum(powerspect[:index])/len(powerspect[:index])
 
 freq
 
-"""
-wuhweuihwurhwiuhruiw
-"""
+
