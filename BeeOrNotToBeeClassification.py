@@ -4,7 +4,8 @@ from sklearn.model_selection import train_test_split
 import logging
 import os
 import numpy as np
-from scipy.fft import fft,fftfreq
+from scipy.fft import fft,fftfreq #why we don't use fftfreq
+import librosa
 
 class BeeNotBee:
     """BeeNotBee class ....
@@ -123,33 +124,41 @@ class BeeNotBee:
 
     def acoustic_file_names(self):
         """
-        TODO add logging and checks
         Create a list of files which have bee and no-bee data
         :return: two lists - bee_files and nobee_files
         :rtype: list
         """
         self.bee_files = os.listdir(self.bee_folder)
         self.nobee_files = os.listdir(self.no_bee_folder)
-
+        logging.info('Files in the two directories are stores in two lists: bee_files and nobee_files')
+        if len(bee_files)==0:
+            raise ValueError('bee_files list is empty. Please, check the %s folder' %self.bee_folder)
+        if len(nobee_files) == 0:
+            raise ValueError('nobee_files list is empty. Please, check the %s folder' % self.no_bee_folder)
 
     def harley_transformation_with_window(self,x,window = np.hanning):
         """
-        TODO add logging and checks
         Transform np.array to fast harley transformation with a window function
         :param x: time sequence
         :type x: numpy array
-        :param window: windowing function
+        :param window: windowing function from the list np.hanning, np.bartlett, np.blackman, np.hamming. More information for the windows functions here https://numpy.org/doc/stable/reference/routines.window.html
         :type window: numpy function
         :return:
         """
-        x_trans = fft(x * window(len(x)))  # adding window function
-        x_trans = np.real(x_trans) - np.imag(x_trans)
+        window_list = [np.hanning, np.bartlett, np.blackman, np.hamming]
+        if window not in window_list:
+            raise ValueError('Invalid window type. Expected one of: %s' %['np.'+w.__name__ for w in window_list])
+        elif type(x) != np.ndarray:
+            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
+        else:
+            x_trans = fft(x * window(len(x)))  # adding window function
+            x_trans = np.real(x_trans) - np.imag(x_trans)
+            logging.info('Harley transformation is completed for the array conducted with window function %s' %window.__name__ )
         return x_trans
 
     def freq_powerspect_func(self,x, dt, npnts, denoise=True, cutoff=0):
         """
-        TODO add loggings and checks
-        Transform the FFT harley vector into frequency and power vector
+        Transform the FFT harley vector into frequency and power vectors
         :param x: time sequence
         :type x: numpy array
         :param t: time vector
@@ -165,20 +174,32 @@ class BeeNotBee:
         :return: frequency list and power specter list
         :rtype: list
         """
-        X = self.harley_transformation_with_window(x)
-        n = np.arange(npnts)
-        T = npnts * dt
-        freq = n / T
-        powerspect = 2 * np.abs(X) / npnts
-        if denoise:
-            powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
-            X = X * (powerspect > cutoff)  # Zero small Fourier coefficients
-        return freq, powerspect
+        if type(x) != np.ndarray:
+            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
+        elif type(npnts) != int:
+            raise ValueError('Invalid npnts type. npnts is type %s and expected type is int.' %type(npnts).__name__)
+        elif type(dt) != float:
+            raise ValueError('Invalid dt type. dt is type %s and expected type is float.' %type(dt).__name__)
+        elif type(denoise) != bool:
+            raise ValueError('Invalid denoise type. denoise is type %s and expected type is bool.' %type(denoise).__name__)
+        elif type(cutoff) != int:
+            raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
+        else:
+            X = self.harley_transformation_with_window(x)
+            n = np.arange(npnts)
+            T = npnts * dt
+            freq = n / T
+            powerspect = 2 * np.abs(X) / npnts
+            if denoise:
+                powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
+                X = X * (powerspect > cutoff)  # Zero small Fourier coefficients
+            logging.info('Frequency and power specter is calculated for the time vector')
+            return freq, powerspect
+
 
     def binning(self, x, dt, npnts, n_bins =128, n_start = 0.0 , n_end = 2000.0, denoise=True, cutoff=0):
         """
         Transform a time to frequency using the freq_powerspect_func and then binning it to a specific number of frequency vectors. The power in every bin is the average of the original frequency vector.
-        TODO add logging and checks
         :param x: time sequence
         :type x: numpy array
         :param dt: sampling interval
@@ -198,26 +219,98 @@ class BeeNotBee:
         :return: list of the binned inputs
         :rtype: list
         """
-        freq, powerspect = self.freq_powerspect_func(x=x,npnts=npnts, dt=dt,denoise=denoise,cutoff=cutoff)
-        bins = np.linspace(n_start, n_end, n_bins)
-        bins_list = [(bins[i], bins[i + 1]) for i in (range(len(bins) - 1))]
-        binned_x = list()
-        for pair in bins_list:
-            b0 = pair[0]
-            b1 = pair[1]
-            index = ([b0] + [i for i, e in enumerate(freq) if e < b1])[-1]
+        if type(x) != np.ndarray:
+            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
+        elif type(npnts) != int:
+            raise ValueError('Invalid npnts type. npnts is type %s and expected type is int.' %type(npnts).__name__)
+        elif type(dt) != float:
+            raise ValueError('Invalid dt type. dt is type %s and expected type is float.' %type(dt).__name__)
+        elif type(denoise) != bool:
+            raise ValueError('Invalid denoise type. denoise is type %s and expected type is bool.' %type(denoise).__name__)
+        elif type(cutoff) != int:
+            raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
+        elif type(n_bins) != int:
+            raise ValueError('Invalid n_bins type. n_bins is type %s and expected type is int.' % type(n_bins).__name__)
+        elif type(n_start) != float:
+            raise ValueError('Invalid n_start type. n_start is type %s and expected type is float.' % type(n_start).__name__)
+        elif type(n_end) != float:
+            raise ValueError('Invalid n_end type. n_end is type %s and expected type is float.' % type(n_end).__name__)
+        else:
+            # to ensure the length of the bins is unchanged, add 1
+            n_bins=n_bins+1
+            freq, powerspect = self.freq_powerspect_func(x=x,npnts=npnts, dt=dt,denoise=denoise,cutoff=cutoff)
+            bins = np.linspace(n_start, n_end, n_bins)
+            bins_list = [(bins[i], bins[i + 1]) for i in (range(len(bins) - 1))]
+            binned_x = list()
+            for pair in bins_list:
+                b0 = pair[0]
+                b1 = pair[1]
+                index = ([b0] + [i for i, e in enumerate(freq) if e < b1])[-1]
+                try:
+                    old_index
+                except NameError:
+                    old_index = 0
+                try:
+                    p = sum(powerspect[old_index:index]) / len(powerspect[old_index:index])
+                except:
+                    p = 0
+                binned_x.append(p)
+                old_index = index
+            logging.info('Frequency vector binned.')
+            return binned_x
+    def data_transformation(self, X,y):
+        """
+        TODO checks and logging
+        Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. STore the index from the annotation data frame (the key) and the df index to track the associated y values.
+        :param X: pandas data frame with the indices of the acoustic files which need to be transformed
+        :type X: pandas.dataFrame
+
+        :return: data frame with the transformed data
+        :rtype:pandas.dataFrame
+        """
+        # DF to store the results
+        X_transformed = pd.DataFrame()
+        for train_index, row in X.iterrows():
+            # get the necessary indices to trace files easily
+            file_index = row['index']  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
+            label = y.loc[train_index, 'label']
+            # check if the file from the annotation data exists in the folders
             try:
-                old_index
-            except NameError:
-                old_index = 0
-            try:
-                p = sum(powerspect[old_index:index]) / len(powerspect[old_index:index])
+                if label == 'bee':
+                    file_name = [x for x in self.bee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+                    file_name = self.bee_folder + file_name
+                else:
+                    file_name = [x for x in self.nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+                    file_name = self.nobee_files + file_name
+                logging.info('%s file exists.' %file_name)
             except:
-                p = 0
-            binned_x.append(p)
-            old_index = index
-        return binned_x
+                logging.warning('No %s file exists.' %file_name)
 
-
-
-
+            # # read the files
+            # try:
+            #     samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+            #     # check if the data extraction is correct
+            #     duration_of_sound = len(samples) / sample_rate
+            #     annotation_duration = annotation_df.loc[annotation_df['index'] == file_index, 'duration']
+            #
+            #     # we need to do different error handling with log files at a later point
+            #     if duration_of_sound == annotation_duration.to_list()[0]:
+            #         print('file is read correctly')
+            #     else:
+            #         print('file is not read correctly')
+            #
+            #     # calculate the fft
+            #     # we need to get only the real part of FFT -> need to check on this
+            #     print('1')
+            #     fft_file = fft(samples).tolist()
+            #     fft_file_real = [x.real for x in fft_file]
+            #
+            #     # we need to add somewhere the train index
+            #     fft_file_real.append(train_index)  # question: can this be a different length?
+            #     fft_file_real.append(file_index)
+            #
+            #     X_train = X_train._append(pd.DataFrame([fft_file_real]))
+            # except:
+            #     print('lab exception file')
+            #
+            #
