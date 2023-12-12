@@ -6,6 +6,9 @@ import os
 import numpy as np
 from scipy.fft import fft,fftfreq #why we don't use fftfreq
 import librosa
+from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import randint
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 
 class BeeNotBee:
     """BeeNotBee class ....
@@ -131,9 +134,9 @@ class BeeNotBee:
         self.bee_files = os.listdir(self.bee_folder)
         self.nobee_files = os.listdir(self.no_bee_folder)
         logging.info('Files in the two directories are stores in two lists: bee_files and nobee_files')
-        if len(bee_files)==0:
+        if len(self.bee_files)==0:
             raise ValueError('bee_files list is empty. Please, check the %s folder' %self.bee_folder)
-        if len(nobee_files) == 0:
+        if len(self.nobee_files) == 0:
             raise ValueError('nobee_files list is empty. Please, check the %s folder' % self.no_bee_folder)
 
     def harley_transformation_with_window(self,x,window = np.hanning):
@@ -284,33 +287,210 @@ class BeeNotBee:
                     file_name = self.nobee_files + file_name
                 logging.info('%s file exists.' %file_name)
             except:
-                logging.warning('No %s file exists.' %file_name)
+                logging.warning('No file with index %s exists.' %str(file_index))
 
-            # # read the files
-            # try:
-            #     samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
-            #     # check if the data extraction is correct
-            #     duration_of_sound = len(samples) / sample_rate
-            #     annotation_duration = annotation_df.loc[annotation_df['index'] == file_index, 'duration']
-            #
-            #     # we need to do different error handling with log files at a later point
-            #     if duration_of_sound == annotation_duration.to_list()[0]:
-            #         print('file is read correctly')
-            #     else:
-            #         print('file is not read correctly')
-            #
-            #     # calculate the fft
-            #     # we need to get only the real part of FFT -> need to check on this
-            #     print('1')
-            #     fft_file = fft(samples).tolist()
-            #     fft_file_real = [x.real for x in fft_file]
-            #
-            #     # we need to add somewhere the train index
-            #     fft_file_real.append(train_index)  # question: can this be a different length?
-            #     fft_file_real.append(file_index)
-            #
-            #     X_train = X_train._append(pd.DataFrame([fft_file_real]))
-            # except:
-            #     print('lab exception file')
-            #
-            #
+            # read the files
+            try:
+                samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+                # check if the data extraction is correct
+                duration_of_sound =  round(len(samples) / sample_rate,2)
+                annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
+
+                # we need to do different error handling with log files at a later point
+                if duration_of_sound == round(annotation_duration.loc[train_index,],2):
+                    logging.info('%s file has the correct duration.' % file_name)
+                else:
+                    logging.warning('%s file DOES NOT have the correct duration.' % file_name)
+
+                # transform the time to binned frequency vector
+                dt = 1 / sample_rate
+                t = np.arange(0, duration_of_sound, dt)
+                npnts = len(t)
+                sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+
+                # we need to add the indices for tracking purposes
+                sample_transformed.insert(0,train_index)
+                sample_transformed.insert(0, file_index)
+
+                X_transformed = X_transformed._append(pd.DataFrame([sample_transformed]))
+                logging.info('%s file transformed and added to the transformed data frame' % file_name)
+
+            except:
+                logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
+        return X_transformed
+
+    # def best_model(self, model, param_dist):
+    #     """Identify the best model after tuning the hyperparameters
+    #
+    #     :param model: an initiated machine learning model
+    #     :type model: Any
+    #     :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
+    #     :type param_dist: dict
+    #     :return: RandomizedSearchCV object
+    #     :rtype: RandomizedSearchCV
+    #     """
+    #     try:
+    #         best_model = RandomizedSearchCV(model,
+    #                                         param_distributions=param_dist,
+    #                                         n_iter=100,
+    #                                         cv=10)
+    #         logging.info('Parameter tuning completed')
+    #     except Exception as error:
+    #         logging.error(error)
+    #     return best_model
+    #
+    # def accuracy_metrics(self, y_pred, cm_title, cm_file_name):
+    #     """ Provide accuracy metrics to compare the different models
+    #
+    #     :param y_pred: predicted dependent values
+    #     :type y_pred: list
+    #     :param cm_title: title for the confusion matrix plot
+    #     :type cm_title: str
+    #     :param cm_file_name: title for the confusion matrix plot
+    #     :type cm_file_name: str
+    #     :return: accuracy, precision, recall and saved graph for the confusion matrix
+    #     :rtype: list
+    #     """
+    #     try:
+    #         # accuracy score
+    #         acc = accuracy_score(self.y_test, y_pred)
+    #         # calculate the precision score
+    #         precision = precision_score(self.y_test, y_pred, average='macro')
+    #         recall = recall_score(self.y_test, y_pred, average='macro')
+    #         # confusion matrix
+    #
+    #         self.cm = confusion_matrix(self.y_test, y_pred)
+    #
+    #         code_str = "sns.heatmap(self.cm, annot=True, fmt='.3f', linewidths=.5, square=True, cmap='Blues_r')"
+    #
+    #         self.plot_figure(
+    #             plot_title=cm_title
+    #             , file_title=cm_file_name
+    #             , plot_code=code_str
+    #         )
+    #         logging.info('Accuracy metrics calculated')
+    #     except Exception as error:
+    #         logging.error(error)
+    #
+    #     return acc, precision, recall
+    #
+    # def misclassified_analysis(self, y_pred):
+    #     """Misclassification analysis to understand where the model miscalculates and if any pattern can be found
+    #
+    #     :param y_pred: predicted dependent values
+    #     :type y_pred: list
+    #     :return: misclassified values
+    #     :rtype: list
+    #     """
+    #     try:
+    #
+    #         # check the misclassified datapoints
+    #         y_test_df = pd.DataFrame(self.y_test)
+    #         y_test_df['pred'] = y_pred
+    #         y_test_df['check'] = y_test_df[self.y_column] == y_test_df['pred']
+    #
+    #         original_y_column_list = [y for y in self.y_columns if y != self.y_column]
+    #         if len(original_y_column_list) == 0:
+    #             original_y_column = self.y_column
+    #         else:
+    #             original_y_column = original_y_column_list[0]
+    #         misclassified = self.data.loc[y_test_df[~y_test_df['check']].index, original_y_column].value_counts()
+    #
+    #         logging.info('Misclassified analysis completed')
+    #     except Exception as error:
+    #         logging.error(error)
+    #
+    #     return misclassified
+    #
+    # def model_results(self
+    #                   , model
+    #                   , param_dist
+    #                   , cm_title
+    #                   , cm_file_name):
+    #     """Provide a full picture of the model performance and accuracy
+    #
+    #     :param model: an initiated machine learning model
+    #     :type model: Any
+    #     :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
+    #     :type param_dist: dict
+    #     :param cm_title: title for the confusion matrix plot
+    #     :type cm_title: str
+    #     :param cm_file_name: title for the confusion matrix plot
+    #     :type cm_file_name: str
+    #     :return: the best model with its accuracy metrics and misclassified analysis
+    #     :rtype: list
+    #     """
+    #     try:
+    #         # Use random search to find the best hyperparameters
+    #         rand_search = self.best_model(model=model, param_dist=param_dist)
+    #
+    #         # fit the best model
+    #         rand_search.fit(self.X_train, self.y_train)
+    #
+    #         # generate predictions with the best model
+    #         y_pred = rand_search.predict(self.X_test)
+    #
+    #         # calculate model accuracy
+    #         acc, precision, recall = self.accuracy_metrics(y_pred=y_pred,
+    #                                                        cm_title=cm_title,
+    #                                                        cm_file_name=cm_file_name)
+    #
+    #         # check the misclassified datapoints
+    #         misclassified = self.misclassified_analysis(y_pred=y_pred)
+    #
+    #         logging.info('Model Results Calculated')
+    #     except Exception as error:
+    #         logging.error(error)
+    #
+    #     return acc, precision, recall, misclassified, rand_search
+    # def random_forest_results(self):
+    #     """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+    #
+    #     :return: accuracy, precision, recall, confusion matrix plot file with the name 'rf_confusion_matrix.png', misclassified analysis, feature importance plot with the name 'rf_feature_importance.png'
+    #     :rtype: list
+    #     """
+    #     try:
+    #         param_dist = {'n_estimators': randint(50, 500), 'max_depth': randint(1, 20)}
+    #         # Create a random forest classifier
+    #         rf = RandomForestClassifier()
+    #
+    #         # check the model results
+    #         acc, precision, recall, misclassified, rand_search = self.model_results(model=rf, param_dist=param_dist,
+    #                                                                                 cm_title='RF Confusion Matrix',
+    #                                                                                 cm_file_name='rf_confusion_matrix.png')
+    #
+    #         # # check the features importance
+    #         best_model = rand_search.best_estimator_
+    #         importances = best_model.feature_importances_
+    #         self.forest_importances = pd.Series(importances, index=self.X_train.columns)
+    #
+    #         code_str = """
+    #         self.forest_importances.sort_values(ascending=False).plot(kind='barh')
+    #         plt.ylabel('Importance')
+    #         plt.xlabel('Features')
+    #                     """
+    #
+    #         self.plot_figure(
+    #             plot_title='RF Feature Importance'
+    #             , file_title='rf_feature_importance.png'
+    #             , plot_code=code_str
+    #         )
+    #         logging.info('Random forest results calculated')
+    #
+    #         # create a plot for the misclassified
+    #         self.misclass_rf = pd.DataFrame(misclassified)
+    #         self.misclass_rf.reset_index(inplace=True)
+    #         self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
+    #
+    #         code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+    #
+    #         self.plot_figure(
+    #             plot_title='Random Forest Misclassified Distribution'
+    #             , file_title='misclassified_rf.png'
+    #             , plot_code=code_str
+    #         )
+    #         logging.info("Random Forest misclassified distribution plot created")
+    #
+    #         return acc, precision, recall, misclassified
+    #     except Exception as error:
+    #         logging.error(error)
