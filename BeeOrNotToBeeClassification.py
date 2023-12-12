@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 import logging
 import os
 import numpy as np
-from scipy.fft import fft,fftfreq #why we don't use fftfreq
+from scipy.fft import fft,rfftfreq, fftfreq
 import librosa
 from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import randint
@@ -189,9 +189,10 @@ class BeeNotBee:
             raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
         else:
             X = self.harley_transformation_with_window(x)
-            n = np.arange(npnts)
-            T = npnts * dt
-            freq = n / T
+            #n = np.arange(npnts)
+            #T = npnts * dt
+            freq = rfftfreq(npnts, dt)
+            #freq = n / T
             powerspect = 2 * np.abs(X) / npnts
             if denoise:
                 powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
@@ -263,7 +264,6 @@ class BeeNotBee:
             return binned_x
     def data_transformation(self, X,y):
         """
-        TODO checks and logging
         Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. STore the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
         :type X: pandas.dataFrame
