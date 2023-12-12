@@ -6,6 +6,7 @@ import os
 import numpy as np
 from scipy.fft import fft,rfftfreq, fftfreq
 import librosa
+import multiprocessing as mp
 from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import randint
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
@@ -262,62 +263,88 @@ class BeeNotBee:
                 old_index = index
             logging.info('Frequency vector binned.')
             return binned_x
-    def data_transformation(self, X,y):
+    def data_transformation_row(self, arg):
         """
-        Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. STore the index from the annotation data frame (the key) and the df index to track the associated y values.
+        A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
+        :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable
+        :type arg: tuple
+
+        :return: list of lists with the transformed data. The non-existent files are returned as None type.
+        :rtype: list
+        """
+        if type(arg) != tuple:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is tuple.' %type(arg).__name__)
+        train_index, row,y = arg
+
+        # get the necessary indices to trace files easily
+        file_index = row['index']  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
+        label = y.loc[train_index, 'label']
+        # check if the file from the annotation data exists in the folders
+        try:
+            if label == 'bee':
+                file_name = [x for x in self.bee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+                file_name = self.bee_folder + file_name
+            else:
+                file_name = [x for x in self.nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+                file_name = self.nobee_files + file_name
+            logging.info('%s file exists.' %file_name)
+        except:
+            logging.warning('No file with index %s exists.' %str(file_index))
+
+        # read the files
+        try:
+            samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+            # check if the data extraction is correct
+            duration_of_sound =  round(len(samples) / sample_rate,2)
+            annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
+
+            # we need to do different error handling with log files at a later point
+            if duration_of_sound == round(annotation_duration.loc[train_index,],2):
+                logging.info('%s file has the correct duration.' % file_name)
+            else:
+                logging.warning('%s file DOES NOT have the correct duration.' % file_name)
+
+            # transform the time to binned frequency vector
+            dt = 1 / sample_rate
+            t = np.arange(0, duration_of_sound, dt)
+            npnts = len(t)
+            sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+
+            # we need to add the indices for tracking purposes
+            sample_transformed.insert(0,train_index)
+            sample_transformed.insert(0, file_index)
+
+            logging.info('%s file transformed and added to the transformed data frame' % file_name)
+            return sample_transformed
+        except:
+            logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
+
+    def data_transformation_df(self, X,y):
+        """
+        Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
-        :type X: pandas.dataFrame
+        :type X: pandas.DataFrame
+        :param y: pandas data frame with the dependant variable
+        :type y: pandas.DataFrame
 
         :return: data frame with the transformed data
         :rtype:pandas.dataFrame
         """
-        # DF to store the results
-        X_transformed = pd.DataFrame()
-        for train_index, row in X.iterrows():
-            # get the necessary indices to trace files easily
-            file_index = row['index']  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
-            label = y.loc[train_index, 'label']
-            # check if the file from the annotation data exists in the folders
-            try:
-                if label == 'bee':
-                    file_name = [x for x in self.bee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-                    file_name = self.bee_folder + file_name
-                else:
-                    file_name = [x for x in self.nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-                    file_name = self.nobee_files + file_name
-                logging.info('%s file exists.' %file_name)
-            except:
-                logging.warning('No file with index %s exists.' %str(file_index))
-
-            # read the files
-            try:
-                samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
-                # check if the data extraction is correct
-                duration_of_sound =  round(len(samples) / sample_rate,2)
-                annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
-
-                # we need to do different error handling with log files at a later point
-                if duration_of_sound == round(annotation_duration.loc[train_index,],2):
-                    logging.info('%s file has the correct duration.' % file_name)
-                else:
-                    logging.warning('%s file DOES NOT have the correct duration.' % file_name)
-
-                # transform the time to binned frequency vector
-                dt = 1 / sample_rate
-                t = np.arange(0, duration_of_sound, dt)
-                npnts = len(t)
-                sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
-
-                # we need to add the indices for tracking purposes
-                sample_transformed.insert(0,train_index)
-                sample_transformed.insert(0, file_index)
-
-                X_transformed = X_transformed._append(pd.DataFrame([sample_transformed]))
-                logging.info('%s file transformed and added to the transformed data frame' % file_name)
-
-            except:
-                logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
+        if type(X) != pandas.core.frame.DataFrame:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
+        if type(y) != pandas.core.frame.DataFrame:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(y).__name__)
+        if 'index' not in X.columns.to_list():
+            raise ValueError('Column index is not part of X data frame. It is a requirement.')
+        if 'label' not in y.columns.to_list():
+            raise ValueError('Column label is not part of y data frame. It is a requirement.')
+        pool = mp.Pool(processes=mp.cpu_count())
+        X_transformed = pool.map(self.data_transformation_row,[(train_index, row,y) for train_index, row in X.iterrows()])
+        # add the column names
+        #TODO
+        logging.info('Whole data frame s transformed.')
         return X_transformed
+
 
     # def best_model(self, model, param_dist):
     #     """Identify the best model after tuning the hyperparameters
