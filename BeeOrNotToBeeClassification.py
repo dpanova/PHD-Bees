@@ -330,9 +330,9 @@ class BeeNotBee:
         :return: data frame with the transformed data
         :rtype:pandas.dataFrame
         """
-        if type(X) != pandas.core.frame.DataFrame:
+        if type(X) != pd.core.frame.DataFrame:
             raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
-        if type(y) != pandas.core.frame.DataFrame:
+        if type(y) != pd.core.frame.DataFrame:
             raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(y).__name__)
         if 'index' not in X.columns.to_list():
             raise ValueError('Column index is not part of X data frame. It is a requirement.')
@@ -341,9 +341,17 @@ class BeeNotBee:
         pool = mp.Pool(processes=mp.cpu_count())
         X_transformed = pool.map(self.data_transformation_row,[(train_index, row,y) for train_index, row in X.iterrows()])
         # add the column names
-        #TODO
+        cols = ['train_index','file_index']
+        max_length = max([len(x) for x in X_transformed if x is not None])
+        cols = cols + ['col' + str(x) for x in range(max_length - 2)]
+        # transform to data frame
+        X_df = pd.DataFrame(columns=cols)
+        for x in X_transformed:
+            if x is not None:
+                X_df.loc[len(X_df)] = x
+
         logging.info('Whole data frame s transformed.')
-        return X_transformed
+        return X_df
 
 
     # def best_model(self, model, param_dist):
