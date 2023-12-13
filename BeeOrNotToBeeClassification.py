@@ -317,7 +317,9 @@ class BeeNotBee:
             logging.info('%s file transformed and added to the transformed data frame' % file_name)
             return sample_transformed
         except:
+            return [train_index,file_index]
             logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
+
 
     def data_transformation_df(self, X,y):
         """
@@ -347,10 +349,12 @@ class BeeNotBee:
         # transform to data frame
         X_df = pd.DataFrame(columns=cols)
         for x in X_transformed:
-            if x is not None:
+            if len(x) !=2:
                 X_df.loc[len(X_df)] = x
-
-        logging.info('Whole data frame s transformed.')
+            else:
+                x_updated = x+[None]*(max_length-len(x))
+                X_df.loc[len(X_df)] = x_updated
+        logging.info('Whole data frame transformed.')
         return X_df
 
 
