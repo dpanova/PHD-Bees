@@ -1,6 +1,6 @@
 # libraries
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split,RandomizedSearchCV
 import logging
 import os
 import numpy as np
@@ -311,8 +311,9 @@ class BeeNotBee:
             sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
 
             # we need to add the indices for tracking purposes
-            sample_transformed.insert(0,train_index)
             sample_transformed.insert(0, file_index)
+            sample_transformed.insert(0,train_index)
+
 
             logging.info('%s file transformed and added to the transformed data frame' % file_name)
             return sample_transformed
@@ -358,178 +359,197 @@ class BeeNotBee:
         return X_df
 
 
-    # def best_model(self, model, param_dist):
-    #     """Identify the best model after tuning the hyperparameters
-    #
-    #     :param model: an initiated machine learning model
-    #     :type model: Any
-    #     :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
-    #     :type param_dist: dict
-    #     :return: RandomizedSearchCV object
-    #     :rtype: RandomizedSearchCV
-    #     """
-    #     try:
-    #         best_model = RandomizedSearchCV(model,
-    #                                         param_distributions=param_dist,
-    #                                         n_iter=100,
-    #                                         cv=10)
-    #         logging.info('Parameter tuning completed')
-    #     except Exception as error:
-    #         logging.error(error)
-    #     return best_model
-    #
-    # def accuracy_metrics(self, y_pred, cm_title, cm_file_name):
-    #     """ Provide accuracy metrics to compare the different models
-    #
-    #     :param y_pred: predicted dependent values
-    #     :type y_pred: list
-    #     :param cm_title: title for the confusion matrix plot
-    #     :type cm_title: str
-    #     :param cm_file_name: title for the confusion matrix plot
-    #     :type cm_file_name: str
-    #     :return: accuracy, precision, recall and saved graph for the confusion matrix
-    #     :rtype: list
-    #     """
-    #     try:
-    #         # accuracy score
-    #         acc = accuracy_score(self.y_test, y_pred)
-    #         # calculate the precision score
-    #         precision = precision_score(self.y_test, y_pred, average='macro')
-    #         recall = recall_score(self.y_test, y_pred, average='macro')
-    #         # confusion matrix
-    #
-    #         self.cm = confusion_matrix(self.y_test, y_pred)
-    #
-    #         code_str = "sns.heatmap(self.cm, annot=True, fmt='.3f', linewidths=.5, square=True, cmap='Blues_r')"
-    #
-    #         self.plot_figure(
-    #             plot_title=cm_title
-    #             , file_title=cm_file_name
-    #             , plot_code=code_str
-    #         )
-    #         logging.info('Accuracy metrics calculated')
-    #     except Exception as error:
-    #         logging.error(error)
-    #
-    #     return acc, precision, recall
-    #
-    # def misclassified_analysis(self, y_pred):
-    #     """Misclassification analysis to understand where the model miscalculates and if any pattern can be found
-    #
-    #     :param y_pred: predicted dependent values
-    #     :type y_pred: list
-    #     :return: misclassified values
-    #     :rtype: list
-    #     """
-    #     try:
-    #
-    #         # check the misclassified datapoints
-    #         y_test_df = pd.DataFrame(self.y_test)
-    #         y_test_df['pred'] = y_pred
-    #         y_test_df['check'] = y_test_df[self.y_column] == y_test_df['pred']
-    #
-    #         original_y_column_list = [y for y in self.y_columns if y != self.y_column]
-    #         if len(original_y_column_list) == 0:
-    #             original_y_column = self.y_column
-    #         else:
-    #             original_y_column = original_y_column_list[0]
-    #         misclassified = self.data.loc[y_test_df[~y_test_df['check']].index, original_y_column].value_counts()
-    #
-    #         logging.info('Misclassified analysis completed')
-    #     except Exception as error:
-    #         logging.error(error)
-    #
-    #     return misclassified
-    #
-    # def model_results(self
-    #                   , model
-    #                   , param_dist
-    #                   , cm_title
-    #                   , cm_file_name):
-    #     """Provide a full picture of the model performance and accuracy
-    #
-    #     :param model: an initiated machine learning model
-    #     :type model: Any
-    #     :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
-    #     :type param_dist: dict
-    #     :param cm_title: title for the confusion matrix plot
-    #     :type cm_title: str
-    #     :param cm_file_name: title for the confusion matrix plot
-    #     :type cm_file_name: str
-    #     :return: the best model with its accuracy metrics and misclassified analysis
-    #     :rtype: list
-    #     """
-    #     try:
-    #         # Use random search to find the best hyperparameters
-    #         rand_search = self.best_model(model=model, param_dist=param_dist)
-    #
-    #         # fit the best model
-    #         rand_search.fit(self.X_train, self.y_train)
-    #
-    #         # generate predictions with the best model
-    #         y_pred = rand_search.predict(self.X_test)
-    #
-    #         # calculate model accuracy
-    #         acc, precision, recall = self.accuracy_metrics(y_pred=y_pred,
-    #                                                        cm_title=cm_title,
-    #                                                        cm_file_name=cm_file_name)
-    #
-    #         # check the misclassified datapoints
-    #         misclassified = self.misclassified_analysis(y_pred=y_pred)
-    #
-    #         logging.info('Model Results Calculated')
-    #     except Exception as error:
-    #         logging.error(error)
-    #
-    #     return acc, precision, recall, misclassified, rand_search
-    # def random_forest_results(self):
-    #     """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
-    #
-    #     :return: accuracy, precision, recall, confusion matrix plot file with the name 'rf_confusion_matrix.png', misclassified analysis, feature importance plot with the name 'rf_feature_importance.png'
-    #     :rtype: list
-    #     """
-    #     try:
-    #         param_dist = {'n_estimators': randint(50, 500), 'max_depth': randint(1, 20)}
-    #         # Create a random forest classifier
-    #         rf = RandomForestClassifier()
-    #
-    #         # check the model results
-    #         acc, precision, recall, misclassified, rand_search = self.model_results(model=rf, param_dist=param_dist,
-    #                                                                                 cm_title='RF Confusion Matrix',
-    #                                                                                 cm_file_name='rf_confusion_matrix.png')
-    #
-    #         # # check the features importance
-    #         best_model = rand_search.best_estimator_
-    #         importances = best_model.feature_importances_
-    #         self.forest_importances = pd.Series(importances, index=self.X_train.columns)
-    #
-    #         code_str = """
-    #         self.forest_importances.sort_values(ascending=False).plot(kind='barh')
-    #         plt.ylabel('Importance')
-    #         plt.xlabel('Features')
-    #                     """
-    #
-    #         self.plot_figure(
-    #             plot_title='RF Feature Importance'
-    #             , file_title='rf_feature_importance.png'
-    #             , plot_code=code_str
-    #         )
-    #         logging.info('Random forest results calculated')
-    #
-    #         # create a plot for the misclassified
-    #         self.misclass_rf = pd.DataFrame(misclassified)
-    #         self.misclass_rf.reset_index(inplace=True)
-    #         self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
-    #
-    #         code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
-    #
-    #         self.plot_figure(
-    #             plot_title='Random Forest Misclassified Distribution'
-    #             , file_title='misclassified_rf.png'
-    #             , plot_code=code_str
-    #         )
-    #         logging.info("Random Forest misclassified distribution plot created")
-    #
-    #         return acc, precision, recall, misclassified
-    #     except Exception as error:
-    #         logging.error(error)
+    def best_model(self, model, param_dist):
+        """Identify the best model after tuning the hyperparameters
+
+        :param model: an initiated machine learning model
+        :type model: Any
+        :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
+        :type param_dist: dict
+        :return: RandomizedSearchCV object
+        :rtype: RandomizedSearchCV
+        """
+        try:
+            best_model = RandomizedSearchCV(model,
+                                            param_distributions=param_dist,
+                                            n_iter=100,
+                                            cv=10)
+            logging.info('Parameter tuning completed')
+        except Exception as error:
+            logging.error(error)
+        return best_model
+
+    def accuracy_metrics(self, y_pred, cm_title, cm_file_name):
+        """ Provide accuracy metrics to compare the different models
+
+        :param y_pred: predicted dependent values
+        :type y_pred: list
+        :param cm_title: title for the confusion matrix plot
+        :type cm_title: str
+        :param cm_file_name: title for the confusion matrix plot
+        :type cm_file_name: str
+        :return: accuracy, precision, recall and saved graph for the confusion matrix
+        :rtype: list
+        """
+        try:
+            # accuracy score
+            acc = accuracy_score(self.y_test, y_pred)
+            # calculate the precision score
+            precision = precision_score(self.y_test, y_pred, average='macro')
+            recall = recall_score(self.y_test, y_pred, average='macro')
+            # confusion matrix
+
+            self.cm = confusion_matrix(self.y_test, y_pred)
+
+            code_str = "sns.heatmap(self.cm, annot=True, fmt='.3f', linewidths=.5, square=True, cmap='Blues_r')"
+
+            self.plot_figure(
+                plot_title=cm_title
+                , file_title=cm_file_name
+                , plot_code=code_str
+            )
+            logging.info('Accuracy metrics calculated')
+        except Exception as error:
+            logging.error(error)
+
+        return acc, precision, recall
+
+    def misclassified_analysis(self, y_pred):
+        """Misclassification analysis to understand where the model miscalculates and if any pattern can be found
+
+        :param y_pred: predicted dependent values
+        :type y_pred: list
+        :return: misclassified values
+        :rtype: list
+        """
+        try:
+
+            # check the misclassified datapoints
+            y_test_df = pd.DataFrame(self.y_test)
+            y_test_df['pred'] = y_pred
+            y_test_df['check'] = y_test_df[self.y_column] == y_test_df['pred']
+
+            original_y_column_list = [y for y in self.y_columns if y != self.y_column] #need to check this, it may not work properly
+            if len(original_y_column_list) == 0:
+                original_y_column = self.y_column
+            else:
+                original_y_column = original_y_column_list[0]
+            misclassified = self.data.loc[y_test_df[~y_test_df['check']].index, original_y_column].value_counts()
+
+            logging.info('Misclassified analysis completed')
+        except Exception as error:
+            logging.error(error)
+
+        return misclassified
+
+    def model_results(self
+                      , model
+                      , param_dist
+                      , cm_title
+                      , cm_file_name):
+        """Provide a full picture of the model performance and accuracy
+
+        :param model: an initiated machine learning model
+        :type model: Any
+        :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
+        :type param_dist: dict
+        :param cm_title: title for the confusion matrix plot
+        :type cm_title: str
+        :param cm_file_name: title for the confusion matrix plot
+        :type cm_file_name: str
+        :return: the best model with its accuracy metrics and misclassified analysis
+        :rtype: list
+        """
+        try:
+            # Use random search to find the best hyperparameters
+            rand_search = self.best_model(model=model, param_dist=param_dist)
+
+            # transform the X_train and then get only the correct entries
+            self.X_train = self.data_transformation_df(self.X_train_index, self.y_train)
+            # subset the index for inspection
+            self.X_train_fail = self.X_train[self.X_train['col0'].isnull()]
+            #subset the data for the training
+            self.X_train = self.X_train[~self.X_train['col0'].isnull()]
+
+            self.X_test = self.data_transformation_df(self.X_test_index, self.y_test)
+            self.X_test_fail = self.X_train[self.X_test['col0'].isnull()]
+            # subset the data for the training
+            self.X_test = self.X_test[~self.X_test['col0'].isnull()]
+
+            #subset the y variables
+            self.y_train = self.y_train.loc[self.X_train['train_index'].astype(int)]
+            self.y_test = self.y_test.loc[self.X_test['train_index'].astype(int)]
+            #here we need to make sure we subset the y variable for the correct index and remove the first two columns from X
+
+            # fit the best model
+            rand_search.fit(self.X_train[[x for x in self.X_train.columns if x not in ['train_index', 'file_index'] ]],
+                            self.y_train)
+
+            # generate predictions with the best model
+            y_pred = rand_search.predict(self.X_test[[x for x in self.X_test.columns if x not in ['train_index', 'file_index'] ]])
+
+            # calculate model accuracy
+            acc, precision, recall = self.accuracy_metrics(y_pred=y_pred,
+                                                           cm_title=cm_title,
+                                                           cm_file_name=cm_file_name)
+
+            # check the misclassified datapoints
+            misclassified = self.misclassified_analysis(y_pred=y_pred)
+
+            logging.info('Model Results Calculated')
+        except Exception as error:
+            logging.error(error)
+
+        return acc, precision, recall, misclassified, rand_search
+
+    def random_forest_results(self):
+        """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+
+        :return: accuracy, precision, recall, confusion matrix plot file with the name 'rf_confusion_matrix.png', misclassified analysis, feature importance plot with the name 'rf_feature_importance.png'
+        :rtype: list
+        """
+        try:
+            param_dist = {'n_estimators': randint(50, 500), 'max_depth': randint(1, 20)}
+            # Create a random forest classifier
+            rf = RandomForestClassifier()
+
+            # check the model results
+            acc, precision, recall, misclassified, rand_search = self.model_results(model=rf, param_dist=param_dist,
+                                                                                    cm_title='RF Confusion Matrix',
+                                                                                    cm_file_name='rf_confusion_matrix.png')
+
+            # # check the features importance
+            best_model = rand_search.best_estimator_
+            importances = best_model.feature_importances_
+            self.forest_importances = pd.Series(importances, index=self.X_train.columns)
+
+            code_str = """
+            self.forest_importances.sort_values(ascending=False).plot(kind='barh')
+            plt.ylabel('Importance')
+            plt.xlabel('Features')
+                        """
+
+            self.plot_figure(
+                plot_title='RF Feature Importance'
+                , file_title='rf_feature_importance.png'
+                , plot_code=code_str
+            )
+            logging.info('Random forest results calculated')
+
+            # create a plot for the misclassified
+            self.misclass_rf = pd.DataFrame(misclassified)
+            self.misclass_rf.reset_index(inplace=True)
+            # self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
+
+            code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+
+            self.plot_figure(
+                plot_title='Random Forest Misclassified Distribution'
+                , file_title='misclassified_rf.png'
+                , plot_code=code_str
+            )
+            logging.info("Random Forest misclassified distribution plot created")
+
+            return acc, precision, recall, misclassified
+        except Exception as error:
+            logging.error(error)
