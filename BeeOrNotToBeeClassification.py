@@ -10,6 +10,8 @@ import multiprocessing as mp
 from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import randint
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class BeeNotBee:
     """BeeNotBee class ....
@@ -53,6 +55,28 @@ class BeeNotBee:
                             , format='%(asctime)s %(levelname)s %(message)s'
                             , datefmt='%H:%M:%S'
                             , level=logging.DEBUG)
+    def plot_figure(self
+                    , plot_title
+                    , file_title
+                    , plot_code):
+        """ Plotting a figure based on dynamic code
+
+        :param plot_title: plot title
+        :type plot_title: str
+        :param file_title: title of the saved file
+        :type file_title: str
+        :param plot_code: code to be executed for the plot to visualize
+        :type plot_code: str
+        :return: saved file with the requested plot
+        """
+        try:
+            plt.figure(figsize=(16, 6))
+            exec(plot_code)
+            plt.title(plot_title)
+            plt.savefig(file_title, dpi=300, bbox_inches='tight')
+            logging.info("Graph is plotted")
+        except Exception as error:
+            logging.error(error)
 
 
     def read_annotation_csv(self):
@@ -427,14 +451,14 @@ class BeeNotBee:
             # check the misclassified datapoints
             y_test_df = pd.DataFrame(self.y_test)
             y_test_df['pred'] = y_pred
-            y_test_df['check'] = y_test_df[self.y_column] == y_test_df['pred']
+            y_test_df['check'] = y_test_df[self.y_col] == y_test_df['pred']
 
-            original_y_column_list = [y for y in self.y_columns if y != self.y_column] #need to check this, it may not work properly
-            if len(original_y_column_list) == 0:
-                original_y_column = self.y_column
+            original_y_col_list = [y for y in self.y_cols if y != self.y_col] #need to check this, it may not work properly
+            if len(original_y_col_list) == 0:
+                original_y_col = self.y_col
             else:
-                original_y_column = original_y_column_list[0]
-            misclassified = self.data.loc[y_test_df[~y_test_df['check']].index, original_y_column].value_counts()
+                original_y_col = original_y_col_list[0]
+            misclassified = self.data.loc[y_test_df[~y_test_df['check']].index, original_y_col].value_counts()
 
             logging.info('Misclassified analysis completed')
         except Exception as error:
@@ -472,7 +496,7 @@ class BeeNotBee:
             self.X_train = self.X_train[~self.X_train['col0'].isnull()]
 
             self.X_test = self.data_transformation_df(self.X_test_index, self.y_test)
-            self.X_test_fail = self.X_train[self.X_test['col0'].isnull()]
+            self.X_test_fail = self.X_test[self.X_test['col0'].isnull()]
             # subset the data for the training
             self.X_test = self.X_test[~self.X_test['col0'].isnull()]
 
@@ -483,7 +507,7 @@ class BeeNotBee:
 
             # fit the best model
             rand_search.fit(self.X_train[[x for x in self.X_train.columns if x not in ['train_index', 'file_index'] ]],
-                            self.y_train)
+                            np.array(self.y_train).ravel())
 
             # generate predictions with the best model
             y_pred = rand_search.predict(self.X_test[[x for x in self.X_test.columns if x not in ['train_index', 'file_index'] ]])
@@ -494,13 +518,13 @@ class BeeNotBee:
                                                            cm_file_name=cm_file_name)
 
             # check the misclassified datapoints
-            misclassified = self.misclassified_analysis(y_pred=y_pred)
+            # misclassified = self.misclassified_analysis(y_pred=y_pred)
 
             logging.info('Model Results Calculated')
         except Exception as error:
             logging.error(error)
 
-        return acc, precision, recall, misclassified, rand_search
+        return acc, precision, recall,  rand_search #, misclassified
 
     def random_forest_results(self):
         """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
@@ -514,14 +538,15 @@ class BeeNotBee:
             rf = RandomForestClassifier()
 
             # check the model results
-            acc, precision, recall, misclassified, rand_search = self.model_results(model=rf, param_dist=param_dist,
+            # misclassified,
+            acc, precision, recall,  rand_search = self.model_results(model=rf, param_dist=param_dist,
                                                                                     cm_title='RF Confusion Matrix',
                                                                                     cm_file_name='rf_confusion_matrix.png')
 
             # # check the features importance
             best_model = rand_search.best_estimator_
             importances = best_model.feature_importances_
-            self.forest_importances = pd.Series(importances, index=self.X_train.columns)
+            self.forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
 
             code_str = """
             self.forest_importances.sort_values(ascending=False).plot(kind='barh')
@@ -537,19 +562,19 @@ class BeeNotBee:
             logging.info('Random forest results calculated')
 
             # create a plot for the misclassified
-            self.misclass_rf = pd.DataFrame(misclassified)
-            self.misclass_rf.reset_index(inplace=True)
+            # self.misclass_rf = pd.DataFrame(misclassified)
+            # self.misclass_rf.reset_index(inplace=True)
             # self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
 
-            code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+            # code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+            #
+            # self.plot_figure(
+            #     plot_title='Random Forest Misclassified Distribution'
+            #     , file_title='misclassified_rf.png'
+            #     , plot_code=code_str
+            # )
+            # logging.info("Random Forest misclassified distribution plot created")
 
-            self.plot_figure(
-                plot_title='Random Forest Misclassified Distribution'
-                , file_title='misclassified_rf.png'
-                , plot_code=code_str
-            )
-            logging.info("Random Forest misclassified distribution plot created")
-
-            return acc, precision, recall, misclassified
+            return acc, precision, recall #, misclassified
         except Exception as error:
             logging.error(error)
