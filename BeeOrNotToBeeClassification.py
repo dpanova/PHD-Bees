@@ -15,7 +15,7 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-class BeeNotBee:
+class Bee:
     """BeeNotBee class ....
     # TODO: update the documentation
     :param annotation_path: path to the annotation data
