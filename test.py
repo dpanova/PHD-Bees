@@ -1,332 +1,588 @@
-# The goal of this file is the following:
-# 1. Split the data into train and test, y-label -> bee or not to bee
-# 2. extract FFT and CWT coefficients (continuous wavelet transformation)
-# 3. Compare the following models:
-# - Random FOrest
-# - SVM
-# - XGBoost
-# - Light GBM
-# - Deep Neural Network
-
-# library
-from sklearn.model_selection import train_test_split
+# libraries
 import pandas as pd
+from sklearn.model_selection import train_test_split,RandomizedSearchCV
+import logging
 import os
-from scipy.fft import fft, rfftfreq
-import librosa
 import numpy as np
-#%%
-# Test-train
-# Do we actually need to stratify?
-annotation_df = pd.read_csv('beeAnnotations_enhanced.csv')
-annotation_df[['label', 'duration']].groupby('label', as_index=False).sum()
-annotation_df[['label', 'duration']].groupby('label', as_index=False).count()
-
-# No we don't need to stratify the split. We are not interested in the duration of the file but rather the frequencies,
-# since we are moving away from the time domain and we go for the frequency domain, then we will look into the count of
-# observations which is balanced for this label
-
-# to perform the random split we will use the annotation file
-X_train_index, X_test_index, y_train, y_test = train_test_split(annotation_df[['index']], annotation_df[['label']],
-                                                    test_size=0.25)
-
-# save all files for reproducibility
-X_train_index.to_csv('X_train_index.csv')
-X_test_index.to_csv('X_test_index.csv')
-y_train.to_csv('y_train.csv')
-y_test.to_csv('y_test.csv')
-#%%
-# get a list of all split files
-bee_folder = 'data/bee/'
-no_bee_folder = 'data/nobee/'
-
-bee_files = os.listdir(bee_folder)
-nobee_files = os.listdir(no_bee_folder)
-
-# DF to store the results
-X_train = pd.DataFrame()
-
-#%%
-len(X_train_index)
-X_train_part1 = X_train_index.iloc[:10,:]
-
-
-
-
-#%%
-# transform the train set with fft and store it to a DF
-for train_index,row in X_train_part1.iterrows():
-    print(train_index)
-    # get the necessary indices
-    file_index = row['index'] # this index is necessary to ensure we have the correct file name
-    label = y_train.loc[train_index,'label']
-    # locate the correct file
-    print('3')
-    try:
-        if label =='bee':
-            file_name = [x for x in bee_files if x.find('index'+str(file_index)+'.wav') != -1][0]
-            file_name = bee_folder+file_name
-        else:
-            file_name = [x for x in nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-            file_name = nobee_files+file_name
-    except:
-        print('no such file')
-    print('2')
-    # try to read the file
-    try:
-        samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset = 0.0, duration=None)
-        #check if the data extraction is correct
-        duration_of_sound = len(samples)/sample_rate
-        annotation_duration = annotation_df.loc[annotation_df['index']==file_index, 'duration']
-
-        # we need to do different error handling with log files at a later point
-        if duration_of_sound==annotation_duration.to_list()[0]:
-            print('file is read correctly')
-        else:
-            print('file is not read correctly')
-
-        # calculate the fft
-        # we need to get only the real part of FFT -> need to check on this
-        print('1')
-        fft_file = fft(samples).tolist()
-        fft_file_real = [x.real for x in fft_file]
-
-        # we need to add somewhere the train index
-        fft_file_real.append(train_index) # question: can this be a different length?
-        fft_file_real.append(file_index)
-
-        X_train = X_train._append(pd.DataFrame([fft_file_real]))
-    except:
-        print('lab exception file')
-X_train.to_csv('X_train.csv', index=False)
-#%%
-# it looks like only 53 out of 100 have been transformed
-# we need to change the file to get the index as the first argument
-# we need to check why fft does not provide the same len vector
-# all of them are not read correctly - why?
-
-# different sampling rates - different fft vector lengths
-
-# we will investigate the two usecases
-train_index1 = 0
-train_index2 = 7
-# get the necessary indices
-
-file_index1 = X_train_index.loc[train_index1,] # this index is necessary to ensure we have the correct file name
-file_index2 = X_train_index.loc[train_index2,]
-
-label1 = y_train.loc[train_index1,'label']
-label2 = y_train.loc[train_index2,'label']
-# locate the correct file
-
-
-file_name1 = [x for x in bee_files if x.find('index'+str(file_index1[0])+'.wav') != -1][0]
-file_name1 = bee_folder+file_name1
-file_name2 = [x for x in bee_files if x.find('index' + str(file_index2[0]) + '.wav') != -1][0]
-file_name2 = bee_folder+file_name2
-
-
-# file 1
-samples1, sample_rate1 = librosa.load(file_name1, sr=None, mono=True, offset = 0.0, duration=None)
-len(samples1) #496125
-sample_rate1 #44100
-duration_of_sound1 = len(samples1)/sample_rate1 #11.25
-annotation_duration1 = annotation_df.loc[annotation_df['index']==file_index1[0], :]['duration'][train_index1] # this could be the issue itself, it was substracting the whole table
-
-duration_of_sound==annotation_duration
-
-
-fft_file1 = fft(samples1).tolist()
-fft_file_real1 = [x.real for x in fft_file1]
-len(fft_file_real1) #496125, the same number as the samples
-
-# let us do the same for sample 2
-
-samples2, sample_rate2 = librosa.load(file_name2, sr=None, mono=True, offset = 0.0, duration=None)
-len(samples2) #220500
-sample_rate2 #44100
-duration_of_sound2 = len(samples2)/sample_rate2 #5.0
-annotation_duration2 = annotation_df.loc[annotation_df['index']==file_index2[0], :]['duration'][train_index2]
-# this could be the issue itself, it was substracting the whole table
-# also the index is to be highlighted
-
-duration_of_sound==annotation_duration
-
-
-fft_file2 = fft(samples2).tolist()
-fft_file_real2 = [x.real for x in fft_file2]
-len(fft_file_real2) #220500, the same number as the samples
-
-N1 = len(samples1)
-fft_frq1 = rfftfreq(N1, d = 1.0/sample_rate1)
-len(fft_frq1) #248063
-
-N2 = len(samples2)
-fft_frq2 = rfftfreq(N2, d = 1.0/sample_rate2)
-len(fft_frq2) #248063
-
-# what if we apply window length and calculate the fft? so that we have the same length of the array?
-
-def dht(x: np.array):
-    """ Compute the DHT for a sequence x of length n using the FFT.
-    """
-    X = np.fft.fft(x)
-    X = np.real(X) - np.imag(X)
-    return X
-
-# TODO
-# a = fft(samples1*np.hanning(len(samples1))) #adding hann window function
-
-a = dht(samples1)
-freqs = np.fft.fftfreq(len(samples1), sample_rate1)
-
-# we can split the data into 128 bins
-#
-# The output from the FHT is a series of frequency ‘bins’, the value of each bin represents the intensity of the input signal within the range of frequencies the bin represents.
-
-
-
-# # need to understand the difference between FFT and fast hartley transformation
-# import ducc0
-# from ducc0 import  fft as fftd
-# fftd()
-
-#%%
-# following the example in this notebook https://raghavchhetri.github.io/scattered.dimes/2021/07/21/Fourier-Transforms-in-Python
-from scipy.fft import fft, ifft, fftn, ifftn, fftshift, ifftshift, fftfreq, rfft, irfft, rfftfreq
+from scipy.fft import fft,rfftfreq, fftfreq
+import librosa
+import multiprocessing as mp
+from sklearn.ensemble import RandomForestClassifier
+from scipy.stats import randint
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 import matplotlib.pyplot as plt
-X = fft(samples1)
-freq = fftfreq(len(X),(1/sample_rate1))
-powerspect = 2*np.abs(X)/len(X)
-# denoice - cutoff all frequencies with small power
-cutoff = 0
-powerspect = powerspect * (powerspect > cutoff)
-X = X * (powerspect > cutoff) # Zero small Fourier coefficients
-t = np.arange(0,duration_of_sound1,(1/sample_rate1))
+import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-plt.figure(figsize=(9, 7))
-plt.subplot(311)
-plt.plot(t, samples1, 'k', label='original')
-plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
-plt.legend()
-
-plt.subplot(312)
-plt.title('frq')
-# plt.stem(freq, np.abs(X),'c', markerfmt=" ", basefmt="-b")
-plt.stem(freq, powerspect, 'c', markerfmt=" ", basefmt="-b")
-plt.xlabel('Freq (Hz)')
-plt.ylabel('FFT Amplitude')
-plt.xlim(-2000, 2000)
-plt.subplot(313)
-plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
-plt.legend()
-
-plt.tight_layout()
-plt.show()
-
-#%% define the function in a separate piece of code
-
-def fft_powerspectrum_plot(x, t, dt, npnts, freq_show, method=2, denoise=False, cutoff=0):
-    '''
-    - plot original signal
-    - compute FFT and power spectrum (power per frequency)
-    - plot power spectrum
-    - plot recovered signal after fft-> ifft
-
-    x:         1D signal
-    t:         time vector
-    dt:        sampling interval
-    npnts:     number of time points
-    freq_show: upper range of frequency to plot
-    method:    1/2/3
-    denoise:   filter out noise
-    cutoff:    denoise below the cutoff amplitude
-
-    Call: plot_signal_fftamplitude(x, t, dt, npnts, 200, method=1, denoise=True, cutoff=3)
-    '''
-    if method == 1:
-        X = fft(x)
-        n = np.arange(npnts)
-        T = npnts * dt
-        freq = n / T
-        title = 'Frequency mirroring above Nyquist'
-    elif method == 2:
-        X = fft(x)
-        freq = fftfreq(npnts, dt)
-        title = 'Frequency mirroring about zero'
-    elif method == 3:
-        X = rfft(x)
-        freq = rfftfreq(npnts, dt)
-        title = 'No mirroring: only positive frequencies'
-
-    powerspect = 2 * np.abs(X) / npnts
-    # Note: Normalized as 2*np.abs(X)/npnts instead of simply np.abs(X)
-    # returns the actual amplitude values of the sine and cosine functions
-    # instead of some arbitrarily-scaled values
-
-    if denoise:
-        powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
-        X = X * (powerspect > cutoff)  # Zero small Fourier coefficients
-        # To further zero out a peak at zero frequency -- occurs if noise is 'rand' instead of 'randn'
-        # powerspect = powerspect * (powerspect < 10)
-        # X = X * (powerspect < 10)
-
-    # PLOT
-    plt.figure(figsize=(9, 7))
-    plt.subplot(311)
-    plt.plot(t, x, 'k', label='original')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Amplitude')
-    plt.legend()
-
-    plt.subplot(312)
-    plt.title(title)
-    # plt.stem(freq, np.abs(X),'c', markerfmt=" ", basefmt="-b")
-    plt.stem(freq, powerspect, 'c', markerfmt=" ", basefmt="-b")
-    plt.xlabel('Freq (Hz)')
-    plt.ylabel('FFT Amplitude')
-    if method == 2:
-        plt.xlim(-freq_show, freq_show)
-    else:
-        plt.xlim(0, freq_show)
-
-    plt.subplot(313)
-    if method == 3:
-        plt.plot(t, irfft(X), 'k--', label='recovered')
-    else:
-        plt.plot(t, ifft(X), 'k--', label='recovered')
-    plt.xlabel('Time (s)')
-    plt.ylabel('Amplitude')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
-
-    print('Number of time points:', npnts, 'points')
-    print('Number of points in frequency range:', len(freq), 'points')
-    print('Frequency range:', min(freq), max(freq), 'Hz')
-    return freq, powerspect
-#%%
-srate = sample_rate1
-dt = 1/srate
-duration = duration_of_sound1
-t = np.arange(0,duration,dt)
-npnts  = len(t)
-x = samples1
-
-freq, powerspect = fft_powerspectrum_plot(x, t, dt, npnts, 2000, 1, denoise=True)
-#%%
-# let us split the freq into 128 buckets
-
-bins = np.linspace(0.0, 2000.0, 128 )
-b0 = bins[0]
-b1 = bins[1]
-index = ([0]+[i for i, e in enumerate(freq) if e < b1])[-1]
-# index = ([0]+[i for i, e in enumerate(listIWantToCheck[:indexOfLastThree]) if e < 2])[-1] + 1
-p = sum(powerspect[:index])/len(powerspect[:index])
-
-freq
+class BeeNotBee:
+    """BeeNotBee class ....
+    # TODO: update the documentation
+    :param annotation_path: path to the annotation data
+    :type annotation_path: str
+    :param y_col: column label for the dependent variable in the annotation file
+    :type y_col: str
+    :param x_col: column label for the independent variable in the annotation file
+    :type x_col: str
+    :param bee_folder: folder name where only bee acoustic files are hosted
+    :type bee_folder: str
+    :param no_bee_folder: folder name where only no-bee acoustic files are hosted
+    :type no_bee_folder: str
 
 
+
+    :param logname: path to the log file
+    :type logname: str
+
+    :return: BeeNotBee object
+    :rtype: BeeNotBee
+    """
+
+    def __init__(self
+                 ,annotation_path ='beeAnnotations_enhanced.csv'
+                 ,annotation_dtypes_path = 'annotation_data_types.csv'
+                 ,x_col = 'index'
+                 ,y_col = 'label'
+                 ,logname='bee.log'
+                 ,bee_folder = 'data/bee/'
+                 ,no_bee_folder = 'data/nobee/'):
+        self.annotation_path =annotation_path
+        self.annotation_dtypes_path = annotation_dtypes_path
+        self.x_col = x_col
+        self.y_col = y_col
+        self.bee_folder = bee_folder
+        self.no_bee_folder = no_bee_folder
+        logging.basicConfig(filename=logname
+                            , filemode='a'
+                            , format='%(asctime)s %(levelname)s %(message)s'
+                            , datefmt='%H:%M:%S'
+                            , level=logging.DEBUG)
+    def plot_figure(self
+                    , plot_title
+                    , file_title
+                    , plot_code):
+        """ Plotting a figure based on dynamic code
+
+        :param plot_title: plot title
+        :type plot_title: str
+        :param file_title: title of the saved file
+        :type file_title: str
+        :param plot_code: code to be executed for the plot to visualize
+        :type plot_code: str
+        :return: saved file with the requested plot
+        """
+        try:
+            plt.figure(figsize=(16, 6))
+            exec(plot_code)
+            plt.title(plot_title)
+            plt.savefig(file_title, dpi=300, bbox_inches='tight')
+            logging.info("Graph is plotted")
+        except Exception as error:
+            logging.error(error)
+
+
+    def read_annotation_csv(self):
+        """
+        Read annotation data
+        :return: pandas data frame with the annotations
+        :rtype: pandas.DataFrame
+        """
+
+        try:
+            self.annotation_df = pd.read_csv(self.annotation_path)
+            logging.info('Annotation data is read successfully')
+            self.validate_annotation_csv()
+        except:
+            logging.warning('Annotation data is NOT read successfully')
+
+
+
+    def validate_annotation_csv(self):
+        """"
+        Validate annotation data
+        :return: warning if the data is as expected
+        :rtype: log
+        """
+        dtypes_df = pd.read_csv(self.annotation_dtypes_path)
+        cols = dtypes_df['col_name']
+        if len(set(cols).difference(set(self.annotation_df))) == 0:
+            logging.info("All columns are present correctly")
+        else:
+            logging.warning("NOT all columns are present correctly")
+
+        # check that the data types are as expected
+        data_type = pd.DataFrame(self.annotation_df.dtypes)
+        data_type.reset_index(inplace=True)
+        data_type.columns = dtypes_df.columns
+        check_df = data_type.merge(dtypes_df,
+                                              right_on=dtypes_df.columns[0],
+                                              left_on=dtypes_df.columns[0],
+                                              how='left')
+        check_df['type check'] = check_df[dtypes_df.columns[1] + '_x'] == check_df[
+            dtypes_df.columns[1] + '_y']
+        if sum(check_df['type check']) == len(check_df):
+            logging.info("All data is in the correct type")
+        else:
+            logging.error("NOT all data is in the correct type")
+
+
+    def split_annotation_data(self,perc=0.25):
+        """
+        Split the annotation data into train and test. Save the csv files
+        :param perc: test split percentage, a number between 0.0 and 1.0
+        :type perc: float
+        :return: X train, X test, y train and y test pandas data frames
+        :rtype: pandas.DataFrame
+        """
+        if isinstance(perc, float) and perc >= 0.0 and perc <= 1.0:
+            logging.info('Percentage number is NOT correct')
+            if (self.x_col in self.annotation_df) and (self.x_col in self.annotation_df):
+                logging.info('X_col and y_col are valid columns')
+
+                # here we need to update the documentation if everything works properly for the data split
+                existing_indices = pd.DataFrame()
+                existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in
+                                             self.nobee_files + self.bee_files]
+                existing_indices['Dir Exist'] = True
+
+                self.annotation_df = self.annotation_df.merge(existing_indices, how='left', left_on='index', right_on='index')
+                self.annotation_df['Dir Exist'].fillna(False, inplace=True)
+                # 367 files are missing
+                #here we may need to update something in future so that it is more universal
+                annotation_df_updated  = self.annotation_df[self.annotation_df['Dir Exist']]
+                annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
+
+                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(annotation_df_updated[[self.x_col]],
+                                                                                annotation_df_updated[[self.y_col]],
+                                                                                test_size=perc)
+
+                # save all files for reproducibility
+                self.X_train_index.to_csv('X_train_index.csv')
+                self.X_test_index.to_csv('X_test_index.csv')
+                self.y_train.to_csv('y_train.csv')
+                self.y_test.to_csv('y_test.csv')
+            else:
+                logging.error('X_col and/or y_col are NOT valid columns')
+        else:
+            logging.error('Percentage number is NOT correct')
+
+    def acoustic_file_names(self):
+        """
+        Create a list of files which have bee and no-bee data
+        :return: two lists - bee_files and nobee_files
+        :rtype: list
+        """
+        self.bee_files = os.listdir(self.bee_folder)
+        self.nobee_files = os.listdir(self.no_bee_folder)
+        logging.info('Files in the two directories are stores in two lists: bee_files and nobee_files')
+        if len(self.bee_files)==0:
+            raise ValueError('bee_files list is empty. Please, check the %s folder' %self.bee_folder)
+        if len(self.nobee_files) == 0:
+            raise ValueError('nobee_files list is empty. Please, check the %s folder' % self.no_bee_folder)
+
+    def harley_transformation_with_window(self,x,window = np.hanning):
+        """
+        Transform np.array to fast harley transformation with a window function
+        :param x: time sequence
+        :type x: numpy array
+        :param window: windowing function from the list np.hanning, np.bartlett, np.blackman, np.hamming. More information for the windows functions here https://numpy.org/doc/stable/reference/routines.window.html
+        :type window: numpy function
+        :return:
+        """
+        window_list = [np.hanning, np.bartlett, np.blackman, np.hamming]
+        if window not in window_list:
+            raise ValueError('Invalid window type. Expected one of: %s' %['np.'+w.__name__ for w in window_list])
+        elif type(x) != np.ndarray:
+            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
+        else:
+            x_trans = fft(x * window(len(x)))  # adding window function
+            x_trans = np.real(x_trans) - np.imag(x_trans)
+            logging.info('Harley transformation is completed for the array conducted with window function %s' %window.__name__ )
+        return x_trans
+
+    def freq_powerspect_func(self,x, dt, npnts, denoise=True, cutoff=0):
+        """
+        Transform the FFT harley vector into frequency and power vectors
+        :param x: time sequence
+        :type x: numpy array
+        :param t: time vector
+        :type t: numpy array
+        :param dt: sampling interval
+        :type dt: list
+        :param npnts: number of time points
+        :type npnts:  int
+        :param denoise: filter out noise
+        :type denoise: bool
+        :param cutoff: denoise below the cutoff amplitude
+        :type cutoff: int
+        :return: frequency list and power specter list
+        :rtype: list
+        """
+        if type(x) != np.ndarray:
+            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
+        elif type(npnts) != int:
+            raise ValueError('Invalid npnts type. npnts is type %s and expected type is int.' %type(npnts).__name__)
+        elif type(dt) != float:
+            raise ValueError('Invalid dt type. dt is type %s and expected type is float.' %type(dt).__name__)
+        elif type(denoise) != bool:
+            raise ValueError('Invalid denoise type. denoise is type %s and expected type is bool.' %type(denoise).__name__)
+        elif type(cutoff) != int:
+            raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
+        else:
+            X = self.harley_transformation_with_window(x)
+            #n = np.arange(npnts)
+            #T = npnts * dt
+            freq = rfftfreq(npnts, dt)
+            #freq = n / T
+            powerspect = 2 * np.abs(X) / npnts
+            if denoise:
+                powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
+                X = X * (powerspect > cutoff)  # Zero small Fourier coefficients
+            logging.info('Frequency and power specter is calculated for the time vector')
+            return freq, powerspect
+
+
+    def binning(self, x, dt, npnts, n_bins =128, n_start = 0.0 , n_end = 2000.0, denoise=True, cutoff=0):
+        """
+        Transform a time to frequency using the freq_powerspect_func and then binning it to a specific number of frequency vectors. The power in every bin is the average of the original frequency vector.
+        :param x: time sequence
+        :type x: numpy array
+        :param dt: sampling interval
+        :type dt: list
+        :param npnts: number of time points
+        :type npnts:  int
+        :param n_bins: number of bins in the new array
+        :type n_bins: int
+        :param n_start: from where the binning to start
+        :type n_start: float
+        :param n_end: until where the binning to stop
+        :type n_end: float
+        :param denoise: filter out noise
+        :type denoise: bool
+        :param cutoff: denoise below the cutoff amplitude
+        :type cutoff: int
+        :return: list of the binned inputs
+        :rtype: list
+        """
+        if type(x) != np.ndarray:
+            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
+        elif type(npnts) != int:
+            raise ValueError('Invalid npnts type. npnts is type %s and expected type is int.' %type(npnts).__name__)
+        elif type(dt) != float:
+            raise ValueError('Invalid dt type. dt is type %s and expected type is float.' %type(dt).__name__)
+        elif type(denoise) != bool:
+            raise ValueError('Invalid denoise type. denoise is type %s and expected type is bool.' %type(denoise).__name__)
+        elif type(cutoff) != int:
+            raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
+        elif type(n_bins) != int:
+            raise ValueError('Invalid n_bins type. n_bins is type %s and expected type is int.' % type(n_bins).__name__)
+        elif type(n_start) != float:
+            raise ValueError('Invalid n_start type. n_start is type %s and expected type is float.' % type(n_start).__name__)
+        elif type(n_end) != float:
+            raise ValueError('Invalid n_end type. n_end is type %s and expected type is float.' % type(n_end).__name__)
+        else:
+            # to ensure the length of the bins is unchanged, add 1
+            n_bins=n_bins+1
+            freq, powerspect = self.freq_powerspect_func(x=x,npnts=npnts, dt=dt,denoise=denoise,cutoff=cutoff)
+            bins = np.linspace(n_start, n_end, n_bins)
+            bins_list = [(bins[i], bins[i + 1]) for i in (range(len(bins) - 1))]
+            binned_x = list()
+            for pair in bins_list:
+                b0 = pair[0]
+                b1 = pair[1]
+                index = ([b0] + [i for i, e in enumerate(freq) if e < b1])[-1]
+                try:
+                    old_index
+                except NameError:
+                    old_index = 0
+                try:
+                    p = sum(powerspect[old_index:index]) / len(powerspect[old_index:index])
+                except:
+                    p = 0
+                binned_x.append(p)
+                old_index = index
+            logging.info('Frequency vector binned.')
+            return binned_x
+    def data_transformation_row(self, arg):
+        """
+        A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
+        :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable
+        :type arg: tuple
+
+        :return: list of lists with the transformed data. The non-existent files are returned as None type.
+        :rtype: list
+        """
+        if type(arg) != tuple:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is tuple.' %type(arg).__name__)
+        train_index, row,y = arg
+
+        # get the necessary indices to trace files easily
+        file_index = row['index']  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
+        label = y.loc[train_index, 'label']
+        # check if the file from the annotation data exists in the folders
+        try:
+            if label == 'bee':
+                file_name = [x for x in self.bee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+                file_name = self.bee_folder + file_name
+            else:
+                file_name = [x for x in self.nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+                file_name = self.no_bee_folder + file_name
+            logging.info('%s file exists.' %file_name)
+        except:
+            logging.warning('No file with index %s exists.' %str(file_index))
+
+        # read the files
+        try:
+            samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+            # check if the data extraction is correct
+            duration_of_sound =  round(len(samples) / sample_rate,2)
+            annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
+
+            # we need to do different error handling with log files at a later point
+            if duration_of_sound == round(annotation_duration.loc[train_index,],2):
+                logging.info('%s file has the correct duration.' % file_name)
+            else:
+                logging.warning('%s file DOES NOT have the correct duration.' % file_name)
+
+            # transform the time to binned frequency vector
+            dt = 1 / sample_rate
+            t = np.arange(0, duration_of_sound, dt)
+            npnts = len(t)
+            sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+
+            # we need to add the indices for tracking purposes
+            sample_transformed.insert(0, file_index)
+            sample_transformed.insert(0,train_index)
+
+
+            logging.info('%s file transformed and added to the transformed data frame' % file_name)
+            return sample_transformed
+        except:
+            return [train_index,file_index]
+            logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
+
+
+    def data_transformation_df(self, X,y):
+        """
+        Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
+        :param X: pandas data frame with the indices of the acoustic files which need to be transformed
+        :type X: pandas.DataFrame
+        :param y: pandas data frame with the dependant variable
+        :type y: pandas.DataFrame
+
+        :return: data frame with the transformed data
+        :rtype:pandas.dataFrame
+        """
+        if type(X) != pd.core.frame.DataFrame:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
+        if type(y) != pd.core.frame.DataFrame:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(y).__name__)
+        if 'index' not in X.columns.to_list():
+            raise ValueError('Column index is not part of X data frame. It is a requirement.')
+        if 'label' not in y.columns.to_list():
+            raise ValueError('Column label is not part of y data frame. It is a requirement.')
+        pool = mp.Pool(processes=mp.cpu_count())
+        X_transformed = pool.map(self.data_transformation_row,[(train_index, row,y) for train_index, row in X.iterrows()])
+        # add the column names
+        cols = ['train_index','file_index']
+        max_length = max([len(x) for x in X_transformed if x is not None])
+        cols = cols + ['col' + str(x) for x in range(max_length - 2)]
+        # transform to data frame
+        X_df = pd.DataFrame(columns=cols)
+        for x in X_transformed:
+            if len(x) !=2:
+                X_df.loc[len(X_df)] = x
+            else:
+                x_updated = x+[None]*(max_length-len(x))
+                X_df.loc[len(X_df)] = x_updated
+        logging.info('Whole data frame transformed.')
+        return X_df
+
+
+    def best_model(self, model, param_dist):
+        """Identify the best model after tuning the hyperparameters
+
+        :param model: an initiated machine learning model
+        :type model: Any
+        :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
+        :type param_dist: dict
+        :return: RandomizedSearchCV object
+        :rtype: RandomizedSearchCV
+        """
+        try:
+            best_model = RandomizedSearchCV(model,
+                                            param_distributions=param_dist,
+                                            n_iter=100,
+                                            cv=10)
+            logging.info('Parameter tuning completed')
+        except Exception as error:
+            logging.error(error)
+        return best_model
+
+    def accuracy_metrics(self, y_pred, cm_title, cm_file_name):
+        """ Provide accuracy metrics to compare the different models
+
+        :param y_pred: predicted dependent values
+        :type y_pred: list
+        :param cm_title: title for the confusion matrix plot
+        :type cm_title: str
+        :param cm_file_name: title for the confusion matrix plot
+        :type cm_file_name: str
+        :return: accuracy, precision, recall and saved graph for the confusion matrix
+        :rtype: list
+        """
+        try:
+            # accuracy score
+            acc = accuracy_score(self.y_test, y_pred)
+            # calculate the precision score
+            precision = precision_score(self.y_test, y_pred, average='macro')
+            recall = recall_score(self.y_test, y_pred, average='macro')
+            # confusion matrix
+
+            self.cm = confusion_matrix(self.y_test, y_pred)
+
+            code_str = "sns.heatmap(self.cm, annot=True, fmt='.3f', linewidths=.5, square=True, cmap='Blues_r')"
+
+            self.plot_figure(
+                plot_title=cm_title
+                , file_title=cm_file_name
+                , plot_code=code_str
+            )
+            logging.info('Accuracy metrics calculated')
+        except Exception as error:
+            logging.error(error)
+
+        return acc, precision, recall
+
+    def misclassified_analysis(self, y_pred):
+        """Misclassification analysis to understand where the model miscalculates and if any pattern can be found
+
+        :param y_pred: predicted dependent values
+        :type y_pred: list
+        :return: misclassified values
+        :rtype: list
+        """
+        try:
+
+            # check the misclassified datapoints
+            y_test_df = pd.DataFrame(self.y_test)
+            y_test_df['pred'] = y_pred
+            y_test_df['check'] = y_test_df[self.y_col] == y_test_df['pred']
+            misclassified = y_test_df.loc[y_test_df[~y_test_df['check']].index,:].value_counts()
+            logging.info('Misclassified analysis completed')
+        except Exception as error:
+            logging.error(error)
+
+        return misclassified
+
+    def model_results(self
+                      , model
+                      , param_dist
+                      , cm_title
+                      , cm_file_name):
+        """Provide a full picture of the model performance and accuracy
+
+        :param model: an initiated machine learning model
+        :type model: Any
+        :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
+        :type param_dist: dict
+        :param cm_title: title for the confusion matrix plot
+        :type cm_title: str
+        :param cm_file_name: title for the confusion matrix plot
+        :type cm_file_name: str
+        :return: the best model with its accuracy metrics and misclassified analysis
+        :rtype: list
+        """
+        try:
+            # Use random search to find the best hyperparameters
+            rand_search = self.best_model(model=model, param_dist=param_dist)
+
+            # transform the X_train and then get only the correct entries
+            self.X_train = self.data_transformation_df(self.X_train_index, self.y_train)
+            # subset the index for inspection
+            self.X_train_fail = self.X_train[self.X_train['col0'].isnull()]
+            #subset the data for the training
+            self.X_train = self.X_train[~self.X_train['col0'].isnull()]
+
+            self.X_test = self.data_transformation_df(self.X_test_index, self.y_test)
+            self.X_test_fail = self.X_test[self.X_test['col0'].isnull()]
+            # subset the data for the training
+            self.X_test = self.X_test[~self.X_test['col0'].isnull()]
+
+            #subset the y variables
+            self.y_train = self.y_train.loc[self.X_train['train_index'].astype(int)]
+            self.y_test = self.y_test.loc[self.X_test['train_index'].astype(int)]
+            #here we need to make sure we subset the y variable for the correct index and remove the first two columns from X
+
+            # fit the best model
+            rand_search.fit(self.X_train[[x for x in self.X_train.columns if x not in ['train_index', 'file_index'] ]],
+                            np.array(self.y_train).ravel())
+
+            # generate predictions with the best model
+            y_pred = rand_search.predict(self.X_test[[x for x in self.X_test.columns if x not in ['train_index', 'file_index'] ]])
+
+            # calculate model accuracy
+            acc, precision, recall = self.accuracy_metrics(y_pred=y_pred,
+                                                           cm_title=cm_title,
+                                                           cm_file_name=cm_file_name)
+
+            # check the misclassified datapoints
+            misclassified = self.misclassified_analysis(y_pred=y_pred)
+
+            logging.info('Model Results Calculated')
+        except Exception as error:
+            logging.error(error)
+
+        return acc, precision, recall,  rand_search , misclassified
+
+    def random_forest_results(self):
+        """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+
+        :return: accuracy, precision, recall, confusion matrix plot file with the name 'rf_confusion_matrix.png', misclassified analysis, feature importance plot with the name 'rf_feature_importance.png'
+        :rtype: list
+        """
+        try:
+            param_dist = {'n_estimators': randint(50, 500), 'max_depth': randint(1, 20)}
+            # Create a random forest classifier
+            rf = RandomForestClassifier()
+
+            # check the model results
+            acc, precision, recall,  rand_search,misclassified = self.model_results(model=rf, param_dist=param_dist,
+                                                                                    cm_title='RF Confusion Matrix',
+                                                                                    cm_file_name='rf_confusion_matrix.png')
+
+            # # check the features importance
+            best_model = rand_search.best_estimator_
+            importances = best_model.feature_importances_
+            self.forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
+
+            code_str = """
+            self.forest_importances.sort_values(ascending=False).plot(kind='barh')
+            plt.ylabel('Importance')
+            plt.xlabel('Features')
+                        """
+
+            self.plot_figure(
+                plot_title='RF Feature Importance'
+                , file_title='rf_feature_importance.png'
+                , plot_code=code_str
+            )
+            logging.info('Random forest results calculated')
+
+            # create a plot for the misclassified
+            self.misclass_rf = pd.DataFrame(misclassified)
+            self.misclass_rf.reset_index(inplace=True)
+            #self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
+
+            code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+
+            self.plot_figure(
+                plot_title='Random Forest Misclassified Distribution'
+                , file_title='misclassified_rf.png'
+                , plot_code=code_str
+            )
+            logging.info("Random Forest misclassified distribution plot created")
+
+            return acc, precision, recall , misclassified
+        except Exception as error:
+            logging.error(error)
