@@ -22,12 +22,11 @@ class Bee:
     :type annotation_path: str
     :param y_col: column label for the dependent variable in the annotation file
     :type y_col: str
-    :param x_col: column label for the independent variable in the annotation file
+    :param x_col: column label for the independent variable in the annotation file. It is used to read the wav file.
     :type x_col: str
-    :param bee_folder: folder name where only bee acoustic files are hosted
-    :type bee_folder: str
-    :param no_bee_folder: folder name where only no-bee acoustic files are hosted
-    :type no_bee_folder: str
+    :param acoustic_folder: folder name where acoustic files are stored
+    :type acoustic_folder: str
+
 
 
 
@@ -45,15 +44,13 @@ class Bee:
                  ,y_col = 'label'
                  ,bee_col = 'label'
                  ,logname='bee.log'
-                 ,bee_folder = 'data/bee/'
-                 ,no_bee_folder = 'data/nobee/'):
+                 ,acoustic_folder = 'data/SplitData/'):
         self.annotation_path =annotation_path
         self.annotation_dtypes_path = annotation_dtypes_path
         self.x_col = x_col
         self.y_col = y_col
         self.bee_col = bee_col
-        self.bee_folder = bee_folder
-        self.no_bee_folder = no_bee_folder
+        self.acoustic_folder = acoustic_folder
         logging.basicConfig(filename=logname
                             , filemode='a'
                             , format='%(asctime)s %(levelname)s %(message)s'
@@ -186,8 +183,7 @@ class Bee:
 
             if data_quality:
                 existing_indices = pd.DataFrame()
-                existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in
-                                             self.nobee_files + self.bee_files]
+                existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in self.accoustic_files]
                 existing_indices['Dir Exist'] = True
 
                 self.annotation_df = self.annotation_df.merge(existing_indices, how='left', left_on='index', right_on='index')
@@ -224,17 +220,15 @@ class Bee:
     def acoustic_file_names(self):
         """
         Create a list of files which have bee and no-bee data
-        :return: two lists - bee_files and nobee_files
+        :return: a list - acoustic_files
         :rtype: list
         """
         #TODO update to have just one folder
-        self.bee_files = os.listdir(self.bee_folder)
-        self.nobee_files = os.listdir(self.no_bee_folder)
-        logging.info('Files in the two directories are stores in two lists: bee_files and nobee_files')
-        if len(self.bee_files)==0:
-            raise ValueError('bee_files list is empty. Please, check the %s folder' %self.bee_folder)
-        if len(self.nobee_files) == 0:
-            raise ValueError('nobee_files list is empty. Please, check the %s folder' % self.no_bee_folder)
+        self.accoustic_files = os.listdir(self.acoustic_folder)
+        logging.info('Files in the two directories are stores in a list - acoustic_files')
+        if len(self.accoustic_files)==0:
+            raise ValueError('bee_files list is empty. Please, check the %s folder' % self.acoustic_folder)
+
 
     def harley_transformation_with_window(self,x,window = np.hanning):
         """
@@ -359,6 +353,8 @@ class Bee:
                 old_index = index
             logging.info('Frequency vector binned.')
             return binned_x
+
+
     def data_transformation_row(self, arg):
         """
         A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
@@ -373,55 +369,55 @@ class Bee:
         train_index, row,y = arg
 
         # get the necessary indices to trace files easily
-        #TODO update with x_col
-        file_index = row['index']  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
-        #TODO update with bee_col
-        label = y.loc[train_index, 'label']
+        file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
+        #TODO do we need actually this label? this means we don't need to pass the y variable at all
+        #label = y.loc[train_index, self.bee_col]
         # check if the file from the annotation data exists in the folders
-        # TODO do we need this at all? what if we just need one folder? maybe that is the best solution
         try:
-            if label == 'bee':
-                file_name = [x for x in self.bee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-                file_name = self.bee_folder + file_name
-            else:
-                file_name = [x for x in self.nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-                file_name = self.no_bee_folder + file_name
+            #identify the file name
+            file_name = [x for x in self.accoustic_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+            file_name = self.acoustic_folder + file_name
             logging.info('%s file exists.' %file_name)
+
+            try:
+                # read the file
+                samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+
+                # check if the data extraction is correct through the duration of the sample
+                duration_of_sound = round(len(samples) / sample_rate, 2)
+                annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
+                if duration_of_sound == round(annotation_duration.loc[train_index,], 2):
+                    logging.info('%s file has the correct duration.' %file_name)
+                else:
+                    logging.warning('%s file DOES NOT have the correct duration.' %file_name)
+
+                    # TODO here is what we need to abstract and create as a second function
+
+                    # transform the time to binned frequency vector
+                    dt = 1 / sample_rate
+                    t = np.arange(0, duration_of_sound, dt)
+                    npnts = len(t)
+                    sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+
+                    # we need to add the indices for tracking purposes
+                    sample_transformed.insert(0, file_index)
+                    sample_transformed.insert(0, train_index)
+
+                    logging.info('%s file transformed and added to the transformed data frame' % file_name)
+
+                # return the transformed file and add the indices
+                return sample_transformed
+
+            except:
+                return [train_index,file_index]
+                logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
         except:
             logging.warning('No file with index %s exists.' %str(file_index))
 
-        # read the files
-        try:
-            samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
-            # check if the data extraction is correct
-            duration_of_sound =  round(len(samples) / sample_rate,2)
-            annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
-
-            # we need to do different error handling with log files at a later point
-            if duration_of_sound == round(annotation_duration.loc[train_index,],2):
-                logging.info('%s file has the correct duration.' % file_name)
-            else:
-                logging.warning('%s file DOES NOT have the correct duration.' % file_name)
-
-            # TODO here is what we need to abstract and create as a second function
 
 
-            # transform the time to binned frequency vector
-            dt = 1 / sample_rate
-            t = np.arange(0, duration_of_sound, dt)
-            npnts = len(t)
-            sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
-
-            # we need to add the indices for tracking purposes
-            sample_transformed.insert(0, file_index)
-            sample_transformed.insert(0,train_index)
 
 
-            logging.info('%s file transformed and added to the transformed data frame' % file_name)
-            return sample_transformed
-        except:
-            return [train_index,file_index]
-            logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
 
 
     def data_transformation_df(self, X,y):
@@ -443,6 +439,8 @@ class Bee:
             raise ValueError('Column index is not part of X data frame. It is a requirement.')
         if 'label' not in y.columns.to_list():
             raise ValueError('Column label is not part of y data frame. It is a requirement.')
+        #TODO remove providing y_col to the function
+
         pool = mp.Pool(processes=mp.cpu_count())
         X_transformed = pool.map(self.data_transformation_row,[(train_index, row,y) for train_index, row in X.iterrows()])
         # add the column names
