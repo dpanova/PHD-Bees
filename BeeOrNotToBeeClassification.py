@@ -12,6 +12,8 @@ from scipy.stats import randint
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 import matplotlib.pyplot as plt
 import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class BeeNotBee:
     """BeeNotBee class ....
@@ -93,6 +95,27 @@ class BeeNotBee:
         except:
             logging.warning('Annotation data is NOT read successfully')
 
+    def new_y_label_creation(self, old_col=['missing queen', 'queen',
+       'active day', 'swarming'], new_col='action'):
+        """
+        Transform boolean columns into one column.
+        :param old_col: list of column names
+        :type old_col: list
+        :param new_col: new column name
+        :type new_col: str
+        :return: updated annotation dataframe with a new column and updated y_col in the class
+        :rtype: pandas.DataFrame
+        """
+        if type(old_col) != list:
+            raise ValueError('old_col input is not the correct type. It is type %s, but it should be a list.' %type(old_col))
+        if type(new_col) != str:
+            raise ValueError('new_col input is not the correct type. It is type %s, but it should be a str.' %type(new_col))
+        if not set(old_col).issubset(self.annotation_df.columns):
+            raise ValueError('%s are not part of the annotation_df columns' %old_col)
+        else:
+            self.annotation_df[new_col] = [row.idxmax() for idx,row in self.annotation_df[old_col].iterrows()]
+            self.y_col = new_col
+            logging.info('New label created and assigned to the class')
 
 
     def validate_annotation_csv(self):
@@ -136,8 +159,22 @@ class BeeNotBee:
             logging.info('Percentage number is NOT correct')
             if (self.x_col in self.annotation_df) and (self.x_col in self.annotation_df):
                 logging.info('X_col and y_col are valid columns')
-                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(self.annotation_df[[self.x_col]],
-                                                                                self.annotation_df[[self.y_col]],
+
+                # here we need to update the documentation if everything works properly for the data split
+                existing_indices = pd.DataFrame()
+                existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in
+                                             self.nobee_files + self.bee_files]
+                existing_indices['Dir Exist'] = True
+
+                self.annotation_df = self.annotation_df.merge(existing_indices, how='left', left_on='index', right_on='index')
+                self.annotation_df['Dir Exist'].fillna(False, inplace=True)
+                # 367 files are missing
+                #here we may need to update something in future so that it is more universal
+                annotation_df_updated  = self.annotation_df[self.annotation_df['Dir Exist']]
+                annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
+
+                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(annotation_df_updated[[self.x_col]],
+                                                                                annotation_df_updated[[self.y_col]],
                                                                                 test_size=perc)
 
                 # save all files for reproducibility
@@ -310,7 +347,7 @@ class BeeNotBee:
                 file_name = self.bee_folder + file_name
             else:
                 file_name = [x for x in self.nobee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-                file_name = self.nobee_files + file_name
+                file_name = self.no_bee_folder + file_name
             logging.info('%s file exists.' %file_name)
         except:
             logging.warning('No file with index %s exists.' %str(file_index))
@@ -452,14 +489,7 @@ class BeeNotBee:
             y_test_df = pd.DataFrame(self.y_test)
             y_test_df['pred'] = y_pred
             y_test_df['check'] = y_test_df[self.y_col] == y_test_df['pred']
-
-            original_y_col_list = [y for y in self.y_cols if y != self.y_col] #need to check this, it may not work properly
-            if len(original_y_col_list) == 0:
-                original_y_col = self.y_col
-            else:
-                original_y_col = original_y_col_list[0]
-            misclassified = self.data.loc[y_test_df[~y_test_df['check']].index, original_y_col].value_counts()
-
+            misclassified = y_test_df.loc[y_test_df[~y_test_df['check']].index,:].value_counts()
             logging.info('Misclassified analysis completed')
         except Exception as error:
             logging.error(error)
@@ -518,13 +548,13 @@ class BeeNotBee:
                                                            cm_file_name=cm_file_name)
 
             # check the misclassified datapoints
-            # misclassified = self.misclassified_analysis(y_pred=y_pred)
+            misclassified = self.misclassified_analysis(y_pred=y_pred)
 
             logging.info('Model Results Calculated')
         except Exception as error:
             logging.error(error)
 
-        return acc, precision, recall,  rand_search #, misclassified
+        return acc, precision, recall,  rand_search , misclassified
 
     def random_forest_results(self):
         """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
@@ -538,8 +568,7 @@ class BeeNotBee:
             rf = RandomForestClassifier()
 
             # check the model results
-            # misclassified,
-            acc, precision, recall,  rand_search = self.model_results(model=rf, param_dist=param_dist,
+            acc, precision, recall,  rand_search,misclassified = self.model_results(model=rf, param_dist=param_dist,
                                                                                     cm_title='RF Confusion Matrix',
                                                                                     cm_file_name='rf_confusion_matrix.png')
 
@@ -562,19 +591,19 @@ class BeeNotBee:
             logging.info('Random forest results calculated')
 
             # create a plot for the misclassified
-            # self.misclass_rf = pd.DataFrame(misclassified)
-            # self.misclass_rf.reset_index(inplace=True)
-            # self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
+            self.misclass_rf = pd.DataFrame(misclassified)
+            self.misclass_rf.reset_index(inplace=True)
+            #self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
 
-            # code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
-            #
-            # self.plot_figure(
-            #     plot_title='Random Forest Misclassified Distribution'
-            #     , file_title='misclassified_rf.png'
-            #     , plot_code=code_str
-            # )
-            # logging.info("Random Forest misclassified distribution plot created")
+            code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
 
-            return acc, precision, recall #, misclassified
+            self.plot_figure(
+                plot_title='Random Forest Misclassified Distribution'
+                , file_title='misclassified_rf.png'
+                , plot_code=code_str
+            )
+            logging.info("Random Forest misclassified distribution plot created")
+
+            return acc, precision, recall , misclassified
         except Exception as error:
             logging.error(error)
