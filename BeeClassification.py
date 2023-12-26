@@ -43,6 +43,7 @@ class Bee:
                  ,annotation_dtypes_path = 'annotation_data_types.csv'
                  ,x_col = 'index'
                  ,y_col = 'label'
+                 ,bee_col = 'label'
                  ,logname='bee.log'
                  ,bee_folder = 'data/bee/'
                  ,no_bee_folder = 'data/nobee/'):
@@ -50,6 +51,7 @@ class Bee:
         self.annotation_dtypes_path = annotation_dtypes_path
         self.x_col = x_col
         self.y_col = y_col
+        self.bee_col = bee_col
         self.bee_folder = bee_folder
         self.no_bee_folder = no_bee_folder
         logging.basicConfig(filename=logname
@@ -147,20 +149,42 @@ class Bee:
             logging.error("NOT all data is in the correct type")
 
 
-    def split_annotation_data(self,perc=0.25):
+    def split_annotation_data(self,perc=0.25, no_bee = False, data_quality = True, stratified = True):
         """
-        Split the annotation data into train and test. Save the csv files
+        Split the annotation data into train and test based on the y_col and x_col values. Only bee or bee and non-bee files can be used. Data can be enhanced as well. Save the csv files.
         :param perc: test split percentage, a number between 0.0 and 1.0
         :type perc: float
+        :param no_bee: Boolean value to indicate if no_bee files to be added in the data set.
+        :type no_bee: bool
+        :param data_quality: Boolean value to indicate if only the quality data should be kept. This means files which exist in the directory and are above 2 sec. long.
+        :type data_quality: bool
+        :param stratified: Boolean value to indicate if the split should be stratified
+        :type stratified: bool
         :return: X train, X test, y train and y test pandas data frames
         :rtype: pandas.DataFrame
         """
-        if isinstance(perc, float) and perc >= 0.0 and perc <= 1.0:
-            logging.info('Percentage number is NOT correct')
-            if (self.x_col in self.annotation_df) and (self.y_col in self.annotation_df):
-                logging.info('X_col and y_col are valid columns')
+        if type(perc) != float:
+            raise ValueError(
+                'perc input is not the correct type. It is type %s, but it should be a float.' % type(perc))
+        if perc < 0.0:
+            raise ValueError('perc should be bigger than 0.')
+        if perc > 1.0:
+            raise ValueError('perc should be smaller than 1.')
+        if type(no_bee) != bool:
+            raise ValueError('no_bee input is not the correct type. It is type %s, but it should be a boolean.' % type(no_bee))
+        if type(data_quality) != bool:
+            raise ValueError('stratified input is not the correct type. It is type %s, but it should be a boolean.' % type(data_quality))
+        if type(stratified) != bool:
+            raise ValueError(
+                'stratified input is not the correct type. It is type %s, but it should be a boolean.' % type(
+                    stratified))
+        if self.x_col not in self.annotation_df:
+            raise ValueError('x_col not in the annotation_df. Change x_col.')
+        if self.y_col not in self.annotation_df:
+            raise ValueError('y_col not in the annotation_df. Change y_col.')
+        else:
 
-                # here we need to update the documentation if everything works properly for the data split
+            if data_quality:
                 existing_indices = pd.DataFrame()
                 existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in
                                              self.nobee_files + self.bee_files]
@@ -172,20 +196,30 @@ class Bee:
                 #here we may need to update something in future so that it is more universal
                 annotation_df_updated  = self.annotation_df[self.annotation_df['Dir Exist']]
                 annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
-
-                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(annotation_df_updated[[self.x_col]],
-                                                                                annotation_df_updated[[self.y_col]],
-                                                                                test_size=perc)
-
-                # save all files for reproducibility
-                self.X_train_index.to_csv('X_train_index.csv')
-                self.X_test_index.to_csv('X_test_index.csv')
-                self.y_train.to_csv('y_train.csv')
-                self.y_test.to_csv('y_test.csv')
             else:
-                logging.error('X_col and/or y_col are NOT valid columns')
-        else:
-            logging.error('Percentage number is NOT correct')
+                annotation_df_updated = self.annotation_df
+
+            if not no_bee:
+                annotation_df_updated = annotation_df_updated[annotation_df_updated[self.bee_col]=='bee']
+
+            if stratified:
+                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
+                    annotation_df_updated[[self.x_col]],
+                    annotation_df_updated[[self.y_col]],
+                    test_size=perc,
+                    stratify=annotation_df_updated[[self.y_col]])
+            else:
+                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
+                    annotation_df_updated[[self.x_col]],
+                    annotation_df_updated[[self.y_col]],
+                    test_size=perc)
+
+            # save all files for reproducibility
+            self.X_train_index.to_csv('X_train_index.csv')
+            self.X_test_index.to_csv('X_test_index.csv')
+            self.y_train.to_csv('y_train.csv')
+            self.y_test.to_csv('y_test.csv')
+
 
     def acoustic_file_names(self):
         """
@@ -193,6 +227,7 @@ class Bee:
         :return: two lists - bee_files and nobee_files
         :rtype: list
         """
+        #TODO update to have just one folder
         self.bee_files = os.listdir(self.bee_folder)
         self.nobee_files = os.listdir(self.no_bee_folder)
         logging.info('Files in the two directories are stores in two lists: bee_files and nobee_files')
@@ -338,9 +373,12 @@ class Bee:
         train_index, row,y = arg
 
         # get the necessary indices to trace files easily
+        #TODO update with x_col
         file_index = row['index']  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
+        #TODO update with bee_col
         label = y.loc[train_index, 'label']
         # check if the file from the annotation data exists in the folders
+        # TODO do we need this at all? what if we just need one folder? maybe that is the best solution
         try:
             if label == 'bee':
                 file_name = [x for x in self.bee_files if x.find('index' + str(file_index) + '.wav') != -1][0]
@@ -364,6 +402,9 @@ class Bee:
                 logging.info('%s file has the correct duration.' % file_name)
             else:
                 logging.warning('%s file DOES NOT have the correct duration.' % file_name)
+
+            # TODO here is what we need to abstract and create as a second function
+
 
             # transform the time to binned frequency vector
             dt = 1 / sample_rate
