@@ -24,6 +24,7 @@ for file in dir_list:
 # Note: there were duplicated files which we investigated if they are duplicated and then removed them
 # also, we realized that some files are mp3 not only wav
 #%%
+#TODO have just one folder - SplitData
 # now we will create a loop for to read each file and split it into the bee and no-bee
 bee_folder = 'data/bee/'
 no_bee_folder = 'data/nobee/'
