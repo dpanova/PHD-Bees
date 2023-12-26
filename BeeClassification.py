@@ -157,7 +157,7 @@ class Bee:
         """
         if isinstance(perc, float) and perc >= 0.0 and perc <= 1.0:
             logging.info('Percentage number is NOT correct')
-            if (self.x_col in self.annotation_df) and (self.x_col in self.annotation_df):
+            if (self.x_col in self.annotation_df) and (self.y_col in self.annotation_df):
                 logging.info('X_col and y_col are valid columns')
 
                 # here we need to update the documentation if everything works properly for the data split
