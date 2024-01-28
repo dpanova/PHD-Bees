@@ -363,9 +363,13 @@ class Bee:
         :return: list of lists with the transformed data. The non-existent files are returned as None type.
         :rtype: list
         """
+
         if type(arg) != tuple:
-            raise ValueError('Invalid arg type. arg is type %s and expected type is tuple.' %type(arg).__name__)
-        train_index, row = arg
+            raise ValueError('Invalid arg type. arg is type %s and expected type is list.' %type(arg).__name__)
+        train_index, row, func = arg
+
+
+
 
         # get the necessary indices to trace files easily
         file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
@@ -389,15 +393,17 @@ class Bee:
                 else:
                     logging.warning('%s file DOES NOT have the correct duration.' %file_name)
 
-                    # TODO here is what we need to abstract and create as a second function
 
+                if func == self.binning:
 
-                # transform the time to binned frequency vector
-                dt = 1 / sample_rate
-                t = np.arange(0, duration_of_sound, dt)
-                npnts = len(t)
-                sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
-
+                    # transform the file
+                    dt = 1 / sample_rate
+                    t = np.arange(0, duration_of_sound, dt)
+                    npnts = len(t)
+                    sample_transformed = func(x=samples, dt=dt, npnts=npnts)
+                else:
+                    #TODO once we update with another function, we need to revisit this
+                    sample_transformed = func(samples)
                 # we need to add the indices for tracking purposes
                 sample_transformed.insert(0, file_index)
                 sample_transformed.insert(0, train_index)
@@ -419,13 +425,13 @@ class Bee:
 
 
 
-    def data_transformation_df(self, X):
+    def data_transformation_df(self, X, func):
         """
         Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
         :type X: pandas.DataFrame
-        :param y: pandas data frame with the dependant variable
-        :type y: pandas.DataFrame
+        :param func: function for audio files transformation
+        :type func: function or method
 
         :return: data frame with the transformed data
         :rtype:pandas.dataFrame
@@ -434,10 +440,14 @@ class Bee:
             raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
         if 'index' not in X.columns.to_list():
             raise ValueError('Column index is not part of X data frame. It is a requirement.')
-        #TODO remove providing y_col to the function
+        if (hasattr(func, '__call__')):
+            logging.info('Data is transformed with function %s ' %func)
+        else:
+            raise ValueError('Invalid function type. function is type %s and expected type is method or function.' %type(func).__name__)
 
         pool = mp.Pool(processes=mp.cpu_count())
-        X_transformed = pool.map(self.data_transformation_row,[(train_index, row) for train_index, row in X.iterrows()])
+        #TODO once, we add a new function, we need to check if this is working or not
+        X_transformed = pool.map(self.data_transformation_row,[(train_index, row, func) for train_index, row in X.iterrows()])
         # add the column names
         cols = ['train_index','file_index']
         max_length = max([len(x) for x in X_transformed if x is not None])
