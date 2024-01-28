@@ -223,7 +223,6 @@ class Bee:
         :return: a list - acoustic_files
         :rtype: list
         """
-        #TODO update to have just one folder
         self.accoustic_files = os.listdir(self.acoustic_folder)
         logging.info('Files in the two directories are stores in a list - acoustic_files')
         if len(self.accoustic_files)==0:
@@ -394,16 +393,20 @@ class Bee:
                     logging.warning('%s file DOES NOT have the correct duration.' %file_name)
 
 
-                if func == self.binning:
-
+                # TODO once we update with another function, we need to revisit this
+                if func == 'binning':
                     # transform the file
                     dt = 1 / sample_rate
                     t = np.arange(0, duration_of_sound, dt)
                     npnts = len(t)
-                    sample_transformed = func(x=samples, dt=dt, npnts=npnts)
-                else:
-                    #TODO once we update with another function, we need to revisit this
-                    sample_transformed = func(samples)
+                    sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+                elif func == 'mfcc':
+                    # TODO change the mean value to something else
+                    # TODO change the n_mfcc to something else
+                    sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate, n_mfcc=100).T, axis=0)
+                elif func == 'mel spec':
+                    #TODO change the fixed values
+                    sample_transformed = librosa.feature.melspectrogram(y=samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128)
                 # we need to add the indices for tracking purposes
                 sample_transformed.insert(0, file_index)
                 sample_transformed.insert(0, train_index)
@@ -430,20 +433,24 @@ class Bee:
         Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
         :type X: pandas.DataFrame
-        :param func: function for audio files transformation
+        :param func: function for audio files transformation. One can choose from a list of options ['binning', 'mfcc','mel spec']
         :type func: function or method
 
         :return: data frame with the transformed data
         :rtype:pandas.dataFrame
         """
+        func_list = ['binning', 'mfcc','mel spec']
         if type(X) != pd.core.frame.DataFrame:
             raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
         if 'index' not in X.columns.to_list():
             raise ValueError('Column index is not part of X data frame. It is a requirement.')
-        if (hasattr(func, '__call__')):
-            logging.info('Data is transformed with function %s ' %func)
-        else:
-            raise ValueError('Invalid function type. function is type %s and expected type is method or function.' %type(func).__name__)
+        if func not in func_list:
+            raise ValueError(
+                'Invalid function. function should be from the list %s' %func_list)
+        # if (hasattr(func, '__call__')):
+        #     logging.info('Data is transformed with function %s ' %func)
+        # else:
+        #     raise ValueError('Invalid function type. function is type %s and expected type is method or function.' %type(func).__name__)
 
         pool = mp.Pool(processes=mp.cpu_count())
         #TODO once, we add a new function, we need to check if this is working or not
