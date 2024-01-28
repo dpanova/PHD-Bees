@@ -1,18 +1,20 @@
-from BeeOrNotToBeeClassification import BeeNotBee
-import time
-bee = BeeNotBee()
+from BeeClassification import Bee
+
+bee = Bee()
 # read and validate the annotation data
 bee.read_annotation_csv()
+#create the new label
+bee.new_y_label_creation()
 # this should be first to integrate the changes
-bee.acoustic_file_names()
+bee.acoustic_file_names() # here we need to figure out if we need it and why
+# split the data
 bee.split_annotation_data()
 
-acc, precision, recall, misclassified = bee.random_forest_results()
 
 #%%
 
 # This was working before and we are aiming at it
-from BeeOrNotToBeeClassification import BeeNotBee
+from BeeClassification import BeeNotBee
 import time
 bee = BeeNotBee()
 # read and validate the annotation data
@@ -37,5 +39,4 @@ acc, precision, recall, misclassified = bee.random_forest_results()
 # check the duration for the misclassified ones, the hypothesis is that it is the short ones
 # we can also check with different window functions and xgboost
 # we should also time the algorithm
-
 

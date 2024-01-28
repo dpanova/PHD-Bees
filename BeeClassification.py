@@ -354,7 +354,6 @@ class Bee:
             logging.info('Frequency vector binned.')
             return binned_x
 
-
     def data_transformation_row(self, arg):
         """
         A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
@@ -366,11 +365,10 @@ class Bee:
         """
         if type(arg) != tuple:
             raise ValueError('Invalid arg type. arg is type %s and expected type is tuple.' %type(arg).__name__)
-        train_index, row,y = arg
+        train_index, row = arg
 
         # get the necessary indices to trace files easily
         file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
-        #TODO do we need actually this label? this means we don't need to pass the y variable at all
         #label = y.loc[train_index, self.bee_col]
         # check if the file from the annotation data exists in the folders
         try:
@@ -393,17 +391,18 @@ class Bee:
 
                     # TODO here is what we need to abstract and create as a second function
 
-                    # transform the time to binned frequency vector
-                    dt = 1 / sample_rate
-                    t = np.arange(0, duration_of_sound, dt)
-                    npnts = len(t)
-                    sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
 
-                    # we need to add the indices for tracking purposes
-                    sample_transformed.insert(0, file_index)
-                    sample_transformed.insert(0, train_index)
+                # transform the time to binned frequency vector
+                dt = 1 / sample_rate
+                t = np.arange(0, duration_of_sound, dt)
+                npnts = len(t)
+                sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
 
-                    logging.info('%s file transformed and added to the transformed data frame' % file_name)
+                # we need to add the indices for tracking purposes
+                sample_transformed.insert(0, file_index)
+                sample_transformed.insert(0, train_index)
+
+                logging.info('%s file transformed and added to the transformed data frame' % file_name)
 
                 # return the transformed file and add the indices
                 return sample_transformed
@@ -420,7 +419,7 @@ class Bee:
 
 
 
-    def data_transformation_df(self, X,y):
+    def data_transformation_df(self, X):
         """
         Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
@@ -433,16 +432,12 @@ class Bee:
         """
         if type(X) != pd.core.frame.DataFrame:
             raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
-        if type(y) != pd.core.frame.DataFrame:
-            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(y).__name__)
         if 'index' not in X.columns.to_list():
             raise ValueError('Column index is not part of X data frame. It is a requirement.')
-        if 'label' not in y.columns.to_list():
-            raise ValueError('Column label is not part of y data frame. It is a requirement.')
         #TODO remove providing y_col to the function
 
         pool = mp.Pool(processes=mp.cpu_count())
-        X_transformed = pool.map(self.data_transformation_row,[(train_index, row,y) for train_index, row in X.iterrows()])
+        X_transformed = pool.map(self.data_transformation_row,[(train_index, row) for train_index, row in X.iterrows()])
         # add the column names
         cols = ['train_index','file_index']
         max_length = max([len(x) for x in X_transformed if x is not None])
