@@ -392,8 +392,6 @@ class Bee:
                 else:
                     logging.warning('%s file DOES NOT have the correct duration.' %file_name)
 
-
-                # TODO once we update with another function, we need to revisit this
                 if func == 'binning':
                     # transform the file
                     dt = 1 / sample_rate
@@ -404,13 +402,14 @@ class Bee:
                     # TODO change the mean value to something else
                     # TODO change the n_mfcc to something else
                     sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate, n_mfcc=100).T, axis=0)
-                    logging.info('reached')
                 elif func == 'mel spec':
+                    # TODO change the mean value to something else
                     #TODO change the fixed values
-                    sample_transformed = librosa.feature.melspectrogram(y=samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128)
+                    sample_transformed = np.mean(librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128).T, axis =0)
                 # we need to add the indices for tracking purposes
-                sample_transformed.insert(0, file_index)
-                sample_transformed.insert(0, train_index)
+                sample_transformed = np.insert(sample_transformed, 0, file_index)
+                sample_transformed = np.insert(sample_transformed, 0, train_index)
+
 
                 logging.info('%s file transformed and added to the transformed data frame' % file_name)
 
@@ -454,7 +453,6 @@ class Bee:
         #     raise ValueError('Invalid function type. function is type %s and expected type is method or function.' %type(func).__name__)
 
         pool = mp.Pool(processes=mp.cpu_count())
-        #TODO once, we add a new function, we need to check if this is working or not
         X_transformed = pool.map(self.data_transformation_row,[(train_index, row, func) for train_index, row in X.iterrows()])
         # add the column names
         cols = ['train_index','file_index']
