@@ -404,6 +404,7 @@ class Bee:
                     # TODO change the mean value to something else
                     # TODO change the n_mfcc to something else
                     sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate, n_mfcc=100).T, axis=0)
+                    logging.info('reached')
                 elif func == 'mel spec':
                     #TODO change the fixed values
                     sample_transformed = librosa.feature.melspectrogram(y=samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128)
