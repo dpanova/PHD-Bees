@@ -11,6 +11,8 @@ from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import randint
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 import matplotlib.pyplot as plt
+from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, Shift
+import soundfile as sf
 import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -44,13 +46,15 @@ class Bee:
                  ,y_col = 'label'
                  ,bee_col = 'label'
                  ,logname='bee.log'
-                 ,acoustic_folder = 'data/SplitData/'):
+                 ,acoustic_folder = 'data/SplitData/'
+                 ,augment_folder = 'data/augment/'):
         self.annotation_path =annotation_path
         self.annotation_dtypes_path = annotation_dtypes_path
         self.x_col = x_col
         self.y_col = y_col
         self.bee_col = bee_col
         self.acoustic_folder = acoustic_folder
+        self.augment_folder = augment_folder
         logging.basicConfig(filename=logname
                             , filemode='a'
                             , format='%(asctime)s %(levelname)s %(message)s'
@@ -352,7 +356,87 @@ class Bee:
                 old_index = index
             logging.info('Frequency vector binned.')
             return binned_x
+    def file_read(self, file_index):
+        """
+        :param file_index: index of the file we need to search for
+        :return: int
+        :return: samples and sample rate arrays
+        :rtype: numpy.ndarray and int
+        """
+        if type(file_index) != np.int64:
+            raise ValueError('Invalid file_index type. file_index is type %s and expected type is int.' % type(file_index).__name__)
+        try:
+            file_name = [x for x in self.accoustic_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+            file_name = self.acoustic_folder + file_name
+            logging.info('%s file exists.' % file_name)
+            samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+            return samples, sample_rate
 
+        except:
+            raise ValueError('File %s DOES NOT exist' %file_name)
+
+    def data_augmentation_row(self,arg):
+        """
+
+        :param arg:
+        :return:
+        """
+        if type(arg) != tuple:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is list.' %type(arg).__name__)
+        train_index, row = arg
+
+        # get the necessary indices to trace files easily
+        file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
+        label = self.y_train.loc[train_index, self.y_col]
+        # check if the file from the annotation data exists in the folders
+        try:
+            # read the file
+            samples, sample_rate = self.file_read(file_index)
+            augment = Compose([
+                AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
+                TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
+                PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
+                Shift(min_shift=-0.5, max_shift=0.5, p=0.5),
+            ])
+            augmented_samples = augment(samples=samples, sample_rate=sample_rate)
+            # TODO update the index increments
+            augmented_file_index = file_index + 10000
+            augmented_file_name = 'index' + str(augmented_file_index) + '.wav'
+            augmented_train_index = train_index + 10000
+            sf.write(self.augment_folder + augmented_file_name, augmented_samples, sample_rate)
+            return augmented_file_index, augmented_train_index, label
+        except:
+            return [train_index, file_index]
+            logging.warning('File with index %s is NOT augmented' % str(file_index))
+
+    def data_augmentation_df(self,X):
+        """
+        # TODO
+        :param X:
+        :return:
+        """
+        if type(X) != pd.core.frame.DataFrame:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
+        if 'index' not in X.columns.to_list():
+            raise ValueError('Column index is not part of X data frame. It is a requirement.')
+
+        pool = mp.Pool(processes=mp.cpu_count())
+        X_transformed = pool.map(self.data_augmentation_row,
+                                 [(train_index, row, func) for train_index, row in X.iterrows()])
+        # add the column names
+        cols = ['train_index', 'file_index']
+        max_length = max([len(x) for x in X_transformed if x is not None])
+        cols = cols + ['col' + str(x) for x in range(max_length - 2)]
+        # transform to data frame
+        X_df = pd.DataFrame(columns=cols)
+        for x in X_transformed:
+            if len(x) != 2:
+                X_df.loc[len(X_df)] = x
+            else:
+                x_updated = x + [None] * (max_length - len(x))
+                X_df.loc[len(X_df)] = x_updated
+        logging.info('Whole data frame transformed.')
+        return X_df
     def data_transformation_row(self, arg):
         """
         A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
@@ -367,64 +451,47 @@ class Bee:
             raise ValueError('Invalid arg type. arg is type %s and expected type is list.' %type(arg).__name__)
         train_index, row, func = arg
 
-
-
-
         # get the necessary indices to trace files easily
         file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
-        #label = y.loc[train_index, self.bee_col]
         # check if the file from the annotation data exists in the folders
         try:
-            #identify the file name
-            file_name = [x for x in self.accoustic_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-            file_name = self.acoustic_folder + file_name
-            logging.info('%s file exists.' %file_name)
+            # read the file
+            samples, sample_rate = self.file_read(file_index)
+            # check if the data extraction is correct through the duration of the sample
+            duration_of_sound = round(len(samples) / sample_rate, 2)
+            annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
+            if duration_of_sound == round(annotation_duration.loc[train_index,], 2):
+                logging.info('File with index %s has the correct duration.' %str(file_index))
+            else:
+                logging.warning('File with index %s DOES NOT have the correct duration.' %str(file_index))
 
-            try:
-                # read the file
-                samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
-
-                # check if the data extraction is correct through the duration of the sample
-                duration_of_sound = round(len(samples) / sample_rate, 2)
-                annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
-                if duration_of_sound == round(annotation_duration.loc[train_index,], 2):
-                    logging.info('%s file has the correct duration.' %file_name)
-                else:
-                    logging.warning('%s file DOES NOT have the correct duration.' %file_name)
-
-                if func == 'binning':
-                    # transform the file
-                    dt = 1 / sample_rate
-                    t = np.arange(0, duration_of_sound, dt)
-                    npnts = len(t)
-                    sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
-                elif func == 'mfcc':
-                    # TODO change the mean value to something else
-                    # TODO change the n_mfcc to something else
-                    sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate, n_mfcc=100).T, axis=0)
-                elif func == 'mel spec':
-                    # TODO change the mean value to something else
-                    #TODO change the fixed values
-                    sample_transformed = np.mean(librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128).T, axis =0)
-                # we need to add the indices for tracking purposes
-                sample_transformed = np.insert(sample_transformed, 0, file_index)
-                sample_transformed = np.insert(sample_transformed, 0, train_index)
+            if func == 'binning':
+                # transform the file
+                dt = 1 / sample_rate
+                t = np.arange(0, duration_of_sound, dt)
+                npnts = len(t)
+                sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+            elif func == 'mfcc':
+                # TODO change the mean value to something else
+                # TODO change the n_mfcc to something else
+                sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate, n_mfcc=100).T, axis=0)
+            elif func == 'mel spec':
+                # TODO change the mean value to something else
+                #TODO change the fixed values
+                sample_transformed = np.mean(librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128).T, axis =0)
+            # we need to add the indices for tracking purposes
+            sample_transformed = np.insert(sample_transformed, 0, file_index)
+            sample_transformed = np.insert(sample_transformed, 0, train_index)
 
 
-                logging.info('%s file transformed and added to the transformed data frame' % file_name)
+            logging.info('File with index %s is transformed and added to the transformed data frame' %str(file_index))
 
-                # return the transformed file and add the indices
-                return sample_transformed
+            # return the transformed file and add the indices
+            return sample_transformed
 
-            except:
-                return [train_index,file_index]
-                logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
         except:
-            logging.warning('No file with index %s exists.' %str(file_index))
-
-
-
-
+            return [train_index,file_index]
+            logging.warning('File with index %s is NOT added to the transformed data frame' %str(file_index))
 
 
 
