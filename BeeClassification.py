@@ -13,6 +13,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, r
 import matplotlib.pyplot as plt
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, Shift
 import soundfile as sf
+import random
 import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -377,7 +378,7 @@ class Bee:
 
     def data_augmentation_row(self,arg):
         """
-
+        TODO
         :param arg:
         :return:
         """
@@ -392,6 +393,7 @@ class Bee:
         try:
             # read the file
             samples, sample_rate = self.file_read(file_index)
+            # TODO update the parameters here
             augment = Compose([
                 AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
                 TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
@@ -399,44 +401,53 @@ class Bee:
                 Shift(min_shift=-0.5, max_shift=0.5, p=0.5),
             ])
             augmented_samples = augment(samples=samples, sample_rate=sample_rate)
-            # TODO update the index increments
-            augmented_file_index = file_index + 10000
+            rand_index = random.randint(max(self.X_train_index['index'])*10,max(self.X_train_index['index'])*100)
+            augmented_file_index = file_index + rand_index
             augmented_file_name = 'index' + str(augmented_file_index) + '.wav'
-            augmented_train_index = train_index + 10000
             sf.write(self.augment_folder + augmented_file_name, augmented_samples, sample_rate)
-            return augmented_file_index, augmented_train_index, label
+            return [augmented_file_index, rand_index, label, train_index]
         except:
             return [train_index, file_index]
             logging.warning('File with index %s is NOT augmented' % str(file_index))
 
-    def data_augmentation_df(self,X):
+    def data_augmentation_df(self):
         """
         # TODO
         :param X:
         :return:
-        """
-        if type(X) != pd.core.frame.DataFrame:
-            raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
-        if 'index' not in X.columns.to_list():
-            raise ValueError('Column index is not part of X data frame. It is a requirement.')
+        # """
+
+        # clean augmented directory
+
+        test = os.listdir(self.augment_folder)
+
+        for item in test:
+            if item.endswith(".wav"):
+                os.remove(os.path.join(self.augment_folder, item))
+        logging.info('Augmented folder is cleaned.')
+        # create the augmented files
 
         pool = mp.Pool(processes=mp.cpu_count())
-        X_transformed = pool.map(self.data_augmentation_row,
-                                 [(train_index, row, func) for train_index, row in X.iterrows()])
-        # add the column names
-        cols = ['train_index', 'file_index']
-        max_length = max([len(x) for x in X_transformed if x is not None])
-        cols = cols + ['col' + str(x) for x in range(max_length - 2)]
-        # transform to data frame
-        X_df = pd.DataFrame(columns=cols)
-        for x in X_transformed:
-            if len(x) != 2:
-                X_df.loc[len(X_df)] = x
-            else:
-                x_updated = x + [None] * (max_length - len(x))
-                X_df.loc[len(X_df)] = x_updated
-        logging.info('Whole data frame transformed.')
-        return X_df
+        augmented = pool.map(self.data_augmentation_row,
+                                 [(train_index, row) for train_index, row in self.X_train_index.iterrows()])
+        augmented_df = pd.DataFrame(augmented, columns=['augmented_file_index', 'rand_index', 'label', 'train_index'])
+        augmented_df.index = augmented_df['rand_index']
+        self.augmented_df = augmented_df
+
+        logging.info('Augmented data is created.')
+        # split X
+        X_train_index = pd.DataFrame(self.augmented_df['augmented_file_index'])
+        X_train_index.columns = self.X_train_index.columns
+        # add the augmented data to the existing data
+        self.X_train_index = pd.concat([X_train_index, self.X_train_index])
+        logging.info('X_train index is updated.')
+        # split y
+        y_train = pd.DataFrame(self.augmented_df['label'])
+        # add the augmented data to the existing data
+        self.y_train = pd.concat([self.y_train,y_train])
+        logging.info('Y_train is updated.')
+
+
     def data_transformation_row(self, arg):
         """
         A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
