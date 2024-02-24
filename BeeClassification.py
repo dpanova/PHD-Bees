@@ -359,6 +359,7 @@ class Bee:
             return binned_x
     def file_read(self, file_index):
         """
+        Read a wav file from the acoustic_folder where the name of the file has an index.
         :param file_index: index of the file we need to search for
         :return: int
         :return: samples and sample rate arrays
@@ -376,11 +377,17 @@ class Bee:
         except:
             raise ValueError('File %s DOES NOT exist' %file_name)
 
+
     def data_augmentation_row(self,arg):
         """
-        TODO
-        :param arg:
-        :return:
+        A row-wise function which augments acoustic data and saves it in the acoustic_folder.
+
+        :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame
+        :type arg: tuple
+
+        :return: list of lists with the augmented data file index, the augmented data train index, the label of the augmented file and the original train index. If an issue occurs, only the original train and file indices are returned.
+        :rtype: list
+
         """
         if type(arg) != tuple:
             raise ValueError('Invalid arg type. arg is type %s and expected type is list.' %type(arg).__name__)
@@ -410,42 +417,45 @@ class Bee:
             return [train_index, file_index]
             logging.warning('File with index %s is NOT augmented' % str(file_index))
 
-    def data_augmentation_df(self):
+    def data_augmentation_df(self,N=3):
         """
-        # TODO
-        :param X:
-        :return:
+        A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; and stores the information in augmented_df.
+        :param N: the number of times the augmentation process should happen
+        :type N: int
         # """
 
-        # clean augmented directory
+        if type(N) != int:
+            raise ValueError('Invalid N type. arg is type %s and expected type is int.' %type(N).__name__)
 
+        # clean augmented directory
         test = os.listdir(self.augment_folder)
 
         for item in test:
             if item.endswith(".wav"):
                 os.remove(os.path.join(self.augment_folder, item))
         logging.info('Augmented folder is cleaned.')
-        # create the augmented files
+        self.augmented_df = pd.DataFrame()
+        for n in range(N):
+            # create the augmented files
+            pool = mp.Pool(processes=mp.cpu_count())
+            augmented = pool.map(self.data_augmentation_row,
+                                     [(train_index, row) for train_index, row in self.X_train_index.iterrows()])
+            augmented_df = pd.DataFrame(augmented, columns=['augmented_file_index', 'rand_index', 'label', 'train_index'])
+            augmented_df.index = augmented_df['rand_index']
+            self.augmented_df = pd.concat([self.augmented_df,augmented_df])
 
-        pool = mp.Pool(processes=mp.cpu_count())
-        augmented = pool.map(self.data_augmentation_row,
-                                 [(train_index, row) for train_index, row in self.X_train_index.iterrows()])
-        augmented_df = pd.DataFrame(augmented, columns=['augmented_file_index', 'rand_index', 'label', 'train_index'])
-        augmented_df.index = augmented_df['rand_index']
-        self.augmented_df = augmented_df
-
-        logging.info('Augmented data is created.')
-        # split X
-        X_train_index = pd.DataFrame(self.augmented_df['augmented_file_index'])
-        X_train_index.columns = self.X_train_index.columns
-        # add the augmented data to the existing data
-        self.X_train_index = pd.concat([X_train_index, self.X_train_index])
-        logging.info('X_train index is updated.')
-        # split y
-        y_train = pd.DataFrame(self.augmented_df['label'])
-        # add the augmented data to the existing data
-        self.y_train = pd.concat([self.y_train,y_train])
-        logging.info('Y_train is updated.')
+            logging.info('Augmented data is created.')
+            # split X
+            X_train_index = pd.DataFrame(augmented_df['augmented_file_index'])
+            X_train_index.columns = self.X_train_index.columns
+            # add the augmented data to the existing data
+            self.X_train_index = pd.concat([X_train_index, self.X_train_index])
+            logging.info('X_train index is updated.')
+            # split y
+            y_train = pd.DataFrame(augmented_df['label'])
+            # add the augmented data to the existing data
+            self.y_train = pd.concat([self.y_train,y_train])
+            logging.info('Y_train is updated.')
 
 
     def data_transformation_row(self, arg):
@@ -508,7 +518,7 @@ class Bee:
 
     def data_transformation_df(self, X, func):
         """
-        Find the correct file from the annotation data frame and then transform the acoustic data to binned harley fft vector. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
+        Find the correct file from the annotation data frame and then transform the acoustic data using binning, mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
         :type X: pandas.DataFrame
         :param func: function for audio files transformation. One can choose from a list of options ['binning', 'mfcc','mel spec']
@@ -525,10 +535,7 @@ class Bee:
         if func not in func_list:
             raise ValueError(
                 'Invalid function. function should be from the list %s' %func_list)
-        # if (hasattr(func, '__call__')):
-        #     logging.info('Data is transformed with function %s ' %func)
-        # else:
-        #     raise ValueError('Invalid function type. function is type %s and expected type is method or function.' %type(func).__name__)
+
 
         pool = mp.Pool(processes=mp.cpu_count())
         X_transformed = pool.map(self.data_transformation_row,[(train_index, row, func) for train_index, row in X.iterrows()])
