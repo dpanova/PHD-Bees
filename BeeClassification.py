@@ -375,7 +375,17 @@ class Bee:
             return samples, sample_rate
 
         except:
-            raise ValueError('File %s DOES NOT exist' %file_name)
+            raise ValueError('File %s DOES NOT exist in %s' %(file_name, self.acoustic_folder))
+
+        try:
+            file_name = [x for x in self.augmented_files if x.find('index' + str(file_index) + '.wav') != -1][0]
+            file_name = self.augment_folder + file_name
+            logging.info('%s file exists.' % file_name)
+            samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
+            return samples, sample_rate
+
+        except:
+            raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
 
 
     def data_augmentation_row(self,arg):
@@ -419,7 +429,7 @@ class Bee:
 
     def data_augmentation_df(self,N=3):
         """
-        A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; and stores the information in augmented_df.
+        A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.
         :param N: the number of times the augmentation process should happen
         :type N: int
         # """
@@ -456,6 +466,12 @@ class Bee:
             # add the augmented data to the existing data
             self.y_train = pd.concat([self.y_train,y_train])
             logging.info('Y_train is updated.')
+
+        #save the names of the augmented files for easy access later on
+        self.augmented_files = os.listdir(self.augment_folder)
+        logging.info('Files in the augmented directory are stores in a list - augmneted_files')
+        if len(self.augmented_files)==0:
+            raise ValueError('bee_files list is empty. Please, check the %s folder' % self.augmented_files)
 
 
     def data_transformation_row(self, arg):
