@@ -15,6 +15,7 @@ from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, 
 import soundfile as sf
 import random
 import seaborn as sns
+from datasets import Dataset
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -199,7 +200,8 @@ class Bee:
                 annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
             else:
                 annotation_df_updated = self.annotation_df
-
+            #TODO what is this doing?
+            # maybe this was in case if we want to model the bee-nobee data? need to check this
             if not no_bee:
                 annotation_df_updated = annotation_df_updated[annotation_df_updated[self.bee_col]=='bee']
 
@@ -224,6 +226,7 @@ class Bee:
 
     def acoustic_file_names(self):
         """
+        TODO abstract so that we can read the name of the augmented files as well
         Create a list of files which have bee and no-bee data
         :return: a list - acoustic_files
         :rtype: list
@@ -243,6 +246,8 @@ class Bee:
         :type window: numpy function
         :return:
         """
+
+
         window_list = [np.hanning, np.bartlett, np.blackman, np.hamming]
         if window not in window_list:
             raise ValueError('Invalid window type. Expected one of: %s' %['np.'+w.__name__ for w in window_list])
@@ -283,6 +288,14 @@ class Bee:
         elif type(cutoff) != int:
             raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
         else:
+
+            # TODO Maybe we can use this piece of code instead https://huggingface.co/learn/audio-course/en/chapter1/audio_data
+            # # get the amplitude spectrum in decibels
+            # amplitude = np.abs(dft)
+            # amplitude_db = librosa.amplitude_to_db(amplitude, ref=np.max)
+
+
+
             X = self.harley_transformation_with_window(x)
             #n = np.arange(npnts)
             #T = npnts * dt
@@ -297,6 +310,7 @@ class Bee:
 
 
     def binning(self, x, dt, npnts, n_bins =128, n_start = 0.0 , n_end = 2000.0, denoise=True, cutoff=0):
+        #TODO - we may not need this any more
         """
         Transform a time to frequency using the freq_powerspect_func and then binning it to a specific number of frequency vectors. The power in every bin is the average of the original frequency vector.
         :param x: time sequence
@@ -361,10 +375,11 @@ class Bee:
         """
         Read a wav file from the acoustic_folder where the name of the file has an index.
         :param file_index: index of the file we need to search for
-        :return: int
+        :type: int
         :return: samples and sample rate arrays
         :rtype: numpy.ndarray and int
         """
+        #TODO update here, when we read the file to make sure we have the same length of files
         if type(file_index) != np.int64:
             raise ValueError('Invalid file_index type. file_index is type %s and expected type is int.' % type(file_index).__name__)
         try:
@@ -387,7 +402,47 @@ class Bee:
         except:
             raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
 
+    def dataframe_to_dataset(self,df, split_type):
+        """
+        Converts a pandas dataframe to data dict which is used in hugging face transformers
+        :param df: pandas data frame which has to be converted
+        :type df: pd.DataFrame
+        :param split_type: 'train' or 'test' for training and testing sets
+        :type split_type: str
+        :return: Dataset
+        :rtype: Dataset
+        """
+        split_type_list = ['train','test']
+        if type(df) != pd.core.frame.DataFrame:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is pd.core.frame.DataFrame.' %type(arg).__name__)
+        if split_type not in split_type_list:
+            raise ValueError(
+                'Invalid function. function should be from the list %s' %split_type_list)
+        if 'index' not in df.columns.to_list():
+            raise ValueError('Column index is not part of df. It is a requirement. The index should provide the file index of the file to be read.')
+        dataset = pd.DataFrame({})
 
+        for train_index, row in df.iterrows():
+            temp_dataset = pd.DataFrame({})
+            sample, sample_rate = self.file_read(row['index'])
+            temp_dataset['audio'] = [sample]
+            temp_dataset['sampling_rate'] = sample_rate
+            temp_dataset['train_index'] = train_index
+            temp_dataset['file_index'] = row['index']
+            temp_dataset['label'] = self.y_train.loc[train_index, self.y_col]
+            dataset = pd.concat([dataset, temp_dataset], axis=0)
+
+        data = Dataset.from_pandas(dataset, split=split_type)
+        logging.info('Dataframe transformed to dataset.')
+        return(data)
+
+    def dataframe_to_datadict(self,train_df, test_df):
+        """
+        Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
+        :param train_df: data frame for the training set
+        :param test_df:
+        :return:
+        """
     def data_augmentation_row(self,arg):
         """
         A row-wise function which augments acoustic data and saves it in the acoustic_folder.
@@ -508,6 +563,8 @@ class Bee:
                 t = np.arange(0, duration_of_sound, dt)
                 npnts = len(t)
                 sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
+                sample_transformed = np.insert(sample_transformed, 0, file_index)
+                sample_transformed = np.insert(sample_transformed, 0, train_index)
             elif func == 'mfcc':
                 # TODO change the mean value to something else
                 # TODO change the n_mfcc to something else
@@ -515,11 +572,15 @@ class Bee:
             elif func == 'mel spec':
                 # TODO change the mean value to something else
                 #TODO change the fixed values
-                sample_transformed = np.mean(librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128).T, axis =0)
-            # we need to add the indices for tracking purposes
-            sample_transformed = np.insert(sample_transformed, 0, file_index)
-            sample_transformed = np.insert(sample_transformed, 0, train_index)
-
+                try:
+                    mel = librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128)
+                    sample_transformed = mel
+                    # sample_transformed = librosa.power_to_db(mel) #TODO update here to remove the power to db potentially
+                    # sample_transformed = sample_transformed.reshape(1,-1)
+                    # sample_transformed = sample_transformed[0][:400]#TODO update here
+                # we need to add the indices for tracking purposes
+                except:
+                    sample_transformed= np.zeros()
 
             logging.info('File with index %s is transformed and added to the transformed data frame' %str(file_index))
 
@@ -562,10 +623,10 @@ class Bee:
         # transform to data frame
         X_df = pd.DataFrame(columns=cols)
         for x in X_transformed:
-            if len(x) !=2:
+            if len(x) == max_length:
                 X_df.loc[len(X_df)] = x
             else:
-                x_updated = x+[None]*(max_length-len(x))
+                x_updated = list(x)+list([1]*(max_length-len(x))) #TODO update here the 1
                 X_df.loc[len(X_df)] = x_updated
         logging.info('Whole data frame transformed.')
         return X_df
