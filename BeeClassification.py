@@ -16,6 +16,8 @@ import soundfile as sf
 import random
 import seaborn as sns
 from datasets import Dataset
+import datasets
+import time
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -49,7 +51,8 @@ class Bee:
                  ,bee_col = 'label'
                  ,logname='bee.log'
                  ,acoustic_folder = 'data/SplitData/'
-                 ,augment_folder = 'data/augment/'):
+                 ,augment_folder = 'data/augment/'
+                 ,datadict_folder = 'data/DataDict/'):
         self.annotation_path =annotation_path
         self.annotation_dtypes_path = annotation_dtypes_path
         self.x_col = x_col
@@ -57,6 +60,7 @@ class Bee:
         self.bee_col = bee_col
         self.acoustic_folder = acoustic_folder
         self.augment_folder = augment_folder
+        self.datadict_folder = datadict_folder
         logging.basicConfig(filename=logname
                             , filemode='a'
                             , format='%(asctime)s %(levelname)s %(message)s'
@@ -401,27 +405,28 @@ class Bee:
 
         except:
             raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
-
-    def dataframe_to_dataset(self,df, split_type):
+    def dataframe_to_dataset_split_save(self,df, split_type,file_name):
         """
-        Converts a pandas dataframe to data dict which is used in hugging face transformers
+        Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to %s
         :param df: pandas data frame which has to be converted
         :type df: pd.DataFrame
         :param split_type: 'train' or 'test' for training and testing sets
         :type split_type: str
-        :return: Dataset
-        :rtype: Dataset
-        """
+        :param file_name: name of the file to be saved
+        :type file_name: str
+        """%self.datadict_folder
         split_type_list = ['train','test']
         if type(df) != pd.core.frame.DataFrame:
-            raise ValueError('Invalid arg type. arg is type %s and expected type is pd.core.frame.DataFrame.' %type(arg).__name__)
+            raise ValueError('Invalid df type. df is type %s and expected type is pd.core.frame.DataFrame.' %type(df).__name__)
+        if type(file_name) != str:
+            raise ValueError(
+                'Invalid file_name type. It is type %s and expected type is str.' % type(file_name).__name__)
         if split_type not in split_type_list:
             raise ValueError(
-                'Invalid function. function should be from the list %s' %split_type_list)
+                'Invalid split type. It should be from the list %s' %split_type_list)
         if 'index' not in df.columns.to_list():
             raise ValueError('Column index is not part of df. It is a requirement. The index should provide the file index of the file to be read.')
         dataset = pd.DataFrame({})
-
         for train_index, row in df.iterrows():
             temp_dataset = pd.DataFrame({})
             sample, sample_rate = self.file_read(row['index'])
@@ -434,15 +439,58 @@ class Bee:
 
         data = Dataset.from_pandas(dataset, split=split_type)
         logging.info('Dataframe transformed to dataset.')
-        return(data)
+        #save the file with the first and the last index
+        data.save_to_disk(self.datadict_folder+file_name)
+        logging.info('Save the data set.')
+    def dataframe_to_dataset(self,df, split_type, num_chunks=10):
+        """
+        Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.
+        :param df: pandas data frame which has to be converted
+        :type df: pd.DataFrame
+        :param split_type: 'train' or 'test' for training and testing sets
+        :type split_type: str
+        :param num_chunks: number of chunks to split the data
+        :rtype num_chunks: int
+        :return: Dataset
+        :rtype: Dataset
+        """
+        split_type_list = ['train','test']
+        if type(df) != pd.core.frame.DataFrame:
+            raise ValueError('Invalid df type. df is type %s and expected type is pd.core.frame.DataFrame.' %type(df).__name__)
+        if type(num_chunks) != int:
+            raise ValueError(
+                'Invalid num_chunks type. It is type %s and expected type is int.' % type(num_chunks).__name__)
+        if split_type not in split_type_list:
+            raise ValueError(
+                'Invalid split type. It should be from the list %s' %split_type_list)
+        if 'index' not in df.columns.to_list():
+            raise ValueError('Column index is not part of df. It is a requirement. The index should provide the file index of the file to be read.')
+        # get all indices for the df
+        all_indices = np.array_split(df.index, 10)
+        for set_indices in all_indices:
+            time.sleep(3)
+            # save the file with the first and the last index
+            file_name = "data%s_%s.hf"%(str(set_indices[0]),str(set_indices[len(set_indices)-1]))
+            self.dataframe_to_dataset_split_save(df.loc[set_indices,],split_type=split_type,file_name=file_name)
+        logging.info('All Dataframes transformed to dataset and saved to %s' %self.datadict_folder)
 
-    def dataframe_to_datadict(self,train_df, test_df):
-        """
-        Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
-        :param train_df: data frame for the training set
-        :param test_df:
-        :return:
-        """
+        # concatinate all sub-data into one data and save it
+        # get all file names
+        hf_files  = os.listdir(self.datadict_folder)
+        data = datasets.load_from_disk(self.datadict_folder+hf_files[0])
+        for f in hf_files[1:]:
+            data_temp = datasets.load_from_disk(self.datadict_folder+f)
+            data = datasets.concatenate_datasets([data, data_temp])
+        logging.info('All data is loaded.')
+        return data
+
+    # def dataframe_to_datadict(self,train_df, test_df):
+    #     """
+    #     Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
+    #     :param train_df: data frame for the training set
+    #     :param test_df:
+    #     :return:
+    #     """
     def data_augmentation_row(self,arg):
         """
         A row-wise function which augments acoustic data and saves it in the acoustic_folder.
