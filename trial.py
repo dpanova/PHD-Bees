@@ -15,7 +15,47 @@ bee.split_annotation_data()
 
 df_tr = bee.dataframe_to_dataset(bee.X_train_index,split_type='train')
 
-#TODO figure out how to store the data
+
+#%%
+folder = 'data/DataDict/'
+all_indices = np.array_split(bee.X_train_index.index, 10)
+for set_indices in all_indices:
+    print(set_indices)
+#%%
+set_indices = all_indices[1]
+data = bee.dataframe_to_dataset(bee.X_train_index.loc[set_indices,], split_type='train')
+data.save_to_disk("data/DataDict/test1")
+
+#%%
+data0 = datasets.load_from_disk("data/DataDict/test.hf")
+data1 = datasets.load_from_disk("data/DataDict/test1.hf")
+
+#%%
+hf_files  = os.listdir('data/DataDict')
+
+
+
+#%%
+data = bee.dataframe_to_dataset(bee.X_train_index.loc[set_indices,], split_type='train')
+# data.to_json(f"data/DataDict/my-dataset.jsonl")
+#data.save_to_disk("data/DataDict/test1.hf")
+#%%
+data1 = bee.dataframe_to_dataset(bee.X_train_index.loc[set_indices,], split_type='train')
+data.save_to_disk("data/DataDict/test")
+#%%
+# data0 = datasets.load_dataset("json", data_files= "data/DataDict/my-dataset.jsonl")
+# dat1 =
+#note - it takes around 03.23 min to load jsonl file
+data1 = datasets.load_from_disk("data/DataDict/test1.hf") #approximately 1 sec, se we will go woth the save to disk option
+
+# data1 = data
+#now we need to be able to combine the two datasets and check how the memory is acting
+# dataset_cc = datasets.concatenate_datasets([data0['train'], data1['train'],data['train'],data_temp['train']])
+dataset_cc = datasets.concatenate_datasets([data0, data])
+
+#%%
+
+dataset_cc['train'] = dataset_cc
 
 
 #%%
@@ -37,11 +77,6 @@ for train_index, row in bee.X_train_index.iterrows():
 
 data = Dataset.from_pandas(train_dataset, split="train")
 
-#%%
-dataset['audio'] = [mypath+fol+audio_folder+f for f in os.listdir(mypath+fol+audio_folder) if os.path.isfile(os.path.join(mypath+fol+audio_folder, f))]
-dataset['sentence'] = pd.read_csv(mypath+fol+'/transcriptions.txt', header=None)[0].apply(str)
-dataset['path'] = dataset['audio']
-train_dataset = pd.concat([train_dataset, dataset], axis=0)
 
 
 
