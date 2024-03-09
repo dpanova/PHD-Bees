@@ -10,74 +10,167 @@ bee.new_y_label_creation()
 bee.acoustic_file_names()
 # split the data
 bee.split_annotation_data()
-
+#%%
 # transform data to dataset
-
-df_tr = bee.dataframe_to_dataset(bee.X_train_index,split_type='train')
-
-
-#%%
-folder = 'data/DataDict/'
-all_indices = np.array_split(bee.X_train_index.index, 10)
-for set_indices in all_indices:
-    print(set_indices)
-#%%
-set_indices = all_indices[1]
-data = bee.dataframe_to_dataset(bee.X_train_index.loc[set_indices,], split_type='train')
-data.save_to_disk("data/DataDict/test1")
-
-#%%
-data0 = datasets.load_from_disk("data/DataDict/test.hf")
-data1 = datasets.load_from_disk("data/DataDict/test1.hf")
-
-#%%
-hf_files  = os.listdir('data/DataDict')
+train, test = bee.dataframe_to_datadict(bee.X_train_index,bee.X_test_index)
 
 
 
 #%%
-data = bee.dataframe_to_dataset(bee.X_train_index.loc[set_indices,], split_type='train')
-# data.to_json(f"data/DataDict/my-dataset.jsonl")
-#data.save_to_disk("data/DataDict/test1.hf")
-#%%
-data1 = bee.dataframe_to_dataset(bee.X_train_index.loc[set_indices,], split_type='train')
-data.save_to_disk("data/DataDict/test")
-#%%
-# data0 = datasets.load_dataset("json", data_files= "data/DataDict/my-dataset.jsonl")
-# dat1 =
-#note - it takes around 03.23 min to load jsonl file
-data1 = datasets.load_from_disk("data/DataDict/test1.hf") #approximately 1 sec, se we will go woth the save to disk option
-
-# data1 = data
-#now we need to be able to combine the two datasets and check how the memory is acting
-# dataset_cc = datasets.concatenate_datasets([data0['train'], data1['train'],data['train'],data_temp['train']])
-dataset_cc = datasets.concatenate_datasets([data0, data])
+import datasets
+#add this to the common function so that we end up with one thing
+data = datasets.DatasetDict(
+    {
+        "train": train,
+        "test": test,
+    }
+)
 
 #%%
+# check how the data looks like
+train[0]
+#%%
+#are our features human readable?
 
-dataset_cc['train'] = dataset_cc
+
+# model_id = 'ardneebwar/wav2vec2-animal-sounds-finetuned-hubert-finetuned-animals'
+#note the first model is fine-tuned from this
+model_id = 'facebook/hubert-base-ls960'
+
+# load predefined model
+from transformers import AutoFeatureExtractor
+
+
+feature_extractor = AutoFeatureExtractor.from_pretrained(
+    model_id, do_normalize=True, return_attention_mask=True
+)
+#%%
+
+#resample to have the same sampling rate
+sampling_rate = feature_extractor.sampling_rate
+from datasets import Audio
+
+#this is the issue but why
+data = data.cast_column("audio", Audio(sampling_rate=sampling_rate))
+
+data['train'][0]['audio']
+#%%
+import numpy as np
+
+
+sample = data["train"][0]["audio"]
+print(f"Mean: {np.mean(sample['array']):.3}, Variance: {np.var(sample['array']):.3}")
+inputs = feature_extractor(sample["array"], sampling_rate=sample["sampling_rate"])
+
+print(f"inputs keys: {list(inputs.keys())}")
+
+print(
+    f"Mean: {np.mean(inputs['input_values']):.3}, Variance: {np.var(inputs['input_values']):.3}"
+)
+
+#good varience
+
+#%%
+#fientune
+
+id2label_fn = data["train"].features["label"].int2str
+
+
+id2label = {
+    str(i): id2label_fn(i)
+    for i in range(len(data["train"].features["label"].names))
+}
+label2id = {v: k for k, v in id2label.items()}
+
+
+num_labels = len(id2label)
 
 
 #%%
-# The goal here is to transform the annotated data set to the correct data type
-import pandas as pd
-from datasets import Audio, Dataset
-train_dataset = pd.DataFrame({})
+from transformers import AutoModelForAudioClassification
+model = AutoModelForAudioClassification.from_pretrained(
+    model_id,
+    num_labels=num_labels,
+    label2id=label2id,
+    id2label=id2label,
+)
 
-for train_index, row in bee.X_train_index.iterrows():
-    dataset = pd.DataFrame({})
-    print(row['index'])
-    sample, sample_rate =  bee.file_read(row['index'])
-    dataset['audio'] = [sample]
-    dataset['sampling_rate'] = sample_rate
-    dataset['train_index'] = train_index
-    dataset['file_index'] = row['index']
-    dataset['label'] = bee.y_train.loc[train_index, bee.y_col]
-    train_dataset = pd.concat([train_dataset, dataset], axis = 0)
+#%%
+from transformers import TrainingArguments
 
-data = Dataset.from_pandas(train_dataset, split="train")
+model_name = model_id.split("/")[-1]
+batch_size = 8
+gradient_accumulation_steps = 1
+num_train_epochs = 10
+
+training_args = TrainingArguments(
+    f"{model_name}-finetuned-bee",
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
+    learning_rate=5e-5,
+    per_device_train_batch_size=batch_size,
+    gradient_accumulation_steps=gradient_accumulation_steps,
+    per_device_eval_batch_size=batch_size,
+    num_train_epochs=num_train_epochs,
+    warmup_ratio=0.1,
+    logging_steps=5,
+    load_best_model_at_end=True,
+    metric_for_best_model="accuracy",
+    fp16=True,
+    push_to_hub=False,
+    dataloader_pin_memory=False
+)
+#%%
+
+import evaluate
+import numpy as np
+
+metric = evaluate.load("accuracy")
 
 
+def compute_metrics(eval_pred):
+    """Computes accuracy on a batch of predictions"""
+    predictions = np.argmax(eval_pred.predictions, axis=1)
+    return metric.compute(predictions=predictions, references=eval_pred.label_ids)
+#%%
+max_duration = 2.0
+
+
+def preprocess_function(examples):
+    audio_arrays = [x["array"] for x in examples["audio"]]
+    inputs = feature_extractor(
+        audio_arrays,
+        sampling_rate=feature_extractor.sampling_rate,
+        max_length=int(feature_extractor.sampling_rate * max_duration),
+        truncation=True,
+        return_attention_mask=True,
+    )
+    return inputs
+
+#%%
+
+data_encoded = data.map(
+    preprocess_function,
+    remove_columns=["audio", "file_index"],
+    batched=True,
+    batch_size=100,
+    num_proc=1,
+)
+data_encoded
+
+#%%
+from transformers import Trainer
+
+trainer = Trainer(
+    model,
+    training_args,
+    train_dataset=data_encoded["train"],
+    eval_dataset=data_encoded["test"],
+    tokenizer=feature_extractor,
+    compute_metrics=compute_metrics,
+)
+
+trainer.train()
 
 
 
