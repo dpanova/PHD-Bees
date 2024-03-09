@@ -1,5 +1,6 @@
 # libraries
 import pandas as pd
+import pyarrow as pa
 from sklearn.model_selection import train_test_split,RandomizedSearchCV
 import logging
 import os
@@ -15,9 +16,10 @@ from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, 
 import soundfile as sf
 import random
 import seaborn as sns
-from datasets import Dataset
+from datasets import Dataset, Audio, ClassLabel
 import datasets
 import time
+import shutil
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -375,23 +377,27 @@ class Bee:
                 old_index = index
             logging.info('Frequency vector binned.')
             return binned_x
-    def file_read(self, file_index):
+    def file_read(self, file_index, output_file_name=False):
         """
         Read a wav file from the acoustic_folder where the name of the file has an index.
         :param file_index: index of the file we need to search for
         :type: int
-        :return: samples and sample rate arrays
-        :rtype: numpy.ndarray and int
+        :param output_file_name: boolean indicating if file name should be outputed
+        :type output_file_name: bool
+        :return: file name, samples and sample rate arrays
+        :rtype: string, numpy.ndarray and int
         """
-        #TODO update here, when we read the file to make sure we have the same length of files
         if type(file_index) != np.int64:
             raise ValueError('Invalid file_index type. file_index is type %s and expected type is int.' % type(file_index).__name__)
         try:
             file_name = [x for x in self.accoustic_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-            file_name = self.acoustic_folder + file_name
+            file_name = self.acoustic_folder + file_name #TODO what about the augmented data? is the data folder ok? or it should be an input
             logging.info('%s file exists.' % file_name)
             samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
-            return samples, sample_rate
+            if output_file_name:
+                return file_name, samples, sample_rate
+            else:
+                return  samples, sample_rate
 
         except:
             raise ValueError('File %s DOES NOT exist in %s' %(file_name, self.acoustic_folder))
@@ -401,10 +407,19 @@ class Bee:
             file_name = self.augment_folder + file_name
             logging.info('%s file exists.' % file_name)
             samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
-            return samples, sample_rate
+            if output_file_name:
+                return file_name, samples, sample_rate
+            else:
+                return  samples, sample_rate
 
         except:
             raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
+    # def map_label2id(self,ClassLabels,example, col):
+    #     """"TODO update the description here
+    #     """
+    #     example[col] = ClassLabels.str2int(example[col])
+    #     return example
+
     def dataframe_to_dataset_split_save(self,df, split_type,file_name):
         """
         Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to %s
@@ -429,21 +444,44 @@ class Bee:
         dataset = pd.DataFrame({})
         for train_index, row in df.iterrows():
             temp_dataset = pd.DataFrame({})
-            sample, sample_rate = self.file_read(row['index'])
-            temp_dataset['audio'] = [sample]
-            temp_dataset['sampling_rate'] = sample_rate
+            path, sample, sample_rate = self.file_read(row['index'],output_file_name=True)
+
+            temp_dataset['audio'] = [{'path':path,
+                                     'array':sample,
+            'sampling_rate':sample_rate}]
+
+            # to update here to have path as an array with everything below
             temp_dataset['train_index'] = train_index
             temp_dataset['file_index'] = row['index']
-            temp_dataset['label'] = self.y_train.loc[train_index, self.y_col]
+            if split_type == 'train':
+                temp_dataset['label'] = self.y_train.loc[train_index, self.y_col]
+            else:
+                temp_dataset['label'] = self.y_test.loc[train_index, self.y_col]
             dataset = pd.concat([dataset, temp_dataset], axis=0)
 
         data = Dataset.from_pandas(dataset, split=split_type)
+        data = data.class_encode_column("label")
         logging.info('Dataframe transformed to dataset.')
         #save the file with the first and the last index
-        data.save_to_disk(self.datadict_folder+file_name)
+        #Note: we use this function because it takes less than a sec to load the data, for .json functions, it took 3 min per chunk
+
+        #Create label and batches
+        # labels = dataset['label'].unique().tolist()
+        # ClassLabels = ClassLabel(num_classes=len(labels),names=labels)
+        # data = data.map(self.map_label2id, batched=True)
+        # data = data.cast_column('label',ClassLabels)
+
+        if split_type == 'train':
+            data.save_to_disk(self.datadict_folder+"/train/"+file_name)
+        elif split_type == 'test':
+            data.save_to_disk(self.datadict_folder + "/test/" + file_name)
+        else:
+            raise ValueError(
+                'Invalid split type. It should be from the list %s' % split_type_list)
         logging.info('Save the data set.')
     def dataframe_to_dataset(self,df, split_type, num_chunks=10):
         """
+        TODO test the raise error part for the list
         Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.
         :param df: pandas data frame which has to be converted
         :type df: pd.DataFrame
@@ -465,8 +503,25 @@ class Bee:
                 'Invalid split type. It should be from the list %s' %split_type_list)
         if 'index' not in df.columns.to_list():
             raise ValueError('Column index is not part of df. It is a requirement. The index should provide the file index of the file to be read.')
+        #creating split folder
+        if split_type == 'train':
+            split_folder='train/'
+        elif split_type == 'test':
+            split_folder='test/'
+        else:
+            raise ValueError(
+                'Invalid split type. It should be from the list %s' % split_type_list)
+        #clean the data in the folder
+        try:
+            files_list = os.listdir(self.datadict_folder + split_folder)
+            for item in files_list:
+                shutil.rmtree(os.path.join(self.datadict_folder+split_folder, item))
+        except:
+            pass
+
         # get all indices for the df
-        all_indices = np.array_split(df.index, 10)
+        all_indices = np.array_split(df.index, num_chunks)
+        #intentionally we use for loop to reduce the memory usage
         for set_indices in all_indices:
             time.sleep(3)
             # save the file with the first and the last index
@@ -476,21 +531,30 @@ class Bee:
 
         # concatinate all sub-data into one data and save it
         # get all file names
-        hf_files  = os.listdir(self.datadict_folder)
-        data = datasets.load_from_disk(self.datadict_folder+hf_files[0])
+
+        hf_files  = os.listdir(self.datadict_folder+split_folder)
+
+        data = datasets.load_from_disk(self.datadict_folder+split_folder+hf_files[0])
         for f in hf_files[1:]:
-            data_temp = datasets.load_from_disk(self.datadict_folder+f)
+            data_temp = datasets.load_from_disk(self.datadict_folder+split_folder+f)
             data = datasets.concatenate_datasets([data, data_temp])
         logging.info('All data is loaded.')
         return data
 
-    # def dataframe_to_datadict(self,train_df, test_df):
-    #     """
-    #     Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
-    #     :param train_df: data frame for the training set
-    #     :param test_df:
-    #     :return:
-    #     """
+    def dataframe_to_datadict(self,train_df, test_df):
+        """
+        Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
+        :param train_df: data frame for the training set
+        :type train_df: pd.DataFrame
+        :param test_df: data frame for the testing set
+        :type test_df: pd.DataFrame
+        :return: tuple of data dict
+        :rtype: Dataset
+        """
+        train_df_dataset = self.dataframe_to_dataset(train_df, split_type='train')
+        test_df_dataset = self.dataframe_to_dataset(test_df, split_type='test')
+        return train_df_dataset, test_df_dataset
+
     def data_augmentation_row(self,arg):
         """
         A row-wise function which augments acoustic data and saves it in the acoustic_folder.
