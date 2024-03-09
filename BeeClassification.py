@@ -159,6 +159,8 @@ class Bee:
             logging.error("NOT all data is in the correct type")
 
 
+
+
     def split_annotation_data(self,perc=0.25, no_bee = False, data_quality = True, stratified = True):
         """
         #TODO update the annotation_df_updated
@@ -194,7 +196,8 @@ class Bee:
         if self.y_col not in self.annotation_df:
             raise ValueError('y_col not in the annotation_df. Change y_col.')
         else:
-
+            #TODO remove this part since we already have it in BeeData. Do we need it since we do it upfront.
+            #TODO update here for the split
             if data_quality:
                 existing_indices = pd.DataFrame()
                 existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in self.accoustic_files]
@@ -240,6 +243,9 @@ class Bee:
         :return: a list of files
         :rtype: list
         """
+        if type(dir) != str:
+            raise ValueError(
+                'Invalid dir type. It is type %s and expected type is str.' % type(dir).__name__)
         list_of_files = os.listdir(dir)
         logging.info('Files in the directory are stores in a list - %s'% dir)
         if len(list_of_files)==0:
