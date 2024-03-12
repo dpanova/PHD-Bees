@@ -380,6 +380,8 @@ class BeeData:
         # rename the old index column since it is related to the original file, not the current one and then add the current index
         self.annotation_df_sliced.rename(columns={self.key_col_name:self.key_col_name+'_original_file'}, inplace=True)
         self.annotation_df_sliced.reset_index(inplace=True)
+        #save the sliced data into a csv file
+        self.annotation_df_sliced.to_csv(self.file_name, index=False)
         logging.info('Annotation data is sliced.')
 
     #TODO extract clean folder and fet file names as a separate functions - maybe we can add it to the auxilary file?
