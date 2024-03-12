@@ -1,9 +1,8 @@
 # libraries
 import pandas as pd
-import pyarrow as pa
+from auxilary_functions import get_file_names, clean_directory
 from sklearn.model_selection import train_test_split,RandomizedSearchCV
 import logging
-import os
 import numpy as np
 from scipy.fft import fft,rfftfreq, fftfreq
 import librosa
@@ -15,11 +14,9 @@ import matplotlib.pyplot as plt
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, Shift
 import soundfile as sf
 import random
-import seaborn as sns
 from datasets import Dataset, Audio, ClassLabel
 import datasets
 import time
-import shutil
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -61,7 +58,7 @@ class Bee:
         self.y_col = y_col
         self.bee_col = bee_col
         self.acoustic_folder = acoustic_folder
-        self.accoustic_files = self.get_file_names(self.acoustic_folder)
+        self.accoustic_files = get_file_names(self.acoustic_folder)
         self.augment_folder = augment_folder
         self.datadict_folder = datadict_folder
         logging.basicConfig(filename=logname
@@ -132,6 +129,7 @@ class Bee:
 
     def validate_annotation_csv(self):
         """"
+        TODO update here
         Validate annotation data
         :return: warning if the data is as expected
         :rtype: log
@@ -161,16 +159,11 @@ class Bee:
 
 
 
-    def split_annotation_data(self,perc=0.25, no_bee = False, data_quality = True, stratified = True):
+    def split_annotation_data(self,perc=0.25, stratified = True):
         """
-        #TODO update the annotation_df_updated
-        Split the annotation data into train and test based on the y_col and x_col values. Only bee or bee and non-bee files can be used. Data can be enhanced as well. Save the csv files.
+        Split the annotation data into train and test based on the y_col and x_col values. Save the csv files.
         :param perc: test split percentage, a number between 0.0 and 1.0
         :type perc: float
-        :param no_bee: Boolean value to indicate if no_bee files to be added in the data set. True means nobee files are included.
-        :type no_bee: bool
-        :param data_quality: Boolean value to indicate if only the quality data should be kept. This means files which exist in the directory and are above 2 sec. long.
-        :type data_quality: bool
         :param stratified: Boolean value to indicate if the split should be stratified
         :type stratified: bool
         :return:annotation_df_updated with the final data which is splitted. X train, X test, y train and y test pandas data frames
@@ -183,10 +176,6 @@ class Bee:
             raise ValueError('perc should be bigger than 0.')
         if perc > 1.0:
             raise ValueError('perc should be smaller than 1.')
-        if type(no_bee) != bool:
-            raise ValueError('no_bee input is not the correct type. It is type %s, but it should be a boolean.' % type(no_bee))
-        if type(data_quality) != bool:
-            raise ValueError('stratified input is not the correct type. It is type %s, but it should be a boolean.' % type(data_quality))
         if type(stratified) != bool:
             raise ValueError(
                 'stratified input is not the correct type. It is type %s, but it should be a boolean.' % type(
@@ -195,62 +184,58 @@ class Bee:
             raise ValueError('x_col not in the annotation_df. Change x_col.')
         if self.y_col not in self.annotation_df:
             raise ValueError('y_col not in the annotation_df. Change y_col.')
+        # else:
+            # if data_quality:
+            #     existing_indices = pd.DataFrame()
+            #     existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in self.accoustic_files]
+            #     existing_indices['Dir Exist'] = True
+            #
+            #     self.annotation_df = self.annotation_df.merge(existing_indices, how='left', left_on='index', right_on='index')
+            #     self.annotation_df['Dir Exist'].fillna(False, inplace=True)
+            #     # 367 files are missing
+            #     #here we may need to update something in future so that it is more universal
+            #     annotation_df_updated  = self.annotation_df[self.annotation_df['Dir Exist']]
+            #     annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
+            # else:
+            #     annotation_df_updated = self.annotation_df
+            #
+            # if not no_bee:
+            #     annotation_df_updated = annotation_df_updated[annotation_df_updated[self.bee_col]=='bee']
+
+        if stratified:
+            self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
+                self.annotation_df[[self.x_col]],
+                self.annotation_df[[self.y_col]],
+                test_size=perc,
+                stratify=self.annotation_df[[self.y_col]])
         else:
-            #TODO remove this part since we already have it in BeeData. Do we need it since we do it upfront.
-            #TODO update here for the split
-            if data_quality:
-                existing_indices = pd.DataFrame()
-                existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in self.accoustic_files]
-                existing_indices['Dir Exist'] = True
-
-                self.annotation_df = self.annotation_df.merge(existing_indices, how='left', left_on='index', right_on='index')
-                self.annotation_df['Dir Exist'].fillna(False, inplace=True)
-                # 367 files are missing
-                #here we may need to update something in future so that it is more universal
-                annotation_df_updated  = self.annotation_df[self.annotation_df['Dir Exist']]
-                annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
-            else:
-                annotation_df_updated = self.annotation_df
-
-            if not no_bee:
-                annotation_df_updated = annotation_df_updated[annotation_df_updated[self.bee_col]=='bee']
-
-            if stratified:
-                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
-                    annotation_df_updated[[self.x_col]],
-                    annotation_df_updated[[self.y_col]],
-                    test_size=perc,
-                    stratify=annotation_df_updated[[self.y_col]])
-            else:
-                self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
-                    annotation_df_updated[[self.x_col]],
-                    annotation_df_updated[[self.y_col]],
-                    test_size=perc)
-            #return the updated annotation data
-            self.annotation_df_updated = annotation_df_updated
-            # save all files for reproducibility
-            self.X_train_index.to_csv('X_train_index.csv')
-            self.X_test_index.to_csv('X_test_index.csv')
-            self.y_train.to_csv('y_train.csv')
-            self.y_test.to_csv('y_test.csv')
+            self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
+                self.annotation_df[[self.x_col]],
+                self.annotation_df[[self.y_col]],
+                test_size=perc)
+        # save all files for reproducibility
+        self.X_train_index.to_csv('X_train_index.csv')
+        self.X_test_index.to_csv('X_test_index.csv')
+        self.y_train.to_csv('y_train.csv')
+        self.y_test.to_csv('y_test.csv')
 
 
-    def get_file_names(self, dir):
-        """
-        Create a list of files in a specific directory
-        :param dir: directory which contains the files
-        :type dir: str
-        :return: a list of files
-        :rtype: list
-        """
-        if type(dir) != str:
-            raise ValueError(
-                'Invalid dir type. It is type %s and expected type is str.' % type(dir).__name__)
-        list_of_files = os.listdir(dir)
-        logging.info('Files in the directory are stores in a list - %s'% dir)
-        if len(list_of_files)==0:
-            raise ValueError('bee_files list is empty. Please, check the %s folder' % dir)
-        return list_of_files
+    # def get_file_names(self, dir):
+    #     """
+    #     Create a list of files in a specific directory
+    #     :param dir: directory which contains the files
+    #     :type dir: str
+    #     :return: a list of files
+    #     :rtype: list
+    #     """
+    #     if type(dir) != str:
+    #         raise ValueError(
+    #             'Invalid dir type. It is type %s and expected type is str.' % type(dir).__name__)
+    #     list_of_files = os.listdir(dir)
+    #     logging.info('Files in the directory are stores in a list - %s'% dir)
+    #     if len(list_of_files)==0:
+    #         raise ValueError('bee_files list is empty. Please, check the %s folder' % dir)
+    #     return list_of_files
 
 
     def harley_transformation_with_window(self,x,window = np.hanning):
@@ -475,11 +460,6 @@ class Bee:
         #save the file with the first and the last index
         #Note: we use this function because it takes less than a sec to load the data, for .json functions, it took 3 min per chunk
 
-        #Create label and batches
-        # labels = dataset['label'].unique().tolist()
-        # ClassLabels = ClassLabel(num_classes=len(labels),names=labels)
-        # data = data.map(self.map_label2id, batched=True)
-        # data = data.cast_column('label',ClassLabels)
 
         if split_type == 'train':
             data.save_to_disk(self.datadict_folder+"/train/"+file_name)
@@ -523,9 +503,11 @@ class Bee:
                 'Invalid split type. It should be from the list %s' % split_type_list)
         #clean the data in the folder
         try:
-            files_list = self.get_file_names(self.datadict_folder + split_folder)
-            for item in files_list:
-                shutil.rmtree(os.path.join(self.datadict_folder+split_folder, item))
+            clean_directory(self.datadict_folder + split_folder, folder=True)
+            #TODO remove after testing
+            # files_list = get_file_names(self.datadict_folder + split_folder)
+            # for item in files_list:
+            #     shutil.rmtree(os.path.join(self.datadict_folder+split_folder, item))
         except:
             pass
 
@@ -542,7 +524,7 @@ class Bee:
         # concatinate all sub-data into one data and save it
         # get all file names
 
-        hf_files  = self.get_file_names(self.datadict_folder+split_folder)
+        hf_files  = get_file_names(self.datadict_folder+split_folder)
 
         data = datasets.load_from_disk(self.datadict_folder+split_folder+hf_files[0])
         for f in hf_files[1:]:
@@ -615,11 +597,13 @@ class Bee:
             raise ValueError('Invalid N type. arg is type %s and expected type is int.' %type(N).__name__)
 
         # clean augmented directory
-        test = self.get_file_names(self.augment_folder)
+        clean_directory(self.augment_folder)
+        #TODO remove after testing
+        # test = get_file_names(self.augment_folder)
+        # for item in test:
+        #     if item.endswith(".wav"):
+        #         os.remove(os.path.join(self.augment_folder, item))
 
-        for item in test:
-            if item.endswith(".wav"):
-                os.remove(os.path.join(self.augment_folder, item))
         logging.info('Augmented folder is cleaned.')
         self.augmented_df = pd.DataFrame()
         for n in range(N):
@@ -645,7 +629,7 @@ class Bee:
             logging.info('Y_train is updated.')
 
         #save the names of the augmented files for easy access later on
-        self.augmented_files = self.get_file_names(self.augment_folder)
+        self.augmented_files = get_file_names(self.augment_folder)
 
 
     def data_transformation_row(self, arg):
