@@ -6,6 +6,7 @@ import os
 import numpy as np
 from pydub import AudioSegment
 import time
+import shutil
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeData:
@@ -25,6 +26,7 @@ class BeeData:
     :type duration_col_name: str
     """
     def __init__(self
+                 ,acoustic_folder = 'data/SplitData/'
                  ,logname='BeeData.log'
                  ,bee_col='label'
                  ,file_name = 'beeAnnotations_enhanced.csv'
@@ -78,6 +80,8 @@ class BeeData:
         self.file_col_name = file_col_name
         self.duration_col_name = duration_col_name
         self.key_col_name = key_col_name
+        self.acoustic_folder = acoustic_folder
+
     def split_list(self,row, column_name):
         """
         The goal of this function is to split a column which consists of a list into several columns
@@ -324,12 +328,16 @@ class BeeData:
         existing_files_df = pd.DataFrame()
         existing_files_df[self.file_col_name] = self.extension_files_list
         existing_files_df['Dir Exist'] = True
+        existing_files_df['WAV Flag'] = existing_files_df[self.file_col_name].str.contains('.wav')
+        existing_files_df['MP3 Flag'] = existing_files_df[self.file_col_name].str.contains('.mp3')
         existing_files_df[self.file_col_name] = existing_files_df[self.file_col_name].str.replace('.wav','').str.replace('.mp3','' )
         self.annotation_df = self.annotation_df.merge(existing_files_df, how='left', left_on=self.file_col_name,
                                                       right_on=self.file_col_name)
         self.annotation_df['Dir Exist'].fillna(False, inplace=True)
         self.annotation_df_data_quality = self.annotation_df[self.annotation_df['Dir Exist']]
         self.annotation_df_data_quality = self.annotation_df_data_quality[self.annotation_df_data_quality[self.duration_col_name] > min_duration]
+        # ensure that only the supported formats are present
+        self.annotation_df_data_quality = self.annotation_df_data_quality [(self.annotation_df_data_quality['MP3 Flag']) | (self.annotation_df_data_quality['WAV Flag'])]
         logging.info('Annotation data quality created.')
 
     def time_slice(self
@@ -369,43 +377,44 @@ class BeeData:
             new_df = pd.concat([new_df, temp_df])
 
         self.annotation_df_sliced = annotation_df_sliced.merge(new_df, on=self.key_col_name, how='outer')
-
+        # rename the old index column since it is related to the original file, not the current one and then add the current index
+        self.annotation_df_sliced.rename(columns={self.key_col_name:self.key_col_name+'_original_file'}, inplace=True)
+        self.annotation_df_sliced.reset_index(inplace=True)
         logging.info('Annotation data is sliced.')
 
+    #TODO extract clean folder and fet file names as a separate functions - maybe we can add it to the auxilary file?
+    # files_list = bee.get_file_names(bee.acoustic_folder)
+    # for item in files_list:
+    #     os.remove(item)
+    #     # shutil.rmtree(os.path.join(bee.acoustic_folder+item)) #this is for a folder
+
     def split_acoustic_data_sliced(self):
-        #TODO update here
-        # loop over all files in the list of files
+        """
+        Splits the original files based on the annotation data sliced and saves it in the %s
+        :return: wav files 
+        """ %self.acoustic_folder
+        try:
+            files_to_delete_list = self.get_file_names(self.acoustic_folder)
+            for f in files_to_delete_list:
+                os.remove(f)
+        except:
+            logging.info('No previous files in %s' %self.acoustic_folder)
         files = self.annotation_df_sliced[self.file_col_name].unique()
         for f in files:
-            time.sleep(3)
-            print(f)
-            if f.__contains__('.wav'):
-                wav_flag = True
-                dir_file = f.replace('.wav', '')
+
+            to_label_df = self.annotation_df_sliced[self.annotation_df_sliced[self.file_col_name] == f]
+            if len(to_label_df) == 0:
+                raise ValueError('%s is not properly sliced.' % f)
+            if to_label_df['WAV Flag'].unique()[0]:
+                recording = AudioSegment.from_wav('data/' + f + '.wav')
             else:
-                wav_flag = False
-                dir_file = f.replace('.mp3', '')
-
-            to_label_df = self.annotation_df_sliced[self.annotation_df_sliced['file name'] == f]
-            if len(to_label_df) == 0:  # not working as expected
-                print('no such file')
-
-            # iterate over one recording. split accordingly and save the resulting files
+                recording = AudioSegment.from_mp3('data/' + f + '.mp3')
+            # iterate over one sliced recording. split accordingly and save the resulting files
             for inx, row in to_label_df.iterrows():
-                print(inx)
-                time.sleep(3)
-                start_time = row['start'] * 1000  # note: package splits in milliseconds
-                end_time = row['end'] * 1000  # note: package splits in milliseconds
-                bee_label = row['label']
-                file_index = row['index']
-                if wav_flag:
-                    recording = AudioSegment.from_wav('data/' + f)
-                else:
-                    recording = AudioSegment.from_mp3('data/' + f)
+                start_time = row[self.start_col_name]
+                end_time = row[self.end_col_name]
+                file_index = row[self.key_col_name]
                 new_recording = recording[start_time:end_time]
-                new_recording_name = bee_label + '_index' + str(file_index) + '.wav'
-                if bee_label == 'bee':
-                    new_recording.export(bee_folder + new_recording_name, format="wav")
-                else:
-                    new_recording.export(no_bee_folder + new_recording_name, format="wav")
-
+                new_recording_name = self.acoustic_folder + 'index' + str(file_index) + '.wav'
+                new_recording.export(new_recording_name, format="wav")
+        logging.info('All files are split.')
