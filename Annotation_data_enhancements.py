@@ -34,11 +34,15 @@ lines_df = lines_df[(lines_df['file name'] != '.\n') & (~lines_df['end'].isna())
 lines_df['file name'] = lines_df['file name'].str.replace('\n', '')
 lines_df['label'] = lines_df['label'].str.replace('\n', '')
 
+
+# this could be a new function
 # adding event labels
 lines_df['missing queen'] = lines_df['file name'].str.lower().str.contains('|'.join(['missing queen', 'no_queen']))
-lines_df['queen'] = (lines_df['file name'].str.lower().str.contains('queenbee')) & (~lines_df['file name'].str.lower().str.contains('no'))
+# lines_df['queen'] = (lines_df['file name'].str.lower().str.contains('queenbee')) & (~lines_df['file name'].str.lower().str.contains('no'))
 lines_df['active day'] = lines_df['file name'].str.lower().str.contains('active - day')
 lines_df['swarming'] = lines_df['file name'].str.lower().str.contains('swarming')
+
+
 
 
 # change data types
