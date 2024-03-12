@@ -29,6 +29,8 @@ for file in dir_list:
 bee_folder = 'data/bee/'
 no_bee_folder = 'data/nobee/'
 
+#Do we actually need this?
+
 # loop over all files in the list of files
 for f in extension_files_list:
     time.sleep(3)
