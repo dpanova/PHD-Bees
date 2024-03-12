@@ -1,12 +1,10 @@
 # import libraries
 import logging
-import math
+from auxilary_functions import split_list,file_name_extract, get_file_names, clean_directory
 import pandas as pd
-import os
 import numpy as np
 from pydub import AudioSegment
-import time
-import shutil
+
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeData:
@@ -82,35 +80,35 @@ class BeeData:
         self.key_col_name = key_col_name
         self.acoustic_folder = acoustic_folder
 
-    def split_list(self,row, column_name):
-        """
-        The goal of this function is to split a column which consists of a list into several columns
-        :param row: row from a data frame
-        :type row: pd.Series
-        :param column_name: name of the column withthe list
-        :type column_name: str
-        :return: pd.Series with the unpacked list
-        :rtype: pd.Series
-        """
-        return pd.Series(row[column_name])
-
-    def file_name_extract(self,row, column_name1, column_name2):
-        """
-        The goal of this function is to extract the file name and add it to the DF
-        :param row: row from a data frame
-        :type row: pd.Series
-        :param column_name1: column name which has a label
-        :type column_name1: str
-        :param column_name2: another column which has a label
-        :type column_name2: str
-        :return: extracted file name
-        :rtype: str
-        """
-        if pd.isnull(row[column_name2]):
-            label = row[column_name1]
-        else:
-            label = math.nan
-        return label
+    # def split_list(self,row, column_name):
+    #     """
+    #     The goal of this function is to split a column which consists of a list into several columns
+    #     :param row: row from a data frame
+    #     :type row: pd.Series
+    #     :param column_name: name of the column withthe list
+    #     :type column_name: str
+    #     :return: pd.Series with the unpacked list
+    #     :rtype: pd.Series
+    #     """
+    #     return pd.Series(row[column_name])
+    #
+    # def file_name_extract(self,row, column_name1, column_name2):
+    #     """
+    #     The goal of this function is to extract the file name and add it to the DF
+    #     :param row: row from a data frame
+    #     :type row: pd.Series
+    #     :param column_name1: column name which has a label
+    #     :type column_name1: str
+    #     :param column_name2: another column which has a label
+    #     :type column_name2: str
+    #     :return: extracted file name
+    #     :rtype: str
+    #     """
+    #     if pd.isnull(row[column_name2]):
+    #         label = row[column_name1]
+    #     else:
+    #         label = math.nan
+    #     return label
 
     def mlf_data_read(self):
         """
@@ -148,7 +146,7 @@ class BeeData:
         lines_df['all'] = lines_df[0].apply(lambda x: x.split('\t'))
         logging.info('Create a list by tabs.')
         # then we split the list into a separate columns
-        lines_df = lines_df.apply(lambda x: self.split_list(x, 'all'), axis=1)
+        lines_df = lines_df.apply(lambda x: split_list(x, 'all'), axis=1)
         logging.info('Split the list into different columns.')
         # check if the name of the file is on a new row, this should result in rows with NaN entries except the first column
         nan_df = pd.DataFrame(lines_df.isna().sum())
@@ -159,7 +157,7 @@ class BeeData:
         lines_df.rename(columns={0: self.start_col_name, 1: self.end_col_name, 2: self.bee_col}, inplace=True)
         logging.info('Add column names.')
         # add the file name to each relevant row
-        lines_df[self.file_col_name] = lines_df.apply(lambda x: self.file_name_extract(x, self.start_col_name, self.end_col_name), axis=1)
+        lines_df[self.file_col_name] = lines_df.apply(lambda x: file_name_extract(x, self.start_col_name, self.end_col_name), axis=1)
         lines_df[self.file_col_name].ffill(inplace=True)
         logging.info('Added file name as a separate column.')
         # remove empty rows, since the original file had rows containing only the file name
@@ -268,37 +266,37 @@ class BeeData:
         #save the data locally
         data.to_csv(self.file_name, index=False)
 
-    def get_file_names(self, dir_name, extension=('.wav','.mp3')):
-        """
-        Create a list of files in a specific directory with specified extension
-        :param dir_name: directory which contains the files
-        :type dir_name: str
-        :param extension: tuple with strings indicating the file extension
-        :type extension: tuple
-        :return: a list of files
-        :rtype: list
-        """
-        if type(dir_name) != str:
-            raise ValueError(
-                'Invalid dir_name type. It is type %s and expected type is str.' % type(dir_name).__name__)
-        if type(extension) != tuple:
-            raise ValueError(
-                'Invalid extension type. It is type %s and expected type is str.' % type(extension).__name__)
-        for a in extension:
-            if type(a) != str:
-                raise ValueError(
-                    'Invalid string type. It is type %s and expected type is str.' % type(a).__name__)
-        list_of_files = os.listdir(dir_name)
-        logging.info('Files in the directory are stores in a list - %s'% dir)
-        extension_files_list = []
-        for file in list_of_files:
-            if file.endswith(extension):
-                extension_files_list.append(file)
-            else:
-                continue
-        if len(extension_files_list)==0:
-            raise ValueError('Extension list is empty. Please, check the %s folder' % dir)
-        return extension_files_list
+    # def get_file_names(self, dir_name, extension=('.wav','.mp3')):
+    #     """
+    #     Create a list of files in a specific directory with specified extension
+    #     :param dir_name: directory which contains the files
+    #     :type dir_name: str
+    #     :param extension: tuple with strings indicating the file extension
+    #     :type extension: tuple
+    #     :return: a list of files
+    #     :rtype: list
+    #     """
+    #     if type(dir_name) != str:
+    #         raise ValueError(
+    #             'Invalid dir_name type. It is type %s and expected type is str.' % type(dir_name).__name__)
+    #     if type(extension) != tuple:
+    #         raise ValueError(
+    #             'Invalid extension type. It is type %s and expected type is str.' % type(extension).__name__)
+    #     for a in extension:
+    #         if type(a) != str:
+    #             raise ValueError(
+    #                 'Invalid string type. It is type %s and expected type is str.' % type(a).__name__)
+    #     list_of_files = os.listdir(dir_name)
+    #     logging.info('Files in the directory are stores in a list - %s'% dir)
+    #     extension_files_list = []
+    #     for file in list_of_files:
+    #         if file.endswith(extension):
+    #             extension_files_list.append(file)
+    #         else:
+    #             continue
+    #     if len(extension_files_list)==0:
+    #         raise ValueError('Extension list is empty. Please, check the %s folder' % dir)
+    #     return extension_files_list
 
 
 
@@ -324,7 +322,7 @@ class BeeData:
 
 
         #get the existing files in the directory
-        self.extension_files_list = self.get_file_names(path)
+        self.extension_files_list = get_file_names(path)
         existing_files_df = pd.DataFrame()
         existing_files_df[self.file_col_name] = self.extension_files_list
         existing_files_df['Dir Exist'] = True
@@ -384,11 +382,6 @@ class BeeData:
         self.annotation_df_sliced.to_csv(self.file_name, index=False)
         logging.info('Annotation data is sliced.')
 
-    #TODO extract clean folder and fet file names as a separate functions - maybe we can add it to the auxilary file?
-    # files_list = bee.get_file_names(bee.acoustic_folder)
-    # for item in files_list:
-    #     os.remove(item)
-    #     # shutil.rmtree(os.path.join(bee.acoustic_folder+item)) #this is for a folder
 
     def split_acoustic_data_sliced(self):
         """
@@ -396,9 +389,8 @@ class BeeData:
         :return: wav files 
         """ %self.acoustic_folder
         try:
-            files_to_delete_list = self.get_file_names(self.acoustic_folder)
-            for f in files_to_delete_list:
-                os.remove(f)
+            clean_directory(self.acoustic_folder)
+            logging.info('Old files are deleted.')
         except:
             logging.info('No previous files in %s' %self.acoustic_folder)
         files = self.annotation_df_sliced[self.file_col_name].unique()
