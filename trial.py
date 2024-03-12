@@ -7,9 +7,13 @@ bee = Bee()
 bee.read_annotation_csv()
 #create the new label
 bee.new_y_label_creation()
-bee.acoustic_file_names()
 # split the data
 bee.split_annotation_data()
+
+
+
+
+
 #%%
 # transform data to dataset
 train, test = bee.dataframe_to_datadict(bee.X_train_index,bee.X_test_index)
