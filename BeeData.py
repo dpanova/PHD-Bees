@@ -357,6 +357,19 @@ class BeeData:
         :rtype: pd.DataFrame
 
         """
+        if type(nobee) != bool:
+            raise ValueError(
+                'Invalid nobee type. It is type %s and expected type is bool.' % type(nobee).__name__)
+        if type(start_sliced_col_name) != str:
+            raise ValueError(
+                'Invalid start_sliced_col_name type. It is type %s and expected type is str.' % type(start_sliced_col_name).__name__)
+        if type(end_sliced_col_name) != str:
+            raise ValueError(
+                'Invalid end_sliced_col_name type. It is type %s and expected type is str.' % type(end_sliced_col_name).__name__)
+        if type(step) != int:
+            raise ValueError(
+                'Invalid step type. It is type %s and expected type is int.' % type(step).__name__)
+
         if not nobee:
             annotation_df_sliced = self.annotation_df_data_quality[self.annotation_df_data_quality[self.bee_col] == 'bee']
         else:
@@ -412,3 +425,31 @@ class BeeData:
                 new_recording_name = self.acoustic_folder + 'index' + str(file_index) + '.wav'
                 new_recording.export(new_recording_name, format="wav")
         logging.info('All files are split.')
+
+    def create_validate_data(self, sliced = True, file_name = 'annotation_data_type.csv'):
+        """
+        Creates validation data set for the data types.
+        :param sliced: boolean to indicate whether to create validation based on the sliced data or not
+        :type sliced: bool
+        :param file_name: name of the file to be saved to
+        :type file_name: basestring
+        :return: csv file with the validation data
+        """
+
+        if type(sliced) != bool:
+            raise ValueError(
+                'Invalid sliced type. It is type %s and expected type is bool.' % type(sliced).__name__)
+        if type(file_name) != str:
+            raise ValueError(
+                'Invalid file_name type. It is type %s and expected type is str.' % type(file_name).__name__)
+        if not file_name.endswith(".csv"):
+            raise ValueError(
+                'Invalid file_name is not csv format.')
+        if sliced:
+            df = pd.DataFrame(self.annotation_df_sliced.dtypes)
+        else:
+            df = pd.DataFrame(self.annotation_df)
+        df.reset_index(inplace=True)
+        df.columns = ['col_name','col_type']
+        df.to_csv(file_name, index=False)
+        logging.info('Validation data saved to %s' % file_name)
