@@ -2,6 +2,9 @@ import pandas as pd
 import math
 import os
 import shutil
+import evaluate
+import numpy as np
+
 
 
 def split_list(row, column_name):
@@ -94,3 +97,22 @@ def clean_directory(path, folder=False):
             shutil.rmtree(os.path.join(path+item))
         else:
             os.remove(item)
+
+def compute_metrics(eval_pred, accuracy_metric ='accuracy'):
+    """Computes accuracy on a batch of predictions"""
+    #TODO add validations
+    metric = evaluate.load(accuracy_metric)
+    predictions = np.argmax(eval_pred.predictions, axis=1)
+    return metric.compute(predictions=predictions, references=eval_pred.label_ids)
+
+def preprocess_function(examples,feature_extractor, max_duration):
+    #TODO add validations
+    audio_arrays = [x["array"] for x in examples["audio"]]
+    inputs = feature_extractor(
+        audio_arrays,
+        sampling_rate=feature_extractor.sampling_rate,
+        max_length=int(feature_extractor.sampling_rate * max_duration),
+        truncation=True,
+        return_attention_mask=True,
+    )
+    return inputs
