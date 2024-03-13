@@ -1,6 +1,6 @@
 # libraries
 import pandas as pd
-from auxilary_functions import get_file_names, clean_directory
+from auxilary_functions import get_file_names, clean_directory, compute_metrics, preprocess_function
 from sklearn.model_selection import train_test_split,RandomizedSearchCV
 import logging
 import numpy as np
@@ -17,10 +17,11 @@ import random
 from datasets import Dataset, Audio, ClassLabel
 import datasets
 import time
+from transformers import AutoFeatureExtractor, AutoModelForAudioClassification, TrainingArguments, Trainer
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-class Bee:
+class BeeClassification:
     """BeeNotBee class ....
     # TODO: update the documentation
     :param annotation_path: path to the annotation data
@@ -129,7 +130,6 @@ class Bee:
 
     def validate_annotation_csv(self):
         """"
-        TODO update here
         Validate annotation data
         :return: warning if the data is as expected
         :rtype: log
@@ -184,23 +184,6 @@ class Bee:
             raise ValueError('x_col not in the annotation_df. Change x_col.')
         if self.y_col not in self.annotation_df:
             raise ValueError('y_col not in the annotation_df. Change y_col.')
-        # else:
-            # if data_quality:
-            #     existing_indices = pd.DataFrame()
-            #     existing_indices['index'] = [int(f.split('index')[1].split('.wav')[0]) for f in self.accoustic_files]
-            #     existing_indices['Dir Exist'] = True
-            #
-            #     self.annotation_df = self.annotation_df.merge(existing_indices, how='left', left_on='index', right_on='index')
-            #     self.annotation_df['Dir Exist'].fillna(False, inplace=True)
-            #     # 367 files are missing
-            #     #here we may need to update something in future so that it is more universal
-            #     annotation_df_updated  = self.annotation_df[self.annotation_df['Dir Exist']]
-            #     annotation_df_updated = annotation_df_updated[annotation_df_updated['duration']>2.0]
-            # else:
-            #     annotation_df_updated = self.annotation_df
-            #
-            # if not no_bee:
-            #     annotation_df_updated = annotation_df_updated[annotation_df_updated[self.bee_col]=='bee']
 
         if stratified:
             self.X_train_index, self.X_test_index, self.y_train, self.y_test = train_test_split(
@@ -219,23 +202,6 @@ class Bee:
         self.y_train.to_csv('y_train.csv')
         self.y_test.to_csv('y_test.csv')
 
-
-    # def get_file_names(self, dir):
-    #     """
-    #     Create a list of files in a specific directory
-    #     :param dir: directory which contains the files
-    #     :type dir: str
-    #     :return: a list of files
-    #     :rtype: list
-    #     """
-    #     if type(dir) != str:
-    #         raise ValueError(
-    #             'Invalid dir type. It is type %s and expected type is str.' % type(dir).__name__)
-    #     list_of_files = os.listdir(dir)
-    #     logging.info('Files in the directory are stores in a list - %s'% dir)
-    #     if len(list_of_files)==0:
-    #         raise ValueError('bee_files list is empty. Please, check the %s folder' % dir)
-    #     return list_of_files
 
 
     def harley_transformation_with_window(self,x,window = np.hanning):
@@ -504,10 +470,6 @@ class Bee:
         #clean the data in the folder
         try:
             clean_directory(self.datadict_folder + split_folder, folder=True)
-            #TODO remove after testing
-            # files_list = get_file_names(self.datadict_folder + split_folder)
-            # for item in files_list:
-            #     shutil.rmtree(os.path.join(self.datadict_folder+split_folder, item))
         except:
             pass
 
@@ -540,12 +502,20 @@ class Bee:
         :type train_df: pd.DataFrame
         :param test_df: data frame for the testing set
         :type test_df: pd.DataFrame
-        :return: tuple of data dict
+        :return: data dict
         :rtype: Dataset
         """
         train_df_dataset = self.dataframe_to_dataset(train_df, split_type='train')
         test_df_dataset = self.dataframe_to_dataset(test_df, split_type='test')
-        return train_df_dataset, test_df_dataset
+        data = datasets.DatasetDict(
+            {
+                "train": train_df_dataset,
+                "test": test_df_dataset,
+            }
+        )
+        return data
+
+
 
     def data_augmentation_row(self,arg):
         """
@@ -598,11 +568,6 @@ class Bee:
 
         # clean augmented directory
         clean_directory(self.augment_folder)
-        #TODO remove after testing
-        # test = get_file_names(self.augment_folder)
-        # for item in test:
-        #     if item.endswith(".wav"):
-        #         os.remove(os.path.join(self.augment_folder, item))
 
         logging.info('Augmented folder is cleaned.')
         self.augmented_df = pd.DataFrame()
@@ -734,6 +699,82 @@ class Bee:
         logging.info('Whole data frame transformed.')
         return X_df
 
+    def transformer_classification(self, data, model_id ='facebook/hubert-base-ls960'):
+
+
+        #create the feature extractor
+        feature_extractor = AutoFeatureExtractor.from_pretrained(
+            model_id, do_normalize=True, return_attention_mask=True
+        )
+        # resample the data to have the same sampling rate as the pretrained model
+        sampling_rate = feature_extractor.sampling_rate
+        data = data.cast_column("audio", Audio(sampling_rate=sampling_rate)) #TODO maybe it is good to save the data within the object
+
+        #create numeric labels
+        id2label_fn = data["train"].features[self.bee_col].int2str
+
+        id2label = {
+            str(i): id2label_fn(i)
+            for i in range(len(data["train"].features[self.bee_col].names))
+        }
+        label2id = {v: k for k, v in id2label.items()}
+
+        num_labels = len(id2label)
+
+        #construct the model
+        model = AutoModelForAudioClassification.from_pretrained(
+            model_id,
+            num_labels=num_labels,
+            label2id=label2id,
+            id2label=id2label,
+        )
+
+        #add the train arguments
+        #TODO we need to add them as an input to the function
+        model_name = model_id.split("/")[-1]
+        batch_size = 8
+        gradient_accumulation_steps = 1
+        num_train_epochs = 10
+
+        training_args = TrainingArguments(
+            f"{model_name}-finetuned-bee",
+            evaluation_strategy="epoch",
+            save_strategy="epoch",
+            learning_rate=5e-5,
+            per_device_train_batch_size=batch_size,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            per_device_eval_batch_size=batch_size,
+            num_train_epochs=num_train_epochs,
+            warmup_ratio=0.1,
+            logging_steps=5,
+            load_best_model_at_end=True,
+            metric_for_best_model="accuracy",
+            fp16=True,
+            push_to_hub=False,
+            dataloader_pin_memory=False
+        )
+
+        #encode the data
+        # TODO this may not work
+        data_encoded = data.map(
+            preprocess_function,
+            remove_columns=["audio", "file_index"],
+            batched=True,
+            batch_size=100,
+            num_proc=1,
+        )
+
+        trainer = Trainer(
+            model,
+            training_args,
+            train_dataset=data_encoded["train"],
+            eval_dataset=data_encoded["test"],
+            tokenizer=feature_extractor,
+            compute_metrics=compute_metrics,
+        )
+
+        trainer.train()
+        return trainer
 
     def best_model(self, model, param_dist):
         """Identify the best model after tuning the hyperparameters
