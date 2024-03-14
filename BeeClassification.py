@@ -502,19 +502,20 @@ class BeeClassification:
         :type train_df: pd.DataFrame
         :param test_df: data frame for the testing set
         :type test_df: pd.DataFrame
-        :return: data dict
-        :rtype: Dataset
+        :return: datadict_data, stored in the object
+        :rtype: datadict
         """
+        # self.train_df_dataset = self.dataframe_to_dataset(train_df, split_type='train')
+        # self.test_df_dataset = self.dataframe_to_dataset(test_df, split_type='test')
         train_df_dataset = self.dataframe_to_dataset(train_df, split_type='train')
         test_df_dataset = self.dataframe_to_dataset(test_df, split_type='test')
-        data = datasets.DatasetDict(
+        self.datadict_data = datasets.DatasetDict(
             {
                 "train": train_df_dataset,
                 "test": test_df_dataset,
             }
         )
-        return data
-
+        logging.info('Data dictionary is created.')
 
 
     def data_augmentation_row(self,arg):
