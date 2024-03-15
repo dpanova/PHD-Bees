@@ -700,7 +700,7 @@ class BeeClassification:
         logging.info('Whole data frame transformed.')
         return X_df
 
-    def transformer_classification(self, data, model_id ='facebook/hubert-base-ls960'):
+    def transformer_classification(self, max_duration=30 , model_id ='facebook/hubert-base-ls960'):
 
 
         #create the feature extractor
@@ -709,14 +709,14 @@ class BeeClassification:
         )
         # resample the data to have the same sampling rate as the pretrained model
         sampling_rate = feature_extractor.sampling_rate
-        data = data.cast_column("audio", Audio(sampling_rate=sampling_rate)) #TODO maybe it is good to save the data within the object
+        data = self.datadict_data.cast_column("audio", Audio(sampling_rate=sampling_rate)) #TODO maybe it is good to save the data within the object
 
         #create numeric labels
-        id2label_fn = data["train"].features[self.bee_col].int2str
+        id2label_fn = self.datadict_data["train"].features[self.bee_col].int2str
 
         id2label = {
             str(i): id2label_fn(i)
-            for i in range(len(data["train"].features[self.bee_col].names))
+            for i in range(len(self.datadict_data["train"].features[self.bee_col].names))
         }
         label2id = {v: k for k, v in id2label.items()}
 
@@ -757,12 +757,13 @@ class BeeClassification:
 
         #encode the data
         # TODO this may not work
-        data_encoded = data.map(
+        data_encoded = self.datadict_data.map(
             preprocess_function,
             remove_columns=["audio", "file_index"],
             batched=True,
             batch_size=100,
             num_proc=1,
+            fn_kwargs={"feature_extractor": feature_extractor, "max_duration": max_duration}
         )
 
         trainer = Trainer(
