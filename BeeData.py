@@ -58,6 +58,9 @@ class BeeData:
         if type(file_col_name) != str:
             raise ValueError(
                 'Invalid file_col_name type. It is type %s and expected type is str.' % type(file_col_name).__name__)
+        if not file_name.endswith('csv'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .csv extension' % file_name)
 
         if type(duration_col_name) != str:
             raise ValueError(
