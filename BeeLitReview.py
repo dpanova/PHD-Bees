@@ -4,6 +4,7 @@ import pandas as pd
 from random import randint
 from time import sleep
 from selenium.webdriver.common.keys import Keys
+import undetected_chromedriver
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 import warnings
@@ -17,13 +18,37 @@ class BeeLitReview:
                  ,already_scraped=True
                  ,scraped_file_name = 'scraped_articles_18Mar.csv'):
         self.scraped_file_name = scraped_file_name
+        logging.basicConfig(filename=logname
+                            , filemode='a'
+                            , format='%(asctime)s %(levelname)s %(message)s'
+                            , datefmt='%H:%M:%S'
+                            , level=logging.DEBUG)
         if already_scraped:
             self.df = pd.read_csv(scraped_file_name)
         else:
             self.df = pd.DataFrame()
 
+        if type(already_scraped) != bool:
+            raise ValueError(
+                'Invalid already_scraped type. It is type %s and expected type is str.' % type(already_scraped).__name__)
+        if type(scraped_file_name) != str:
+            raise ValueError(
+                'Invalid scraped_file_name type. It is type %s and expected type is str.' % type(scraped_file_name).__name__)
+        if not scraped_file_name.endswith('csv'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .csv extension' % scraped_file_name)
+
     def article_scrape(self, article):
-        """TODO update the description"""
+        """
+        Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract
+        :param article: article result
+        :type article: undetected_chromedriver.webelement.WebElement
+        :return: scraped date in the df object
+        :rtype: dataframe
+        """
+        if type(article) != undetected_chromedriver.webelement.WebElement:
+            raise ValueError(
+                'Invalid article type. It is type %s and expected type is undetected_chromedriver.webelement.WebElement.' % type(article).__name__)
 
         # access the inner item stack for each result
         items = article.find_elements(By.CLASS_NAME, 'nova-legacy-v-entity-item__stack-item')
@@ -91,6 +116,34 @@ class BeeLitReview:
                 ,url='https://www.researchgate.net/login?_sg=ITbsht6C-ko8ZSF49e9deV1BNgFqKApIltdEguj_4uiZ9K_WzI6gYtnTL5xsgogphkn5Z2RJTNuYqd9fMiGJfg'
                 , query='bee acoustic'
                  ):
+        """
+        Function to scrape the articles from ResearchGate
+        :param username: username in the website
+        :type username: str
+        :param password: password in the website
+        :type password: str
+        :param url: url of the website
+        :type url: str
+        :param query: query to search in the website
+        :type query: str
+        :return: scraped date in the df object and saved csv
+        :rtype: dataframe
+        """
+
+        if type(username) != str:
+            raise ValueError(
+                'Invalid username type. It is type %s and expected type is str.' % type(username).__name__)
+
+        if type(password) != str:
+            raise ValueError(
+                'Invalid password type. It is type %s and expected type is str.' % type(password).__name__)
+        if type(url) != str:
+            raise ValueError(
+                'Invalid url type. It is type %s and expected type is str.' % type(url).__name__)
+        if type(query) != str:
+            raise ValueError(
+                'Invalid query type. It is type %s and expected type is str.' % type(query).__name__)
+
         driver = uc.Chrome()
         driver.get(url)
         #add password and username
