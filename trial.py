@@ -1,8 +1,9 @@
 # import pandas as pd
 
-from BeeClassification import Bee
+from BeeClassification import BeeClassification
 
-bee = Bee()
+
+bee = BeeClassification()
 # read and validate the annotation data
 bee.read_annotation_csv()
 #create the new label
@@ -10,6 +11,7 @@ bee.new_y_label_creation()
 # split the data
 bee.split_annotation_data()
 
+#%%
 
 
 
