@@ -4,6 +4,7 @@ import os
 import shutil
 import evaluate
 import numpy as np
+from scipy.spatial.distance import cosine
 
 
 
@@ -105,7 +106,7 @@ def compute_metrics(eval_pred, accuracy_metric ='accuracy'):
     predictions = np.argmax(eval_pred.predictions, axis=1)
     return metric.compute(predictions=predictions, references=eval_pred.label_ids)
 
-def preprocess_function(examples,feature_extractor, max_duration):
+def preprocess_function(examples,feature_extractor, max_duration=10):
     #TODO add validations
     audio_arrays = [x["array"] for x in examples["audio"]]
     inputs = feature_extractor(
@@ -116,3 +117,37 @@ def preprocess_function(examples,feature_extractor, max_duration):
         return_attention_mask=True,
     )
     return inputs
+
+def citations(x):
+    if isinstance(x, str):
+        try:
+            value = int([y for y in x.split(';') if y.find('Citation') != -1][0].split(' ')[0])
+        except:
+            value = 0
+    else:
+        value = 0
+    return value
+
+def recommendations(x):
+    if isinstance(x, str):
+        try:
+            value = int([y for y in x.split(';') if y.find('Recommendations') != -1][0].split(' ')[0])
+        except:
+            value = 0
+    else:
+        value = 0
+    return value
+
+def reads(x):
+    if isinstance(x, str):
+        try:
+            value = int([y for y in x.split(';') if y.find('Reads') != -1][0].split(' ')[0])
+        except:
+            value = 0
+    else:
+        value = 0
+    return value
+
+def cos_func(v1,v2):
+    cosine_similarity = 1 - cosine(v1, v2)
+    return(cosine_similarity)
