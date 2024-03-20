@@ -54,6 +54,7 @@ class BeeClassification:
                  ,augment_folder = 'data/augment/'
                  ,datadict_folder = 'data/DataDict/'):
         self.annotation_path =annotation_path
+        self.annotation_df = pd.DataFrame()
         self.annotation_dtypes_path = annotation_dtypes_path
         self.x_col = x_col
         self.y_col = y_col
@@ -61,12 +62,23 @@ class BeeClassification:
         self.acoustic_folder = acoustic_folder
         self.accoustic_files = get_file_names(self.acoustic_folder)
         self.augment_folder = augment_folder
+        self.augmented_df = pd.DataFrame()
         self.datadict_folder = datadict_folder
+        self.datadict_data = None
+        self.X_train_index = None
+        self.X_test_index = None
+        self.y_train = None
+        self.y_test = None
+        self.augmented_files = None
         logging.basicConfig(filename=logname
                             , filemode='a'
                             , format='%(asctime)s %(levelname)s %(message)s'
                             , datefmt='%H:%M:%S'
                             , level=logging.DEBUG)
+
+
+
+
     def plot_figure(self
                     , plot_title
                     , file_title
@@ -375,11 +387,7 @@ class BeeClassification:
 
         except:
             raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
-    # def map_label2id(self,ClassLabels,example, col):
-    #     """"TODO update the description here
-    #     """
-    #     example[col] = ClassLabels.str2int(example[col])
-    #     return example
+
 
     def dataframe_to_dataset_split_save(self,df, split_type,file_name):
         """
