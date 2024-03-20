@@ -361,7 +361,21 @@ class BeeLitReview:
         :type to_review_file_name: str
         :return: Returns dataframe with the first num_articles and saves to data to to_review_file_name.csv for further inspection
         """
-
+        if type(num_articles) != int:
+            raise ValueError(
+                'Invalid num_articles type. It is type %s and expected type is int.' % type(num_articles).__name__)
+        if type(path_file_name) != str:
+            raise ValueError(
+                'Invalid path_file_name type. It is type %s and expected type is str.' % type(path_file_name).__name__)
+        if not path_file_name.endswith('csv'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .csv extension' % path_file_name)
+        if type(to_review_file_name) != str:
+            raise ValueError(
+                'Invalid to_review_file_name type. It is type %s and expected type is str.' % type(to_review_file_name).__name__)
+        if not to_review_file_name.endswith('csv'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .csv extension' % to_review_file_name)
         G = nx.from_pandas_edgelist(self.similarity_df, source='pair0', target='pair1', edge_attr='cos')
         tsp = nx.approximation.traveling_salesman_problem
         self.graph_start = time.time()
