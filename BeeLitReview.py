@@ -387,6 +387,7 @@ class BeeLitReview:
         # get the first 50th
         to_review_df = self.df.loc[path[:num_articles], ['index', 'Title', 'Abstract']]
         to_review_df['Choose'] = False
+        #TODO save to exel
         to_review_df.to_csv(to_review_file_name, index=False)
         logging.info('%s file saved.' % to_review_file_name)
 
