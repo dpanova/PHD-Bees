@@ -100,15 +100,40 @@ def clean_directory(path, folder=False):
         else:
             os.remove(item)
 
-def compute_metrics(eval_pred, accuracy_metric ='accuracy'):
-    """Computes accuracy on a batch of predictions"""
-    #TODO add validations
-    metric = evaluate.load(accuracy_metric)
+def compute_metrics(eval_pred):
+    """
+    Computes accuracy on a batch of predictions
+    :param eval_pred: predictions returned by the HuggingFace model
+    :type eval_pred: array like
+    :return: the computed evaluation metric
+    :rtype: float
+    """
+
+    if not pd.api.types.is_list_like(eval_pred):
+        raise ValueError(
+            'Invalid eval_pred type. It is type %s and expected type is array-like.' % type(eval_pred).__name__)
+
+    metric = evaluate.load('accuracy')
     predictions = np.argmax(eval_pred.predictions, axis=1)
     return metric.compute(predictions=predictions, references=eval_pred.label_ids)
 
 def preprocess_function(examples,feature_extractor, max_duration=10):
-    #TODO add validations
+    """
+    Function to preprocess the audio data to a predefined sampling rate and duration
+    :param examples: datadict examples with 'audio' key
+    :type examples: datadict
+    :param feature_extractor: AutoFeatureExtractor from pretrained model
+    :type feature_extractor: AutoFeatureExtractor
+    :param max_duration: maximum seconds recording
+    :type max_duration: int
+    :return: the preprocessed data as AutoFeatureExtractor
+    :rtype: AutoFeatureExtractor
+    """
+    if type(max_duration) != int:
+        raise ValueError(
+            'Invalid max_duration type. It is type %s and expected type is int.' % type(max_duration).__name__)
+
+
     audio_arrays = [x["array"] for x in examples["audio"]]
     inputs = feature_extractor(
         audio_arrays,
@@ -120,6 +145,13 @@ def preprocess_function(examples,feature_extractor, max_duration=10):
     return inputs
 
 def citations(x):
+    """
+    Function to extract the number of citations from a string
+    :param x: string which has a key word - Citations to extarct the info from
+    :type x: str
+    :return: Number of citations
+    :rtype: int
+    """
     if isinstance(x, str):
         try:
             value = int([y for y in x.split(';') if y.find('Citation') != -1][0].split(' ')[0])
@@ -130,6 +162,13 @@ def citations(x):
     return value
 
 def recommendations(x):
+    """
+    Function to extract the number of Recommendations from a string
+    :param x: string which has a key word - Recommendations to extarct the info from
+    :type x: str
+    :return: Number of Recommendations
+    :rtype: int
+    """
     if isinstance(x, str):
         try:
             value = int([y for y in x.split(';') if y.find('Recommendations') != -1][0].split(' ')[0])
@@ -140,6 +179,13 @@ def recommendations(x):
     return value
 
 def reads(x):
+    """
+    Function to extract the number of Reads from a string
+    :param x: string which has a key word - Reads to extarct the info from
+    :type x: str
+    :return: Number of Reads
+    :rtype: int
+    """
     if isinstance(x, str):
         try:
             value = int([y for y in x.split(';') if y.find('Reads') != -1][0].split(' ')[0])
@@ -150,9 +196,25 @@ def reads(x):
     return value
 
 def cos_func(v1,v2):
-    #TODO check if v1 and v2 are vectors?
+    """
+    Function to calculate the cosine similiarity between two array-like variables
+    :param v1: array-like variable
+    :type v1: array-like
+    :param v2: array-like variable
+    :type v2: array-like
+    :return: cosine similarity between teh two
+    :rtype: float
+    """
+    if not pd.api.types.is_list_like(v1):
+        raise ValueError(
+            'Invalid v1 type. It is type %s and expected type is array-like.' % type(v1).__name__)
+    if not pd.api.types.is_list_like(v2):
+        raise ValueError(
+            'Invalid v2 type. It is type %s and expected type is array-like.' % type(v2).__name__)
+
+
     cosine_similarity = 1 - cosine(v1, v2)
-    return(cosine_similarity)
+    return cosine_similarity
 
 def dbscan_predict(dbscan_model, X_new, metric=sp.spatial.distance.cosine):
     """
@@ -190,8 +252,9 @@ def my_custom_function(model, X):
     :return: silhouette score
     :rtype: float
     """
-    # for models that implement it, e.g. KMeans, could use `predict` instead
-    #TODO update description and move to auxilary
+    if not pd.api.types.is_list_like(X):
+        raise ValueError(
+            'Invalid X type. It is type %s and expected type is array-like.' % type(X).__name__)
     preds = dbscan_predict(model, X)
     return silhouette_score(X, preds) if len(set(preds)) > 1 else float('nan')
 
