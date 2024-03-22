@@ -2,10 +2,10 @@ import logging
 from random import randint
 from time import sleep
 from selenium.webdriver.common.keys import Keys
-import undetected_chromedriver
+# import undetected_chromedriver
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-from auxilary_functions import recommendations, reads, citations, cos_func
+from auxilary_functions import recommendations, reads, citations, cos_func, include_tuple, my_custom_function , dbscan_predict
 import nltk
 from datetime import datetime
 from sentence_transformers import SentenceTransformer
@@ -14,6 +14,11 @@ import networkx as nx
 import pandas as pd
 import time
 import itertools
+from sklearn.cluster import DBSCAN
+from numpy import arange
+from sklearn.model_selection import GridSearchCV
+
+from langdetect import detect
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeLitReview:
@@ -24,12 +29,15 @@ class BeeLitReview:
                  ,logname='BeeLitReview.log'
                  ,already_scraped=True
                  ,scraped_file_name = 'scraped_articles.csv'
-                 ,scraped_file_validation = 'scraped_articles_validation.csv'):
+                 ,scraped_file_validation = 'scraped_articles_validation.csv'
+                 ,to_review_file_name='to_review.xlsx'):
         self.scraped_file_name = scraped_file_name
-        self.similarity_df = pd.DataFrame()
+        self.similarity_df = None
         self.embeddings = None
         self.graph_start = None
         self.graph_end = None
+        self.df_raw = None
+        self.to_review_file_name = to_review_file_name
         self.scraped_file_validation = scraped_file_validation
         logging.basicConfig(filename=logname
                             , filemode='a'
@@ -57,6 +65,12 @@ class BeeLitReview:
         if not scraped_file_validation.endswith('csv'):
             raise ValueError(
                 '%s input is not the correct type. It should be .csv extension' % scraped_file_validation)
+        if type(to_review_file_name) != str:
+            raise ValueError(
+                'Invalid to_review_file_name type. It is type %s and expected type is str.' % type(to_review_file_name).__name__)
+        if not to_review_file_name.endswith('xlsx'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .xlsx extension' % to_review_file_name)
     def validate_scraped_csv(self):
         """"
         Validate scraped data
@@ -94,7 +108,7 @@ class BeeLitReview:
         :return: scraped date in the df object
         :rtype: dataframe
         """
-        if type(article) != undetected_chromedriver.webelement.WebElement:
+        if type(article) != uc.webelement.WebElement:
             raise ValueError(
                 'Invalid article type. It is type %s and expected type is undetected_chromedriver.webelement.WebElement.' % type(article).__name__)
 
@@ -133,17 +147,18 @@ class BeeLitReview:
         right = ';'.join(right_list)
 
         # get the authors
-
-        authors_list = items[3].find_elements(By.XPATH, 'ul//li//a//span')
-        if len(authors_list) > 1:
-            temp_authors_list = []
-            for author in authors_list:
-                if len(author.text) > 0:
-                    temp_authors_list.append(author.text)
-            author = ';'.join(temp_authors_list)
-        else:
-            author = authors_list[0].text
-
+        try:
+            authors_list = items[3].find_elements(By.XPATH, 'ul//li//a//span')
+            if len(authors_list) > 1:
+                temp_authors_list = []
+                for author in authors_list:
+                    if len(author.text) > 0:
+                        temp_authors_list.append(author.text)
+                author = ';'.join(temp_authors_list)
+            else:
+                author = authors_list[0].text
+        except:
+            author ='No author'
         # get the abstract
         abstract = items[4].text
 
@@ -159,10 +174,10 @@ class BeeLitReview:
         page_df = pd.DataFrame(page_dict)
         self.df = pd.concat([self.df, page_df], ignore_index=True)
     def researchgate_scraper(self
-                , username
-                ,password
+                , username = '2239079053@shu.bg'
+                ,password ='BSru%SQ@trZz&nS26$cJ'
                 ,url='https://www.researchgate.net/login?_sg=ITbsht6C-ko8ZSF49e9deV1BNgFqKApIltdEguj_4uiZ9K_WzI6gYtnTL5xsgogphkn5Z2RJTNuYqd9fMiGJfg'
-                , query='bee acoustic'
+                , query='bee acoustic machine learning'
                  ):
         """
         Function to scrape the articles from ResearchGate
@@ -194,14 +209,24 @@ class BeeLitReview:
 
         driver = uc.Chrome()
         driver.get(url)
+        sleep(3)
+        # click the accept button
+        driver.find_element(By.CLASS_NAME, 'didomi-regular-notice').find_element(By.CLASS_NAME,
+                                                                                 'didomi-buttons').find_elements(
+            By.CLASS_NAME, "didomi-components-button")[2].click()
+        sleep(5)
         #add password and username
         uname = driver.find_element("id", "input-login")
+        sleep(3)
         uname.send_keys(username)
+
         pword = driver.find_element("id", "input-password")
+        sleep(3)
         pword.send_keys(password)
         #click submit
         driver.find_element(By.XPATH, '//button[@type="submit"]').click()
         # search for the specific query
+        sleep(3)
         search = driver.find_element('name', 'query')
         search.send_keys(query)
         search.send_keys(Keys.ENTER)
@@ -226,7 +251,7 @@ class BeeLitReview:
             main_url = current_url + '&limit=10&offset=' + str(step)
             driver.get(main_url)
             logging.info(main_url)
-            sleep(randint(10, 30))
+            sleep(randint(10, 45))
 
             # do the same steps
             result_items = driver.find_elements(By.CLASS_NAME, 'search-box__result-item')
@@ -244,7 +269,7 @@ class BeeLitReview:
                                  ,abstract_col ='Abstract'
                                  ,date_col='Date'):
         """
-        Function to extract dates, result type - article/ etc, tokenize the abstract and split the important stats such as citations.
+        Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text.
         :param stats_col: Column which has the stats data
         :type stats_col: str
         :param cat_col:Column which has the result type
@@ -272,7 +297,8 @@ class BeeLitReview:
         if type(date_col) != str:
             raise ValueError(
                 'Invalid date_col type. It is type %s and expected type is str.' % type(date_col).__name__)
-
+        #create a new data frame to host the raw data
+        self.df_raw = self.df
         #ensure we don't have duplicates
         self.df.drop_duplicates(subset=[key_col], keep='last', inplace=True)
         self.df['Citations'] = self.df[stats_col].apply(lambda x: citations(x))
@@ -296,6 +322,15 @@ class BeeLitReview:
         self.df['Year'] = self.df['Datetime'].apply(lambda x: x.year)
         logging.info('Date extracted successfully')
 
+        #check what is the language of the abstract
+        self.df_raw['Language'] = self.df_raw[abstract_col].apply(lambda x: detect(x))
+        #make sure that only English language is left in the enhanced version
+        self.df = self.df[self.df[abstract_col].apply(lambda x: detect(x))=='en']
+        logging.info('Only English abstracts are left')
+
+        #reset the index for trackability
+        self.df.reset_index(inplace=True)
+
         #save the new data for tracking purposes
         self.df.to_csv(self.scraped_file_name.split('.csv')[0]+'_enhanced.csv',index=False)
         logging.info('Data saved successfully to %s' %self.scraped_file_name.split('.csv')[0]+'_enhanced.csv')
@@ -303,7 +338,6 @@ class BeeLitReview:
     def encode_with_transformers(self
                                  ,model_id='sentence-transformers/all-mpnet-base-v2'
                                  ,abstract_col='Abstract'):
-        #TODO add return as function and add description and checks
         """
         Function to encode the abstract text with HuggingFace transformers. Embeddings are saved to embeddings
         :param model_id: HuggingFace transformers' model
@@ -349,16 +383,13 @@ class BeeLitReview:
 
     def calculate_TSP(self
                       ,num_articles = 50
-                      ,path_file_name = 'path.csv'
-                      ,to_review_file_name = 'to_review.csv'):
+                      ,path_file_name = 'path.csv'):
         """
         Calculates the Travel Salesmen Path based on the similarity between the abstracts.
         :param num_articles: number of articles to bee looked into
         :type num_articles: int
         :param path_file_name: name of the file to store the path
         :type path_file_name: str
-        :param to_review_file_name: name of the file to store the review file
-        :type to_review_file_name: str
         :return: Returns dataframe with the first num_articles and saves to data to to_review_file_name.csv for further inspection
         """
         if type(num_articles) != int:
@@ -370,12 +401,7 @@ class BeeLitReview:
         if not path_file_name.endswith('csv'):
             raise ValueError(
                 '%s input is not the correct type. It should be .csv extension' % path_file_name)
-        if type(to_review_file_name) != str:
-            raise ValueError(
-                'Invalid to_review_file_name type. It is type %s and expected type is str.' % type(to_review_file_name).__name__)
-        if not to_review_file_name.endswith('csv'):
-            raise ValueError(
-                '%s input is not the correct type. It should be .csv extension' % to_review_file_name)
+
         G = nx.from_pandas_edgelist(self.similarity_df, source='pair0', target='pair1', edge_attr='cos')
         tsp = nx.approximation.traveling_salesman_problem
         self.graph_start = time.time()
@@ -387,10 +413,76 @@ class BeeLitReview:
         # get the first 50th
         to_review_df = self.df.loc[path[:num_articles], ['index', 'Title', 'Abstract']]
         to_review_df['Choose'] = False
-        #TODO save to exel
-        to_review_df.to_csv(to_review_file_name, index=False)
-        logging.info('%s file saved.' % to_review_file_name)
+        to_review_df.to_excel(self.to_review_file_name, index=False)
+        logging.info('%s file saved.' % self.to_review_file_name)
 
+
+    def dbscan_clusters(self
+                        , cosine_threshold = 0.3
+                        ,year=2023
+                        ,type = ['Article', 'Conference Paper']
+                        ,read = 10
+                        ,citation = 1):
+
+        """
+        Create DBSCAN clusters on the abstracts which we have choosen. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover we can choose those are highly correlated with the originally chosen abstracts.  
+        :param cosine_threshold: threshold for cosine similarity with the chosen articles. The value is between 0 and 1 
+        :type cosine_threshold: float
+        :param year: year of the abstract to filter
+        :type year: int
+        :param type: type of the abstract to filter. You can choose from  %s
+        :type type: list
+        :param read: number of reads an abstract should be associated with 
+        :type read: int
+        :param citation: number of citations an abstract should be associated with
+        :type citation: int
+        :return: pandas data frame with the results (labeled abstracts) 
+        :rtype: pandas data frame
+        """ % ';'.join(list(self.df['Text Type'].unique()))
+
+        to_review_df = pd.read_excel(self.to_review_file_name)
+
+        index_chosen = list(to_review_df[to_review_df['Choose']]['index'])
+
+        self.similarity_df['Under Inspection'] = False
+        self.similarity_df['key'] = list(zip(self.similarity_df['pair0'], self.similarity_df['pair1']))
+
+        for index, row in self.similarity_df.iterrows():
+            self.similarity_df.loc[index, 'Under Inspection'] = include_tuple(index_chosen, row, t_limit=cosine_threshold)
+
+        pair0 = list(self.similarity_df[self.similarity_df['Under Inspection']]['pair0'])
+        pair1 = list(self.similarity_df[self.similarity_df['Under Inspection']]['pair1'])
+        pair = pair0+pair1
+        filter_index = list(self.df[(self.df['Year'] >= year) & (self.df['Text Type'].isin(type)) & (
+                    self.df['Citations'] >= citation) & (self.df['Reads'] >= read)]['index'])
+        common_index = list(set(pair).intersection(filter_index))
+        all_index = index_chosen + common_index
+
+
+        to_cluster_embeddings = [self.embeddings[x] for x in all_index]
+
+        # we can optimize for eps and min_samples
+        param_grid = {
+            'eps': arange(0.1, 0.5, 0.001),
+            'min_samples': range(3, 15, 1)
+        }
+
+        dbscan = DBSCAN(metric='cosine')
+        grid_search = GridSearchCV(dbscan, param_grid, scoring=my_custom_function)
+        grid_search.fit(to_cluster_embeddings)
+
+        best_eps = grid_search.best_params_['eps']
+        best_min_samples = grid_search.best_params_['min_samples']
+
+        dbscan_best = DBSCAN(eps=best_eps, min_samples=best_min_samples, metric='cosine')
+        labels = dbscan_best.fit_predict(to_cluster_embeddings)  # cluster data
+
+        results = pd.DataFrame()
+        results['cluster'] = labels
+        results['index'] = all_index
+
+        results = results.merge(self.df, how='left', on='index')
+        return results
 
     #TODO create a pdf report for both graph and clusters
     # review.df['Year'].value_counts()  # for the report
@@ -400,3 +492,5 @@ class BeeLitReview:
     # similarity_df['cos'].hist()
     # print("The time of execution of above program is :",
     #       (end - start) * 10 ** 3, "ms")
+    # we can do word cloud for the top choices
+    # review.df_raw['Language'].value_counts()
