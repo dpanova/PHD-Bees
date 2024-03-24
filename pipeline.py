@@ -1,34 +1,44 @@
+#TODO add the augmentation data as well and test it after that
+
 from BeeData import BeeData
 from BeeClassification import BeeClassification
+step = 30.0
+for step in range(5,60,1):
+    try:
+        print(step)
+        # from BeeData import BeeData
+        #Get the data
+        beedata = BeeData()
+        beedata.annotation_data_creation()
+        beedata.data_quality('data',float(step)) #This could be the investigation part - how long should the recording be
+        beedata.time_slice(step = int(step)*1000)
+        beedata.split_acoustic_data_sliced()
+        beedata.create_validate_data() # we need to save it locally at the end
 
-#%%
-from BeeData import BeeData
-#Get the data
-beedata = BeeData()
-beedata.annotation_data_creation()
-beedata.data_quality('data',30.0) #This could be the investigation part - how long should the recording be
-beedata.time_slice(step = 30000)
-beedata.split_acoustic_data_sliced()
-beedata.create_validate_data() # we need to save it locally at the end
 
 
-#%%
+    # from BeeClassification import BeeClassification
+        beeclass = BeeClassification()
+        # read and validate the annotation data
+        beeclass.read_annotation_csv()
+        #create the new label
+        beeclass.new_y_label_creation()
+        # split the data
+        beeclass.split_annotation_data()
 
-from BeeClassification import BeeClassification
-beeclass = BeeClassification()
-# read and validate the annotation data
-beeclass.read_annotation_csv()
-#create the new label
-beeclass.new_y_label_creation()
-# split the data
-beeclass.split_annotation_data()
 
-# data = beeclass.dataframe_to_dataset(beeclass.X_train_index,beeclass.X_test_index)
-beeclass.dataframe_to_datadict(beeclass.X_train_index,beeclass.X_test_index)
-# beeclass.datadict_creation()
+        beeclass.dataframe_to_datadict(beeclass.X_train_index,beeclass.X_test_index)
+    # beeclass.datadict_creation()
 
-#%%
-beeclass.transformer_classification(data = beeclass.datadict_data)
+
+        beeclass.transformer_classification(data = beeclass.datadict_data)
+
+    except:
+        print("Doesn't work")
+
+
+
+
 
 
 #%%
