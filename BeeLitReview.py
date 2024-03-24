@@ -5,7 +5,9 @@ from selenium.webdriver.common.keys import Keys
 # import undetected_chromedriver
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-from auxilary_functions import recommendations, reads, citations, cos_func, include_tuple, my_custom_function , dbscan_predict
+from functools import partial
+import multiprocessing as mp
+from auxilary_functions import recommendations, reads, citations, cos_func, include_tuple, my_custom_function , dbscan_predict, cos_sim_func
 import nltk
 from datetime import datetime
 from sentence_transformers import SentenceTransformer
@@ -28,15 +30,19 @@ class BeeLitReview:
     def __init__(self
                  ,logname='BeeLitReview.log'
                  ,already_scraped=True
+                 ,query='bee acoustic machine learning'
                  ,scraped_file_name = 'scraped_articles.csv'
                  ,scraped_file_validation = 'scraped_articles_validation.csv'
                  ,to_review_file_name='to_review.xlsx'):
         self.scraped_file_name = scraped_file_name
+        self.query = query
         self.similarity_df = None
         self.embeddings = None
         self.graph_start = None
         self.graph_end = None
         self.df_raw = None
+        self.path = None
+        self.most_similar = None
         self.to_review_file_name = to_review_file_name
         self.scraped_file_validation = scraped_file_validation
         logging.basicConfig(filename=logname
@@ -49,7 +55,13 @@ class BeeLitReview:
             self.validate_scraped_csv()
         else:
             self.df = pd.DataFrame()
-
+        """
+        :param query: query to search in the website
+        :type query: str
+        """
+        if type(query) != str:
+            raise ValueError(
+                'Invalid query type. It is type %s and expected type is str.' % type(query).__name__)
         if type(already_scraped) != bool:
             raise ValueError(
                 'Invalid already_scraped type. It is type %s and expected type is str.' % type(already_scraped).__name__)
@@ -174,10 +186,10 @@ class BeeLitReview:
         page_df = pd.DataFrame(page_dict)
         self.df = pd.concat([self.df, page_df], ignore_index=True)
     def researchgate_scraper(self
-                , username = '2239079053@shu.bg'
-                ,password ='BSru%SQ@trZz&nS26$cJ'
+                , username = ''
+                ,password = ''
                 ,url='https://www.researchgate.net/login?_sg=ITbsht6C-ko8ZSF49e9deV1BNgFqKApIltdEguj_4uiZ9K_WzI6gYtnTL5xsgogphkn5Z2RJTNuYqd9fMiGJfg'
-                , query='bee acoustic machine learning'
+
                  ):
         """
         Function to scrape the articles from ResearchGate
@@ -187,8 +199,6 @@ class BeeLitReview:
         :type password: str
         :param url: url of the website
         :type url: str
-        :param query: query to search in the website
-        :type query: str
         :return: scraped date in the df object and saved csv
         :rtype: dataframe
         """
@@ -203,9 +213,8 @@ class BeeLitReview:
         if type(url) != str:
             raise ValueError(
                 'Invalid url type. It is type %s and expected type is str.' % type(url).__name__)
-        if type(query) != str:
-            raise ValueError(
-                'Invalid query type. It is type %s and expected type is str.' % type(query).__name__)
+
+
 
         driver = uc.Chrome()
         driver.get(url)
@@ -228,7 +237,7 @@ class BeeLitReview:
         # search for the specific query
         sleep(3)
         search = driver.find_element('name', 'query')
-        search.send_keys(query)
+        search.send_keys(self.query)
         search.send_keys(Keys.ENTER)
         #get only those with full text available
         driver.find_element(By.CLASS_NAME, 'fulltext-availability-switch').click()
@@ -355,6 +364,8 @@ class BeeLitReview:
         #initiate the model
         model = SentenceTransformer(model_id)
         abstract_list = list(self.df[abstract_col])
+        #add the query embedding as the last one
+        abstract_list.append(self.query)
         embeddings = model.encode(abstract_list)
         self.embeddings = embeddings
         logging.info('Embeddings created for the abstracts.')
@@ -365,18 +376,28 @@ class BeeLitReview:
         Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings
         :return: similarity dataframe with columns pair0, pair1 and cos. Saves the data to similarity_df.csv
         """
-        embeddings_index = range(len(self.embeddings))
+        #initiate the multiprocessing
+        pool = mp.Pool(processes=mp.cpu_count())
+
+        query_index = len(self.embeddings)
+        embeddings_index = range(len(self.embeddings) - 1)
+
+        #calculate the similarity of each pair, excluding the query
         pairs = list(itertools.combinations(embeddings_index, 2))
-        similarity_df = pd.DataFrame()
-        for pair in pairs:
-            print(pair)
-            a0 = np.array(self.embeddings[pair[0]])
-            a1 = np.array(self.embeddings[pair[1]])
-            cos_sim = cos_func(a0, a1)
-            temp_dict = {'pair0': pair[0], 'pair1': pair[1], 'cos': cos_sim}
-            temp_df = pd.DataFrame([temp_dict])
-            similarity_df = pd.concat([similarity_df, temp_df], ignore_index=True)
-        self.similarity_df = similarity_df
+        similarity = pool.map(partial(cos_sim_func, embedding_list=self.embeddings), pairs)
+        similarity_df = pd.DataFrame(similarity)
+
+        #calculate the similarity of each abstract and the query
+        pairs = [((query_index - 1), x) for x in embeddings_index]
+        most_similar = pool.map(partial(cos_sim_func, embedding_list=self.embeddings), pairs)
+        most_similar_df = pd.DataFrame(most_similar)
+        #identify the most similar one and add it with cosine zero, this will be our initial point
+        most_similar_df = most_similar_df[most_similar_df['cos'] == most_similar_df['cos'].max()]
+        most_similar_df['cos'] = 0
+        self.most_similar = most_similar_df['pair1']
+
+        # add it to the similarity df
+        self.similarity_df = pd.concat([similarity_df, most_similar_df], ignore_index=True)
         #save the similarity data locally
         similarity_df.to_csv('similarity_df.csv', index=False)
         logging.info('Pairwise cosine similarity calculated.')
@@ -408,10 +429,15 @@ class BeeLitReview:
         path = tsp(G, cycle=False)
         self.graph_end = time.time()
         logging.info('Graph created and TSP calculated.')
-
+        self.path = path
+        ind = self.path.index(self.most_similar.iloc[0])
+        left_length = len(self.path[ind:-1])
+        left = self.path[ind:-1]
+        right = self.path[:(num_articles-left_length)]
+        to_review_path = left+right
         pd.DataFrame(path).to_csv(path_file_name, index=False)
         # get the first 50th
-        to_review_df = self.df.loc[path[:num_articles], ['index', 'Title', 'Abstract']]
+        to_review_df = self.df.loc[to_review_path, ['index', 'Title', 'Abstract']]
         to_review_df['Choose'] = False
         to_review_df.to_excel(self.to_review_file_name, index=False)
         logging.info('%s file saved.' % self.to_review_file_name)
@@ -439,7 +465,7 @@ class BeeLitReview:
         :return: pandas data frame with the results (labeled abstracts) 
         :rtype: pandas data frame
         """ % ';'.join(list(self.df['Text Type'].unique()))
-
+        #TODO save it to the object, think about it
         to_review_df = pd.read_excel(self.to_review_file_name)
 
         index_chosen = list(to_review_df[to_review_df['Choose']]['index'])
@@ -481,7 +507,7 @@ class BeeLitReview:
         results['cluster'] = labels
         results['index'] = all_index
 
-        results = results.merge(self.df, how='left', on='index')
+        results = results.merge(self.df, how='inner', on='index')
         return results
 
     #TODO create a pdf report for both graph and clusters
@@ -494,3 +520,54 @@ class BeeLitReview:
     #       (end - start) * 10 ** 3, "ms")
     # we can do word cloud for the top choices
     # review.df_raw['Language'].value_counts()
+    # word cloud generation
+    # # create a word cloud
+    # to_review_df = pd.read_excel('to_review.xlsx')
+    # from wordcloud import WordCloud
+    # words = nltk.word_tokenize(' . '.join(list(to_review_df['Title'])))
+    # from nltk.corpus import stopwords
+    # stop_words = set(stopwords.words('english'))
+    # from nltk.stem.snowball import SnowballStemmer
+    # stemmer = SnowballStemmer("english")
+    # words = [stemmer.stem(word.lower())
+    #          for word in words
+    #          if word.isalnum() and word.lower() not in stop_words]
+    # word_freq = {}
+    # for word in words:
+    #     if word in word_freq:
+    #         word_freq[word] += 1
+    #     else:
+    #         word_freq[word] = 1
+    # wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
+    # import matplotlib.pyplot as plt
+    # plt.figure(figsize=(10, 5))  # width and height
+    # plt.imshow(wordcloud, interpolation='bilinear')
+    # plt.axis("off")
+    # plt.show()
+    #results.loc[results['cluster']==0,'Abstract']
+
+
+    #
+    #path = pd.read_csv('path.csv')
+    # #select only the inspected articles
+    # path = path[:100]
+    # #create tuples based on the path pairs
+    # path_similarity = pd.DataFrame()
+    # path_similarity['pair0'] = list(path.iloc[:-1,0])
+    # path_similarity['pair1'] = list(path.iloc[1:,0])
+    # path_similarity = path_similarity.merge(review.similarity_df, how='inner', on = ['pair0','pair1'])
+    # path_similarity['cos'].mean() #0.303075465137538101
+    #
+    # #let us do the same for the original research order
+    # original_similarity = pd.DataFrame()
+    # original_similarity['pair0'] = list(range(0,99))
+    # original_similarity['pair1'] = list(range(1,100))
+    # original_similarity = original_similarity.merge(review.similarity_df, how='inner', on = ['pair0','pair1'])
+    # original_similarity['cos'].mean() #0.36051554165103217
+
+    # # cost to read
+    # # get the difference between what has been read in order to get to the same lit research
+    # all_not_read_indix = list(set(list(review.df['index'])).difference(set(list(path.loc[:, '0']))))
+    # all_not_read_indix_max = [x for x in all_not_read_indix if x < max(list(list(path.loc[:, '0'])))]
+    # # the cost in terms of time
+    # review.df.loc[all_not_read_indix_max, 'Abstract Count Words'].sum() / 150 / 60  # 12 hours
