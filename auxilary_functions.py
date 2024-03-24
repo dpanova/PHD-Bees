@@ -216,6 +216,29 @@ def cos_func(v1,v2):
     cosine_similarity = 1 - cosine(v1, v2)
     return cosine_similarity
 
+def cos_sim_func(pair,embedding_list):
+    """
+    Function to calculate the similarity between two embeddings based on cosine similarity
+    :param pair: tuple with the index of the two embeddings
+    :type pair: tuple
+    :param embedding_list: list of the embedding vectors
+    :type embedding_list: array-like
+    :return: dictionary with pair0, pair1 and cos
+    :rtype: dict
+    """
+    if type(pair) != tuple:
+        raise ValueError(
+            'Invalid pair type. It is type %s and expected type is tuple.' % type(pair).__name__)
+    if not pd.api.types.is_list_like(embedding_list):
+        raise ValueError(
+            'Invalid embedding_list type. It is type %s and expected type is array-like.' % type(embedding_list).__name__)
+
+    a0 = np.array(embedding_list[pair[0]])
+    a1 = np.array(embedding_list[pair[1]])
+    cos_sim = cos_func(a0, a1)
+    temp_dict = {'pair0': pair[0], 'pair1': pair[1], 'cos': cos_sim}
+    return temp_dict
+
 def dbscan_predict(dbscan_model, X_new, metric=sp.spatial.distance.cosine):
     """
     Function to predict the DBSCAN Label
@@ -273,7 +296,7 @@ def include_tuple(element_list, row, t_limit=0.3):
     if type(element_list) != list:
         raise ValueError(
             'Invalid element_list type. It is type %s and expected type is list.' % type(element_list).__name__)
-    if type(t_limit) != bool:
+    if type(t_limit) != float:
         raise ValueError(
             'Invalid t_limit type. It is type %s and expected type is bool.' % type(
                 t_limit).__name__)
