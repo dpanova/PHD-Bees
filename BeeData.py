@@ -320,7 +320,7 @@ class BeeData:
                 'Invalid path type. It is type %s and expected type is str.' % type(path).__name__)
         if type(min_duration) != float:
             raise ValueError(
-                'Invalid min_duration type. It is type %s and expected type is str.' % type(min_duration).__name__)
+                'Invalid min_duration type. It is type %s and expected type is float.' % type(min_duration).__name__)
 
 
 
