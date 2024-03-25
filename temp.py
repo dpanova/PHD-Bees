@@ -13,10 +13,32 @@ results = review.dbscan_clusters(cosine_threshold = 0.5
                         ,type = ['Article', 'Conference Paper']
                         ,read = 10
                         ,citation = 1)
+#%%
+#define a function for the table format table creation
+
+def pd_to_tuple(df,col):
+    pandas_table = pd.DataFrame(df[col].value_counts())
+
+    pandas_table.reset_index(inplace=True)
+    pandas_table[col] = pandas_table[col].astype('str')
+    pandas_table['count'] = pandas_table['count'].astype('str')
+    cols = tuple(pandas_table.columns)
+    table_data = [tuple(x) for x in pandas_table.to_numpy()]
+    table_data.insert(0,cols)
+    table_data = tuple(table_data)
+    return table_data
+
+#%%
+
+
+
 
 #%%
 from fpdf import FPDF
 from datetime import datetime
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
 # Generate the PDF report and save it
 pdf = FPDF('P', 'mm', 'A4')
 
@@ -42,36 +64,53 @@ pdf.cell(w = 40, h = 10, txt='A specialized interpretation is essential to deriv
 pdf.ln(15)
 pdf.set_font('Arial', size= 16, style='B')
 pdf.cell(w = 40, h = 10, txt='Statistics')
-pdf.ln(5)
+pdf.ln(10)
 pdf.set_font('Arial', size= 10)
-pdf.cell(w = 40, h = 10, txt='Query %s has been executed in researchgate.com' %review.query)
+pdf.cell(w = 40, h = 10, txt='Query "%s" has been executed in researchgate.com and all available results are scraped - ' %review.query)
 pdf.ln(5)
-pdf.cell(w = 40, h = 10, txt='In this report %s results have been investigated.' %str(len(review.df)))
-pdf.ln(5)
-pdf.cell(w = 40, h = 10, txt='Results distribution over the years')
+pdf.cell(w = 40, h = 10,txt = 'in total %s. Note, that in the context of this report, a result is a search result, it can be an article, presentation, etc.'%str(len(review.df)))
+pdf.ln(10)
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Time Distribution')
+pdf.ln(10)
+pdf.set_font('Arial', size= 10)
+pdf.cell(w = 40, h = 10, txt="Firstly, we will investigate how the results's distribution over the years.")
+pdf.ln(10)
 pdf.set_font("Arial", size=10)
-import pandas as pd
 
-pandas_table = pd.DataFrame(review.df['Year'].value_counts())
-
-pandas_table.reset_index(inplace=True)
-pandas_table['Year'] = pandas_table['Year'].astype('str')
-pandas_table['count'] = pandas_table['count'].astype('str')
-cols = tuple(pandas_table.columns)
-table_data = [tuple(x) for x in pandas_table.to_numpy()]
-table_data.insert(0,cols)
-table_data = tuple(table_data)
+table_data = pd_to_tuple(review.df,'Year')
 
 with pdf.table() as table:
     for data_row in table_data:
         row = table.row()
         for datum in data_row:
             row.cell(datum)
+pdf.ln(10)
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Word Distribution')
+pdf.ln(5)
+pdf.set_font('Arial', size= 10)
+pdf.ln(10)
+pdf.cell(w = 40, h = 10, txt='Then, we will investigate what is the average count of words per abstract. Here the goal is to see if the default transformer')
+
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt='model is still an adequate solution.The default model is all-mpnet-base-v2 and if the word count is above 384, it truncates')
+
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt="the text and we wouldn't have full results in the encoding stage. We have %s of the results consenting the criteria." %str(round(sum(review.df['Abstract Count Words'] <= 384.0) / len(review.df),2)))
+pdf.ln(10)
 
 
-
+plt.figure()
+review.df['Abstract Count Words'].hist()
+# Converting Figure to an image:
+img_buf = BytesIO()  # Create image object
+plt.savefig(img_buf, dpi=100)  # Save the image
+# pdf.image(img_buf, w=pdf.epw)  # Make the image full width
+# pdf.image(img_buf, keep_aspect_ratio=True)
+pdf.image(img_buf, x = 50, y = 200, w = 110, h = 0)
 pdf.output('lit_report.pdf', 'F')
-
+img_buf.close()
 
 #%%
 # Dependant variable analysis
