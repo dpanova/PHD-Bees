@@ -39,6 +39,10 @@ from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 from io import BytesIO
+from nltk.corpus import stopwords
+from wordcloud import WordCloud
+from nltk.stem.snowball import SnowballStemmer
+import nltk
 # Generate the PDF report and save it
 pdf = FPDF('P', 'mm', 'A4')
 
@@ -63,7 +67,7 @@ pdf.cell(w = 40, h = 10, txt='A specialized interpretation is essential to deriv
 # Stats on how many articles have been investigated
 pdf.ln(15)
 pdf.set_font('Arial', size= 16, style='B')
-pdf.cell(w = 40, h = 10, txt='Statistics')
+pdf.cell(w = 40, h = 10, txt='Data Overview')
 pdf.ln(10)
 pdf.set_font('Arial', size= 10)
 pdf.cell(w = 40, h = 10, txt='Query "%s" has been executed in researchgate.com and all available results are scraped - ' %review.query)
@@ -109,8 +113,201 @@ plt.savefig(img_buf, dpi=100)  # Save the image
 # pdf.image(img_buf, w=pdf.epw)  # Make the image full width
 # pdf.image(img_buf, keep_aspect_ratio=True)
 pdf.image(img_buf, x = 50, y = 200, w = 110, h = 0)
-pdf.output('lit_report.pdf', 'F')
+
+# img_buf.close()
+
+#page 2
+
+pdf.add_page()
+pdf.set_margins(10, 10, 10)
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Result type')
+pdf.ln(10)
+pdf.set_font('Arial', size= 10)
+pdf.cell(w = 40, h = 10, txt='Investigate what results are extracted. This will help in the DBSCAN clustering choice for results. The default types for ')
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt='DBscan clustering are: Article and Conference Paper. ')
+
+table_data_type = pd_to_tuple(review.df,'Text Type')
+pdf.ln(10)
+with pdf.table() as table:
+    for data_row in table_data_type:
+        row = table.row()
+        for datum in data_row:
+            row.cell(datum)
+
+pdf.ln(10)
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Language')
+pdf.ln(10)
+pdf.set_font('Arial', size= 10)
+pdf.cell(w = 40, h = 10, txt='Investigate what languages the results are. We are considering only English languages for the purposes of this research.')
+pdf.ln(5)
+
+pdf.cell(w = 40, h = 10, txt='After removing non-English results, we lose %s of the data.' %str(round(len(review.df_raw[review.df_raw['Language']!='en'])/len(review.df_raw),2)))
+
+
+table_data_language = pd_to_tuple(review.df_raw,'Language')
+pdf.ln(10)
+with pdf.table() as table:
+    for data_row in table_data_language:
+        row = table.row()
+        for datum in data_row:
+            row.cell(datum)
+
+
+pdf.ln(10)
+pdf.set_font('Arial', size= 16, style='B')
+pdf.cell(w = 40, h = 10, txt='Results of the Conducted Research')
+pdf.ln(10)
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Travelling Salesmen Problem (TSP)')
+pdf.ln(10)
+pdf.set_font('Arial', size= 10)
+pdf.cell(w = 40, h = 10, txt='Each abstract is turned into an embedding, using the HuggingFace Transformer. The default one is all-mpnet-base-v2.')
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt='After we calculate similarity between each scraped result with each another one, we apply Travelling Salesmen Problem')
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt= 'for finding the shortest path. The time for calculating it is %s ms.' %str((review.graph_end - review.graph_start) * 10 ** 3))
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt= 'Additionally, to optimize the performance of the algorithm, we created an artificial connection in the graph')
+
+
+
+
+
+#page 3
+pdf.add_page()
+
+pdf.set_margins(10, 10, 10)
+initial_point = str(results.loc[0,'index'])
+
+pdf.set_font('Arial', size= 10)
+pdf.cell(w = 40, h = 10, txt= 'between the query %s and the most similar result in terms of cosine similarity between ' %review.query)
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt= 'embeddings. Then we artificially assigned similarity 0 to impose the algorithm to start from there. The result index is %s' %initial_point)
+
+pdf.ln(10)
+
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Similarity Difference')
+pdf.set_font('Arial', size= 10)
+pdf.ln(10)
+pdf.cell(w = 40, h = 10, txt='In order to investigate what is the added value of TSP, we check what is the average similarity measure ')
+pdf.ln(5)
+
+path = pd.read_csv('path.csv')
+#select only the inspected articles
+path = path[:50]
+#create tuples based on the path pairs
+path_similarity = pd.DataFrame()
+path_similarity['pair0'] = list(path.iloc[:-1,0])
+path_similarity['pair1'] = list(path.iloc[1:,0])
+path_similarity = path_similarity.merge(review.similarity_df, how='inner', on = ['pair0','pair1'])
+# path_similarity['cos'].mean() #0.303075465137538101
+
+#let us do the same for the original research order
+original_similarity = pd.DataFrame()
+original_similarity['pair0'] = list(range(0,49))
+original_similarity['pair1'] = list(range(1,50))
+original_similarity = original_similarity.merge(review.similarity_df, how='inner', on = ['pair0','pair1'])
+# original_similarity['cos'].mean() #0.36051554165103217
+
+pdf.cell(w = 40, h = 10, txt='in the first 50 TSP-suggested articles and the first 50 ResearchGate articles. TSP is %s and ResearchGate is %s.' %(str(round(path_similarity['cos'].mean(),2)),str(round(original_similarity['cos'].mean() ,2))))
+pdf.ln(10)
+
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt='Time Saved')
+pdf.set_font('Arial', size= 10)
+pdf.ln(10)
+
+all_not_read_indix = list(set(list(review.df['index'])).difference(set(list(path.loc[:, '0']))))
+all_not_read_indix_max = [x for x in all_not_read_indix if x < max(list(list(path.loc[:, '0'])))]
+# the cost in terms of time
+cost_time = str(round(review.df.loc[all_not_read_indix_max, 'Abstract Count Words'].sum() / 150 / 60,2))  # 12 hours
+
+pdf.cell(w = 40, h = 10, txt='Now we will calculate how much time it is saved by following the 50 articles suggested by TSP. The goal is to ')
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt='understand how much time is saved and at the same time wider knowledge on the topic is acquired. The metric')
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt='encompasses the number of abstracts one should go over to read the same TSP-suggested results. According')
+pdf.ln(5)
+
+pdf.cell(w = 40, h = 10, txt='to a research, one can read around 150 words per minute. Therefore, the saved time by going with the TSP')
+pdf.ln(5)
+pdf.cell(w = 40, h = 10, txt='suggestion is %s hours.' %cost_time)
+
+
+
+pdf.ln(10)
+
+pdf.set_font('Arial', size= 12, style='B')
+pdf.cell(w = 40, h = 10, txt= 'TSP Results of interest')
+pdf.set_font('Arial', size= 10)
+pdf.ln(10)
+pdf.cell(w = 40, h = 10, txt='Let us look into the wordcloud of the TSP-results abstracts to see what those are in one look.')
+pdf.ln(5)
+
+to_review_df = pd.read_excel('to_review.xlsx')
+
+words = nltk.word_tokenize(' . '.join(list(to_review_df['Title'])))
+
+stop_words = set(stopwords.words('english'))
+
+stemmer = SnowballStemmer("english")
+words = [stemmer.stem(word.lower())
+         for word in words
+         if word.isalnum() and word.lower() not in stop_words]
+word_freq = {}
+for word in words:
+    if word in word_freq:
+        word_freq[word] += 1
+    else:
+        word_freq[word] = 1
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
+
+plt.figure(figsize=(10, 5))  # width and height
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis("off")
+
+img_buf = BytesIO()  # Create image object
+plt.savefig(img_buf, dpi=100)  # Save the image
+pdf.image(img_buf, x = 0, y = 100, w = 200, h = 0)
+
+pdf.ln(100)
+
+
+pdf.cell(w = 40, h = 10, txt='The next step is to look into the TSP results and identify those which are of interest for the research.')
+
+pdf.ln(5)
+
+pdf.cell(w = 40, h = 10, txt='We have identified those:')
+
+pdf.ln()
+
+for idx,row in to_review_df[to_review_df['Choose']].iterrows():
+    pdf.cell(w=40, h=10, txt='Title: ' + row['Title'])
+    pdf.ln(5)
+
+
+# pdf.ln(10)
+# pdf.set_font('Arial', size= 12, style='B')
+# pdf.cell(w = 40, h = 10, txt= 'Clustering of the results')
+# pdf.set_font('Arial', size= 10)
+# pdf.ln(10)
+# pdf.cell(w = 40, h = 10, txt='After having the suggested new reading route, the next step is to conduct DBSCAN clustering. The goal is find the simila')
+# pdf.ln(5)
+# pdf.cell(w = 40, h = 10, txt='After having the suggested new reading route, the next step is to conduct DBSCAN clustering.')
+# pdf.ln(5)
+
+
+
+
 img_buf.close()
+pdf.output('lit_report.pdf', 'F')
+
+
+
 
 #%%
 # Dependant variable analysis
@@ -120,6 +317,8 @@ pdf.cell(w = 40, h = 10, txt='Dependant variable distribution')
 #df = wine.data
 
 pdf.ln(10)
+
+
 pdf.set_font('Arial', size= 12)
 pdf.cell(w = 40, h = 10, txt='Original Variable')
 pdf.ln(5)
