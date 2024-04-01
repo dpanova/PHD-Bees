@@ -7,18 +7,29 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from functools import partial
 import multiprocessing as mp
-from auxilary_functions import recommendations, reads, citations, cos_func, include_tuple, my_custom_function , dbscan_predict, cos_sim_func
-import nltk
-from datetime import datetime
+from auxilary_functions import recommendations, reads, citations, include_tuple, cos_sim_func, start_page, h0, h1, h2, normal_text, pdf_table, pdf_table 
+
+
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import networkx as nx
-import pandas as pd
+
 import time
 import itertools
-from sklearn.cluster import DBSCAN
-from numpy import arange
-from sklearn.model_selection import GridSearchCV
+from clusteval import clusteval
+
+from auxilary_functions import pd_to_tuple
+from fpdf import FPDF
+from datetime import datetime
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from nltk.corpus import stopwords
+from wordcloud import WordCloud
+from nltk.stem.snowball import SnowballStemmer
+import nltk
+
+
 
 from langdetect import detect
 import warnings
@@ -43,6 +54,16 @@ class BeeLitReview:
         self.df_raw = None
         self.path = None
         self.most_similar = None
+        self.cosine_clustering_threshold = None
+        self.year = None
+        self.type = None
+        self.read = None
+        self.citation = None
+        self.to_review_df = None
+        self.clustering_indices = None
+        self.to_cluster_embeddings = None
+        self.ce_hdbscan_results = None
+        self.ce_agg_results = None
         self.to_review_file_name = to_review_file_name
         self.scraped_file_validation = scraped_file_validation
         logging.basicConfig(filename=logname
@@ -317,7 +338,6 @@ class BeeLitReview:
         self.df['Reads'] = self.df[stats_col].apply(lambda x: reads(x))
         logging.info('Reads extracted successfully')
 
- 
         # extracting type of text from the left category
         self.df['Text Type'] = self.df[cat_col].apply(
             lambda x: [a for a in x.split(';') if a != 'Full-text available'][0])
@@ -431,26 +451,32 @@ class BeeLitReview:
         logging.info('Graph created and TSP calculated.')
         self.path = path
         ind = self.path.index(self.most_similar.iloc[0])
-        left_length = len(self.path[ind:-1])
-        left = self.path[ind:-1]
-        right = self.path[:(num_articles-left_length)]
-        to_review_path = left+right
+        if ind >= num_articles:
+            left_length = len(self.path[ind:-1])
+            left = self.path[ind:-1]
+            right = self.path[:(num_articles-left_length)]
+            to_review_path = left + right
+        else:
+            to_review_path = self.path[:num_articles]
+
         pd.DataFrame(path).to_csv(path_file_name, index=False)
         # get the first 50th
         to_review_df = self.df.loc[to_review_path, ['index', 'Title', 'Abstract']]
         to_review_df['Choose'] = False
+        # self.to_review_df = to_review_df
         to_review_df.to_excel(self.to_review_file_name, index=False)
         logging.info('%s file saved.' % self.to_review_file_name)
 
 
-    def dbscan_clusters(self
+    def clustering_evaluation(self
                         , cosine_threshold = 0.3
                         ,year=2023
-                        ,type = ['Article', 'Conference Paper']
+                        ,type = ['Article', 'Conference Paper','Preprint','Patent','Thesis']
                         ,read = 10
                         ,citation = 1):
-
+        #TODO update here the definition, the idea is to provide comparison between the diff clustering algorithms
         """
+        TODO update here 
         Create DBSCAN clusters on the abstracts which we have choosen. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover we can choose those are highly correlated with the originally chosen abstracts.  
         :param cosine_threshold: threshold for cosine similarity with the chosen articles. The value is between 0 and 1 
         :type cosine_threshold: float
@@ -465,10 +491,16 @@ class BeeLitReview:
         :return: pandas data frame with the results (labeled abstracts) 
         :rtype: pandas data frame
         """ % ';'.join(list(self.df['Text Type'].unique()))
-        #TODO save it to the object, think about it
-        to_review_df = pd.read_excel(self.to_review_file_name)
+        self.cosine_clustering_threshold = cosine_threshold
+        self.year = year
+        self.type = type
+        self.read = read
+        self.citation = citation
 
-        index_chosen = list(to_review_df[to_review_df['Choose']]['index'])
+        self.to_review_df = pd.read_excel(self.to_review_file_name)
+        self.to_review_df['Choose'] = self.to_review_df['Choose'].astype('bool')
+
+        index_chosen = list( self.to_review_df[ self.to_review_df['Choose']]['index'])
 
         self.similarity_df['Under Inspection'] = False
         self.similarity_df['key'] = list(zip(self.similarity_df['pair0'], self.similarity_df['pair1']))
@@ -482,92 +514,271 @@ class BeeLitReview:
         filter_index = list(self.df[(self.df['Year'] >= year) & (self.df['Text Type'].isin(type)) & (
                     self.df['Citations'] >= citation) & (self.df['Reads'] >= read)]['index'])
         common_index = list(set(pair).intersection(filter_index))
-        all_index = index_chosen + common_index
+
+        #save the clustering indices in the object
+        self.clustering_indices= list(set(index_chosen + common_index))
+        self.to_cluster_embeddings = np.vstack([self.embeddings[x] for x in self.clustering_indices])
+
+        #HDBSAN
+        ce_hdbscan = clusteval(cluster='hdbscan', evaluate='silhouette', linkage='complete')
+        self.ce_hdbscan_results = ce_hdbscan.fit(self.to_cluster_embeddings)
+        ce_hdbscan.fit(self.to_cluster_embeddings)
+        # ce_hdbscan.plot()[0].savefig("sil_score_hdbsan.png")
+
+        ce_hdbscan.dendrogram()
+        plt.savefig("dendogram_hdbscan.png")
+        # ce_hdbscan.plot_silhouette()
+        # plt.savefig("Silhouette_clusters_hdbscan.png")
 
 
-        to_cluster_embeddings = [self.embeddings[x] for x in all_index]
+        #Hierarchical
+        ce_agg = clusteval(cluster='agglomerative', evaluate='silhouette', linkage='complete', metric='cosine')
 
-        # we can optimize for eps and min_samples
-        param_grid = {
-            'eps': arange(0.1, 0.5, 0.001),
-            'min_samples': range(3, 15, 1)
-        }
+        # Cluster evaluation
+        self.ce_agg_results = ce_agg.fit(self.to_cluster_embeddings)
+        #save plots for the report
+        ce_agg.fit(self.to_cluster_embeddings)
+        # ce_agg.plot()[0].savefig("sil_score_agg.png")
 
-        dbscan = DBSCAN(metric='cosine')
-        grid_search = GridSearchCV(dbscan, param_grid, scoring=my_custom_function)
-        grid_search.fit(to_cluster_embeddings)
+        ce_agg.dendrogram()
+        plt.savefig("dendogram_agg.png")
 
-        best_eps = grid_search.best_params_['eps']
-        best_min_samples = grid_search.best_params_['min_samples']
+        # ce_agg.plot_silhouette()
+        # plt.savefig("Silhouette_clusters_agg.png")
 
-        dbscan_best = DBSCAN(eps=best_eps, min_samples=best_min_samples, metric='cosine')
-        labels = dbscan_best.fit_predict(to_cluster_embeddings)  # cluster data
+#TODO add logs to this and previous function
+    def pdf_report_generate(self, report_file_name='lit_report.pdf'):
+        """
+        Generate automated pdf report based on the results from the class
+        The report has:
+        - INTRO: Report title, author, data of the report and disclaimer and dependant variable distribution
+        - DATA OVERVIEW - Time, word, result type, language distributions
+        - Optimal ML Path
+            - Travelling Salesman Problem Solution
+            - Similarity Difference
+            - Time Saved
+            - TSP Results of Interest
+            - Clustering Results
+        - Suggested Reads
+        :return: pdf file
+        :rtype: pdf
+        """
+        if type(report_file_name) != str:
+            raise ValueError(
+                'Invalid report_file_name type. It is type %s and expected type is str.' % type(report_file_name).__name__)
+        if not report_file_name.endswith('pdf'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .pdf extension' % report_file_name)
 
-        results = pd.DataFrame()
-        results['cluster'] = labels
-        results['index'] = all_index
+        # Generate the PDF report and save it
+        pdf = FPDF('P', 'mm', 'A4')
 
-        results = results.merge(self.df, how='inner', on='index')
-        return results
+        # PAGE 1
 
-    #TODO create a pdf report for both graph and clusters
-    # review.df['Year'].value_counts()  # for the report
-    # review.df['Abstract Count Words'].hist()  # for teh report
-    # sum(review.df['Abstract Count Words'] <= 384.0) / len(review.df)  # 92% for the report
-    # review.df['Text Type'].value_counts()  # for teh report
-    # similarity_df['cos'].hist()
-    # print("The time of execution of above program is :",
-    #       (end - start) * 10 ** 3, "ms")
-    # we can do word cloud for the top choices
-    # review.df_raw['Language'].value_counts()
-    # word cloud generation
-    # # create a word cloud
-    # to_review_df = pd.read_excel('to_review.xlsx')
-    # from wordcloud import WordCloud
-    # words = nltk.word_tokenize(' . '.join(list(to_review_df['Title'])))
-    # from nltk.corpus import stopwords
-    # stop_words = set(stopwords.words('english'))
-    # from nltk.stem.snowball import SnowballStemmer
-    # stemmer = SnowballStemmer("english")
-    # words = [stemmer.stem(word.lower())
-    #          for word in words
-    #          if word.isalnum() and word.lower() not in stop_words]
-    # word_freq = {}
-    # for word in words:
-    #     if word in word_freq:
-    #         word_freq[word] += 1
-    #     else:
-    #         word_freq[word] = 1
-    # wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
-    # import matplotlib.pyplot as plt
-    # plt.figure(figsize=(10, 5))  # width and height
-    # plt.imshow(wordcloud, interpolation='bilinear')
-    # plt.axis("off")
-    # plt.show()
-    #results.loc[results['cluster']==0,'Abstract']
+        # INTRO
+        start_page(pdf)
+
+        h0('Literature self Automated Report', pdf)
+
+        normal_text('Author: Denitsa Panova', pdf, x=3, italics=True)
+        normal_text('Date: ' + datetime.today().strftime('%Y-%m-%d'), pdf, italics=True)
+
+        text = (
+            'Disclaimer: The objective of this report is to present the outcomes generated by automated literature research. '
+            'A specialized interpretation is essential to derive accurate conclusions regarding correct articles to '
+            'be selfed.')
+
+        normal_text(text, pdf, italics=True, x=10)
+
+        h1('Data Overview', pdf)
+
+        text = ('Query "%s" has been executed in researchgate.com and all available results are scraped - in total %s. '
+                'Note, that in the context of this report, a result is a search result, it can be an article, '
+                'presentation, etc.') % (self.query, str(len(self.df)))
+        normal_text(text, pdf)
+
+        h2('Time Distribution', pdf)
+        normal_text("Firstly, we will investigate how the results's distribution over the years.", pdf)
+
+        # Table for the time distribution over years
+        year_data = pd_to_tuple(self.df, 'Year')
+
+        pdf_table(year_data, pdf, width=40, cols=(20, 20))
+
+        h2('Word Distribution', pdf)
+
+        text = (
+                    "Then, we will investigate what is the average count of words per abstract. Here the goal is to see if the "
+                    "default transformer model is still an adequate solution.The default model is all-mpnet-base-v2 and if the "
+                    "word count is above 384, it truncates the text and we wouldn't have full results in the encoding stage. "
+                    "We have %s of the results consenting the criteria."
+                    % str(round(sum(self.df['Abstract Count Words'] <= 384.0) / len(self.df), 2)))
+
+        normal_text(text, pdf)
+
+        plot_code = "self.df['Abstract Count Words'].hist()"
+        pdf_graph(pdf, plot_code=plot_code, x=50, y=206, w=110, h=0)
+
+        # NEW PAGE
+        start_page(pdf)
+        h2('Result type', pdf)
+        text = (
+            "Investigate what type of results are extracted. This will help in the correct choice for clustering the results. "
+            "The default types for clustering are: Article and Conference Paper.")
+        normal_text(text, pdf)
+        type_data = pd_to_tuple(self.df, 'Text Type')
+        pdf_table(type_data, pdf, width=60, cols=(40, 20))
+
+        h2('Language', pdf)
+        text = (
+                    "Investigate what languages the results are in. We are considering only English languages for the purposes of "
+                    "this research After removing non-English results, we lose %s of the data."
+                    % str(round(len(self.df_raw[self.df_raw['Language'] != 'en']) / len(self.df_raw), 2)))
+
+        normal_text(text, pdf)
+
+        language_data = pd_to_tuple(self.df_raw, 'Language')
+        pdf_table(language_data, pdf, width=40, cols=(40, 20))
+
+        h1('Optimal ML Path', pdf)
+        h2('Traveling Salesmen Problem (TSP)', pdf)
+
+        initial_point = str(self.most_similar.iloc[0])
+        text = ("Each abstract is turned into an embedding, using the HuggingFace Transformer. The default one is "
+                "all-mpnet-base-v2.After we calculate similarity between each scraped result with each another one, we apply TSP "
+                "for finding the shortest path. The time for calculating it is %s ms. Additionally, to optimize the performance "
+                "of the algorithm by creating an artificial connection in the graph between the query %s and the most similar "
+                "result in terms of cosine similarity between embeddings. Then we artificially assigned similarity 0 to "
+                "impose the algorithm to start from there. The result index is %s"
+                % (str((self.graph_end - self.graph_start) * 10 ** 3), self.query, initial_point))
+
+        normal_text(text, pdf)
+
+        h2('Similarity Difference', pdf)
 
 
-    #
-    #path = pd.read_csv('path.csv')
-    # #select only the inspected articles
-    # path = path[:100]
-    # #create tuples based on the path pairs
-    # path_similarity = pd.DataFrame()
-    # path_similarity['pair0'] = list(path.iloc[:-1,0])
-    # path_similarity['pair1'] = list(path.iloc[1:,0])
-    # path_similarity = path_similarity.merge(review.similarity_df, how='inner', on = ['pair0','pair1'])
-    # path_similarity['cos'].mean() #0.303075465137538101
-    #
-    # #let us do the same for the original research order
-    # original_similarity = pd.DataFrame()
-    # original_similarity['pair0'] = list(range(0,99))
-    # original_similarity['pair1'] = list(range(1,100))
-    # original_similarity = original_similarity.merge(review.similarity_df, how='inner', on = ['pair0','pair1'])
-    # original_similarity['cos'].mean() #0.36051554165103217
+        path = pd.DataFrame(self.path[:50])
+        # create tuples based on the path pairs
+        path_similarity = pd.DataFrame()
+        path_similarity['pair0'] = list(path.iloc[:-1, 0])
+        path_similarity['pair1'] = list(path.iloc[1:, 0])
+        path_similarity = path_similarity.merge(self.similarity_df, how='inner', on=['pair0', 'pair1'])
 
-    # # cost to read
-    # # get the difference between what has been read in order to get to the same lit research
-    # all_not_read_indix = list(set(list(review.df['index'])).difference(set(list(path.loc[:, '0']))))
-    # all_not_read_indix_max = [x for x in all_not_read_indix if x < max(list(list(path.loc[:, '0'])))]
-    # # the cost in terms of time
-    # review.df.loc[all_not_read_indix_max, 'Abstract Count Words'].sum() / 150 / 60  # 12 hours
+        # let us do the same for the original research order
+        original_similarity = pd.DataFrame()
+        original_similarity['pair0'] = list(range(0, 49))
+        original_similarity['pair1'] = list(range(1, 50))
+        original_similarity = original_similarity.merge(self.similarity_df, how='inner', on=['pair0', 'pair1'])
+
+        text = (
+                    "In order to investigate what is the added value of TSP, we check what is the average similarity measure"
+                    "in the first 50 TSP-suggested articles and the first 50 ResearchGate articles. TSP is %s and ResearchGate is %s."
+                    % (str(round(path_similarity['cos'].mean(), 2)), str(round(original_similarity['cos'].mean(), 2))))
+
+        normal_text(text, pdf)
+
+        h2('Time Saved', pdf)
+
+        all_not_read_indix = list(set(list(self.df['index'])).difference(set(list(path.loc[:, 0]))))
+        all_not_read_indix_max = [x for x in all_not_read_indix if x < max(list(list(path.loc[:, 0])))]
+        # the cost in terms of time
+        cost_time = str(
+            round(self.df.loc[all_not_read_indix_max, 'Abstract Count Words'].sum() / 150 / 60, 2))  # 12 hours
+        text = (
+                    "Now we will calculate how much time it is saved by following the 50 articles suggested by TSP. The goal is to "
+                    "understand how much time is saved and at the same time wider knowledge on the topic is acquired. The metric "
+                    "encompasses the number of abstracts one should go over to read the same TSP-suggested results. According "
+                    "to a research, one can read around 150 words per minute. Therefore, the saved time by going with the TSP "
+                    "suggestion is %s hours." % cost_time)
+
+        normal_text(text, pdf)
+
+        h2('TSP Results of Interest', pdf)
+        normal_text('Let us look into the wordcloud of the TSP-results abstracts to see what those are in one look.',
+                    pdf, x=0)
+
+
+        words = nltk.word_tokenize(' . '.join(list(self.to_review_df['Title'])))
+
+        stop_words = set(stopwords.words('english'))
+
+        stemmer = SnowballStemmer("english")
+        words = [stemmer.stem(word.lower())
+                 for word in words
+                 if word.isalnum() and word.lower() not in stop_words]
+        word_freq = {}
+        for word in words:
+            if word in word_freq:
+                word_freq[word] += 1
+            else:
+                word_freq[word] = 1
+        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
+
+        plot_code = ("plt.imshow(wordcloud, interpolation='bilinear') \n"
+                     "plt.axis('off')")
+        pdf_graph(pdf, plot_code=plot_code, x=0, y=100, w=200, h=0)
+        pdf.ln(115)
+        normal_text(
+            'The next step is to look into the TSP results and identify those which are of interest for the research.'
+            'We have identified those:', pdf)
+
+
+        for idx, row in self.to_review_df[self.to_review_df['Choose']].iterrows():
+            normal_text('Original Index: ' + str(row['index']), pdf)
+            normal_text('Title: ' + row['Title'], pdf)
+
+        h2('Clustering Results', pdf)
+        normal_text("Let us see the distribution of the HDBSCAN clusters.", pdf)
+
+        hdbscan_data = pd_to_tuple(pd.DataFrame(self.ce_hdbscan_results['labx'], columns=['Label']), 'Label')
+        hdbscan_table = pdf_table(hdbscan_data, pdf, width=40, cols=(20, 20))
+
+        normal_text("Note: -1 label is for the outliers", pdf, italics=True)
+
+        normal_text('Let us see the dendogram of the HDBSCAN clusters.', pdf)
+        start_page(pdf)
+        pdf_graph(pdf, with_code=False, filename="dendogram_hdbscan.png", x=0, y=10, w=200, h=0)
+
+        pdf.ln(130)
+        normal_text("Let us see the distribution of the Agglomeration clusters.", pdf)
+
+        pdf.ln(10)
+        agg_data = pd_to_tuple(pd.DataFrame(self.ce_agg_results['labx'], columns=['Label']), 'Label')
+        agg_table = pdf_table(agg_data, pdf, width=40, cols=(20, 20))
+
+        normal_text('Let us see the dendogram of the Agglomeration clusters.', pdf)
+        start_page(pdf)
+        pdf_graph(pdf, with_code=False, filename="dendogram_agg.png", x=0, y=10, w=200, h=0)
+
+        pdf.ln(140)
+        h1('Suggested Reads', pdf)
+
+        text = (
+            "We will remove the outlier results (those which are classified from HDBSCAN) and show the rest as per the "
+            "Agglomeration clustering technique.")
+        normal_text(text, pdf)
+
+
+
+        clustered_df = self.df[self.df['index'].isin(self.clustering_indices)]
+        clustered_df['HDBSCAN Labels'] = self.ce_hdbscan_results['labx']
+        clustered_df['AGG Labels'] = self.ce_agg_results['labx']
+        clustered_df = clustered_df[clustered_df['HDBSCAN Labels'] != -1]
+        # clustered_df.sort_values(by=['AGG Labels'],inplace=True)
+        clusters = clustered_df['AGG Labels'].unique()
+
+        for cluster in clusters:
+            h2('Cluster ' + str(cluster), pdf)
+            for idx, row in clustered_df[clustered_df['AGG Labels'] == cluster].iterrows():
+                try:
+                    normal_text('Original Index: ' + str(row['index']), pdf)
+                    normal_text('Title: ' + row['Title'], pdf)
+                    normal_text(row['URL'], pdf)
+                except:
+                    print(row['index'])
+                    normal_text('Original Index: ' + str(row['index']), pdf)
+                    normal_text('No Title: ', pdf)
+                    normal_text(row['URL'], pdf)
+
+
+        pdf.output(report_file_name, 'F')

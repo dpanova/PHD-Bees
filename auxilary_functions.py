@@ -5,8 +5,9 @@ import shutil
 import evaluate
 import numpy as np
 from scipy.spatial.distance import cosine
-from sklearn.metrics import silhouette_score,make_scorer
-import scipy as sp
+from io import BytesIO
+from matplotlib import pyplot as plt
+
 
 
 def split_list(row, column_name):
@@ -239,47 +240,6 @@ def cos_sim_func(pair,embedding_list):
     temp_dict = {'pair0': pair[0], 'pair1': pair[1], 'cos': cos_sim}
     return temp_dict
 
-def dbscan_predict(dbscan_model, X_new, metric=sp.spatial.distance.cosine):
-    """
-    Function to predict the DBSCAN Label
-    :param dbscan_model: Initiated DBSCAN model
-    :type dbscan_model: DBSCAN
-    :param X_new: vectors on which to predict
-    :type X_new: array-like
-    :param metric: metric to calculate the similarity
-    :type metric: function to calculate the similarity between two vectors
-    :return: ist of the lables
-    :rtype: array-like
-    """
-    # Result is noise by default
-    y_new = np.ones(shape=len(X_new), dtype=int) * -1
-
-    # Iterate all input samples for a label
-    for j, x_new in enumerate(X_new):
-        # Find a core sample closer than EPS
-        for i, x_core in enumerate(dbscan_model.components_):
-            if metric(x_new, x_core) < dbscan_model.eps:
-                # Assign label of x_core to x_new
-                y_new[j] = dbscan_model.labels_[dbscan_model.core_sample_indices_[i]]
-                break
-
-    return y_new
-
-def my_custom_function(model, X):
-    """
-    Function to calculate the silhouette score for the DBSCAN clustering in order to optimize the DBSCAN algorithm
-    :param model: DBSCAN model
-    :type model: DBSCAN
-    :param X: vectors on which to predict
-    :type X: array-like
-    :return: silhouette score
-    :rtype: float
-    """
-    if not pd.api.types.is_list_like(X):
-        raise ValueError(
-            'Invalid X type. It is type %s and expected type is array-like.' % type(X).__name__)
-    preds = dbscan_predict(model, X)
-    return silhouette_score(X, preds) if len(set(preds)) > 1 else float('nan')
 
 def include_tuple(element_list, row, t_limit=0.3):
     """
@@ -306,3 +266,96 @@ def include_tuple(element_list, row, t_limit=0.3):
         if (element in row['key']) & (row['cos'] >= t_limit):
             exclude = True
     return exclude
+
+def pd_to_tuple(df,col):
+    """
+    Converts pd.dataframe.value_counts() to tuple for pdf table ingestion.
+    :param df: pandas dataframe
+    :type df: pd.DataFrame
+    :param col: column name for the value_counts
+    :type col: str
+    :return: tuple of tuples
+    :rtype: tuple
+    """
+
+    if type(col) != str:
+        raise ValueError(
+            'Invalid string type. It is type %s and expected type is str.' % type(col).__name__)
+    if type(df) != pd.DataFrame:
+        raise ValueError(
+            'Invalid input type. It is type %s and expected type is pandas,DataFrame.' % type(df).__name__)
+    pandas_table = pd.DataFrame(df[col].value_counts())
+
+    pandas_table.reset_index(inplace=True)
+    pandas_table[col] = pandas_table[col].astype('str')
+    pandas_table['count'] = pandas_table['count'].astype('str')
+    cols = tuple(pandas_table.columns)
+    table_data = [tuple(x) for x in pandas_table.to_numpy()]
+    table_data.insert(0,cols)
+    table_data = tuple(table_data)
+    return table_data
+
+#TODO update the function descriptions and validation
+def normal_text(text, pdf, x=5, italics=False):
+    """
+    Generates pdf normal multi-wor text
+    :param text: the text
+    :type  text: str
+    :param pdf: FPDF instance
+    :type  pdf: FPDF
+    :param x: space after the text
+    :type  x: int
+    :param italics: boolean to indicate if text should be italics
+    :return: pdf generated text
+    """
+    if italics:
+        pdf.set_font('Arial', size=10, style='I')
+    else:
+        pdf.set_font('Arial', size=10)
+    pdf.multi_cell(w=180, h=5, txt=text)
+    pdf.ln(x)
+
+
+def start_page(pdf):
+    pdf.add_page()
+    pdf.set_margins(10, 10, 10)
+
+
+def h0(text, pdf, x=20):
+    pdf.set_font('Arial', 'B', 24)
+    pdf.cell(w=180, h=10, txt=text, align='C')
+    pdf.ln(x)
+
+
+def h1(text, pdf, x=10):
+    pdf.set_font('Arial', size=16, style='B')
+    pdf.cell(w=40, h=10, txt=text)
+    pdf.ln(x)
+
+
+def h2(text, pdf, x=10):
+    pdf.set_font('Arial', size=12, style='B')
+    pdf.cell(w=40, h=10, txt=text)
+    pdf.ln(x)
+
+
+def pdf_table(table_data, pdf, x=10, width=40, cols=(20, 20)):
+    with pdf.table(width=width, col_widths=cols, text_align="CENTER") as table:
+        for data_row in table_data:
+            row = table.row()
+            for datum in data_row:
+                row.cell(datum)
+    pdf.ln(x)
+
+
+def pdf_graph(pdf, x, y, w, h, with_code=True, plot_code='', filename=''):
+    if with_code:
+        plt.figure()
+        exec(plot_code)
+        # Converting Figure to an image:
+        img_buf = BytesIO()  # Create image object
+        plt.savefig(img_buf, dpi=100)  # Save the image
+        pdf.image(img_buf, x=x, y=y, w=w, h=h)
+    else:
+        pdf.image(filename, x=x, y=y, w=w, h=h)
+
