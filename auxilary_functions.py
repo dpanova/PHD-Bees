@@ -7,7 +7,7 @@ import numpy as np
 from scipy.spatial.distance import cosine
 from io import BytesIO
 from matplotlib import pyplot as plt
-
+from fpdf import FPDF
 
 
 def split_list(row, column_name):
@@ -298,7 +298,7 @@ def pd_to_tuple(df,col):
 #TODO update the function descriptions and validation
 def normal_text(text, pdf, x=5, italics=False):
     """
-    Generates pdf normal multi-wor text
+    Generates pdf normal multi-line text
     :param text: the text
     :type  text: str
     :param pdf: FPDF instance
@@ -308,6 +308,20 @@ def normal_text(text, pdf, x=5, italics=False):
     :param italics: boolean to indicate if text should be italics
     :return: pdf generated text
     """
+
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+
+    if type(text) != str:
+        raise ValueError(
+            'Invalid str type. It is type %s and expected type is str.' % type(text).__name__)
+    if type(x) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+    if type(italics) != bool:
+        raise ValueError(
+            'Invalid italics type. It is type %s and expected type is bool.' % type(italics).__name__)
     if italics:
         pdf.set_font('Arial', size=10, style='I')
     else:
@@ -317,29 +331,124 @@ def normal_text(text, pdf, x=5, italics=False):
 
 
 def start_page(pdf):
+    """
+    Genrates pdf file
+    :param pdf: FPDF instance
+    :type pdf: FPDF
+    :return: pdf file
+    """
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
     pdf.add_page()
     pdf.set_margins(10, 10, 10)
 
 
 def h0(text, pdf, x=20):
+    """
+    Generates h0 title text
+    :param text: text for the title
+    :type text: str
+    :param pdf: FPDF instance
+    :type pdf: FPDF
+    :param x: line space after the text
+    :type x: int
+    :return: text
+    """
+    if type(text) != str:
+        raise ValueError(
+            'Invalid str type. It is type %s and expected type is str.' % type(text).__name__)
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+    if type(x) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
     pdf.set_font('Arial', 'B', 24)
     pdf.cell(w=180, h=10, txt=text, align='C')
     pdf.ln(x)
 
 
 def h1(text, pdf, x=10):
+    """
+    Generates h1 title text
+    :param text: text for the title
+    :type text: str
+    :param pdf: FPDF instance
+    :type pdf: FPDF
+    :param x: line space after the text
+    :type x: int
+    :return: text
+    """
+    if type(text) != str:
+        raise ValueError(
+            'Invalid str type. It is type %s and expected type is str.' % type(text).__name__)
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+    if type(x) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
     pdf.set_font('Arial', size=16, style='B')
     pdf.cell(w=40, h=10, txt=text)
     pdf.ln(x)
 
 
 def h2(text, pdf, x=10):
+    """
+    Generates h2 title text
+    :param text: text for the title
+    :type text: str
+    :param pdf: FPDF instance
+    :type pdf: FPDF
+    :param x: line space after the text
+    :type x: int
+    :return: text
+    """
+    if type(text) != str:
+        raise ValueError(
+            'Invalid str type. It is type %s and expected type is str.' % type(text).__name__)
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+    if type(x) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
     pdf.set_font('Arial', size=12, style='B')
     pdf.cell(w=40, h=10, txt=text)
     pdf.ln(x)
 
 
 def pdf_table(table_data, pdf, x=10, width=40, cols=(20, 20)):
+    """
+    Genrates table to be printed in the pdf file
+    :param table_data: table data in tuple version
+    :type table_data: tuple
+    :param pdf: FPDF instance
+    :type pdf: FPDF
+    :param x: lines after the text
+    :type x: int
+    :param width: width of the table
+    :type width: int
+    :param cols: tuple with teh width of the columns
+    :type cols: tuple
+    :return: pdf table
+    """
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+    if type(x) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+    if type(table_data) != tuple:
+        raise ValueError(
+            'Invalid table_data type. It is type %s and expected type is tuple.' % type(table_data).__name__)
+    if type(width) != int:
+        raise ValueError(
+            'Invalid width type. It is type %s and expected type is int.' % type(width).__name__)
+    if type(cols) != tuple:
+        raise ValueError(
+            'Invalid cols type. It is type %s and expected type is tuple.' % type(cols).__name__)
     with pdf.table(width=width, col_widths=cols, text_align="CENTER") as table:
         for data_row in table_data:
             row = table.row()
@@ -349,6 +458,56 @@ def pdf_table(table_data, pdf, x=10, width=40, cols=(20, 20)):
 
 
 def pdf_graph(pdf, x, y, w, h, with_code=True, plot_code='', filename=''):
+    """
+    Generates in the pdf file
+    :param pdf: FPDF instance
+    :type pdf: FPDF
+    :param x: x-coordinate of the plot
+    :type x: int
+    :param y: y-coordinate of the plot
+    :type y: int
+    :param w: w-coordinate of the plot
+    :type w: int0
+    :param h: h-coordinate of the plot
+    :type h: int
+    :param with_code: if code will be executed for teh plot to be created or the plot is saved as a picture
+    :type with_code:  bool
+    :param plot_code: code to be executed for the plot to be created
+    :type plot_code: str
+    :param filename: name of the saved picture
+    :type filename: str
+    :return: a graph in the pdf file
+    """
+    if type(plot_code) != str:
+        raise ValueError(
+            'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
+    if type(pdf) != FPDF:
+        raise ValueError(
+            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+    if type(x) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+    if type(y) != int:
+        raise ValueError(
+            'Invalid y type. It is type %s and expected type is int.' % type(y).__name__)
+    if type(w) != int:
+        raise ValueError(
+            'Invalid w type. It is type %s and expected type is int.' % type(w).__name__)
+    if type(h) != int:
+        raise ValueError(
+            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+    if type(with_code) != bool:
+        raise ValueError(
+            'Invalid with_code type. It is type %s and expected type is bool.' % type(with_code).__name__)
+    if type(plot_code) != str:
+        raise ValueError(
+            'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
+    if type(filename) != str:
+        raise ValueError(
+            'Invalid filename type. It is type %s and expected type is str.' % type(filename).__name__)
+    if not filename.endswith('png'):
+        raise ValueError(
+            '%s input is not the correct type. It should be .png extension' % filename)
     if with_code:
         plt.figure()
         exec(plot_code)
