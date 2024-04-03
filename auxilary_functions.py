@@ -5,8 +5,6 @@ import shutil
 import evaluate
 import numpy as np
 from scipy.spatial.distance import cosine
-from io import BytesIO
-from matplotlib import pyplot as plt
 from fpdf import FPDF
 
 
@@ -295,7 +293,7 @@ def pd_to_tuple(df,col):
     table_data = tuple(table_data)
     return table_data
 
-#TODO update the function descriptions and validation
+
 def normal_text(text, pdf, x=5, italics=False):
     """
     Generates pdf normal multi-line text
@@ -457,64 +455,65 @@ def pdf_table(table_data, pdf, x=10, width=40, cols=(20, 20)):
     pdf.ln(x)
 
 
-def pdf_graph(pdf, x, y, w, h, with_code=True, plot_code='', filename=''):
-    """
-    Generates in the pdf file
-    :param pdf: FPDF instance
-    :type pdf: FPDF
-    :param x: x-coordinate of the plot
-    :type x: int
-    :param y: y-coordinate of the plot
-    :type y: int
-    :param w: w-coordinate of the plot
-    :type w: int0
-    :param h: h-coordinate of the plot
-    :type h: int
-    :param with_code: if code will be executed for teh plot to be created or the plot is saved as a picture
-    :type with_code:  bool
-    :param plot_code: code to be executed for the plot to be created
-    :type plot_code: str
-    :param filename: name of the saved picture
-    :type filename: str
-    :return: a graph in the pdf file
-    """
-    if type(plot_code) != str:
-        raise ValueError(
-            'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
-    if type(pdf) != FPDF:
-        raise ValueError(
-            'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
-    if type(x) != int:
-        raise ValueError(
-            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
-    if type(y) != int:
-        raise ValueError(
-            'Invalid y type. It is type %s and expected type is int.' % type(y).__name__)
-    if type(w) != int:
-        raise ValueError(
-            'Invalid w type. It is type %s and expected type is int.' % type(w).__name__)
-    if type(h) != int:
-        raise ValueError(
-            'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
-    if type(with_code) != bool:
-        raise ValueError(
-            'Invalid with_code type. It is type %s and expected type is bool.' % type(with_code).__name__)
-    if type(plot_code) != str:
-        raise ValueError(
-            'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
-    if type(filename) != str:
-        raise ValueError(
-            'Invalid filename type. It is type %s and expected type is str.' % type(filename).__name__)
-    if not filename.endswith('png'):
-        raise ValueError(
-            '%s input is not the correct type. It should be .png extension' % filename)
-    if with_code:
-        plt.figure()
-        exec(plot_code)
-        # Converting Figure to an image:
-        img_buf = BytesIO()  # Create image object
-        plt.savefig(img_buf, dpi=100)  # Save the image
-        pdf.image(img_buf, x=x, y=y, w=w, h=h)
-    else:
-        pdf.image(filename, x=x, y=y, w=w, h=h)
+# def pdf_graph(pdf, x, y, w, h, with_code=True, plot_code='', filename=''):
+#     """
+#     Generates in the pdf file
+#     :param pdf: FPDF instance
+#     :type pdf: FPDF
+#     :param x: x-coordinate of the plot
+#     :type x: int
+#     :param y: y-coordinate of the plot
+#     :type y: int
+#     :param w: w-coordinate of the plot
+#     :type w: int0
+#     :param h: h-coordinate of the plot
+#     :type h: int
+#     :param with_code: if code will be executed for teh plot to be created or the plot is saved as a picture
+#     :type with_code:  bool
+#     :param plot_code: code to be executed for the plot to be created
+#     :type plot_code: str
+#     :param filename: name of the saved picture
+#     :type filename: str
+#     :return: a graph in the pdf file
+#     """
+#     if type(plot_code) != str:
+#         raise ValueError(
+#             'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
+#     if type(pdf) != FPDF:
+#         raise ValueError(
+#             'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+#     if type(x) != int:
+#         raise ValueError(
+#             'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+#     if type(y) != int:
+#         raise ValueError(
+#             'Invalid y type. It is type %s and expected type is int.' % type(y).__name__)
+#     if type(w) != int:
+#         raise ValueError(
+#             'Invalid w type. It is type %s and expected type is int.' % type(w).__name__)
+#     if type(h) != int:
+#         raise ValueError(
+#             'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+#     if type(with_code) != bool:
+#         raise ValueError(
+#             'Invalid with_code type. It is type %s and expected type is bool.' % type(with_code).__name__)
+#     if type(plot_code) != str:
+#         raise ValueError(
+#             'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
+#     if type(filename) != str:
+#         raise ValueError(
+#             'Invalid filename type. It is type %s and expected type is str.' % type(filename).__name__)
+#     if (not with_code) & (not filename.endswith('png')):
+#     # if not filename.endswith('png'):
+#         raise ValueError(
+#             '%s input is not the correct type. It should be .png extension' % filename)
+#     if with_code:
+#         plt.figure()
+#         exec(plot_code)
+#         # Converting Figure to an image:
+#         img_buf = BytesIO()  # Create image object
+#         plt.savefig(img_buf, dpi=100)  # Save the image
+#         pdf.image(img_buf, x=x, y=y, w=w, h=h)
+#     else:
+#         pdf.image(filename, x=x, y=y, w=w, h=h)
 

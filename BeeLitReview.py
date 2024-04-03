@@ -7,8 +7,8 @@ import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from functools import partial
 import multiprocessing as mp
-from auxilary_functions import recommendations, reads, citations, include_tuple, cos_sim_func, start_page, h0, h1, h2, normal_text, pdf_graph, pdf_table
-
+from auxilary_functions import recommendations, reads, citations, include_tuple, cos_sim_func, start_page, h0, h1, h2, normal_text, pdf_table
+from io import BytesIO
 
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -36,7 +36,19 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeLitReview:
     """
-    TODO update the description and the validations
+    Class to create an automated pdf report to help facilitate depth and breadth of literature research.
+    :param logname: name of the log to save the results
+    :type logname: str
+    :param already_scraped: whether the data needs to be scraped or already exists locally
+    :type already_scraped: bool
+    :param query: query to be scraped from the website
+    :type query: str
+    :param scraped_file_name: name of the file to store the scraped data or where the data exists
+    :type scraped_file_name: str
+    :param scraped_file_validation: name of the file to validate the existent data in terms of format
+    :type scraped_file_validation: str
+    :param to_review_file_name: name of the file to validate TSP results
+    :type to_review_file_name: excel
     """
     def __init__(self
                  ,logname='BeeLitReview.log'
@@ -47,6 +59,7 @@ class BeeLitReview:
                  ,to_review_file_name='to_review.xlsx'):
         self.scraped_file_name = scraped_file_name
         self.query = query
+        self.wordcloud = None
         self.similarity_df = None
         self.embeddings = None
         self.graph_start = None
@@ -76,10 +89,6 @@ class BeeLitReview:
             self.validate_scraped_csv()
         else:
             self.df = pd.DataFrame()
-        """
-        :param query: query to search in the website
-        :type query: str
-        """
         if type(query) != str:
             raise ValueError(
                 'Invalid query type. It is type %s and expected type is str.' % type(query).__name__)
@@ -407,6 +416,10 @@ class BeeLitReview:
         similarity = pool.map(partial(cos_sim_func, embedding_list=self.embeddings), pairs)
         similarity_df = pd.DataFrame(similarity)
 
+        #TODO remove the similarity if one of the pairs have index from 0-8
+        # update the cosine for the similarity between 8 and 9 to be 0
+        # remove every tuple if it has 8,e xcept 8-9, actually we can add it artificially
+
         #calculate the similarity of each abstract and the query
         pairs = [((query_index - 1), x) for x in embeddings_index]
         most_similar = pool.map(partial(cos_sim_func, embedding_list=self.embeddings), pairs)
@@ -449,6 +462,8 @@ class BeeLitReview:
         path = tsp(G, cycle=False)
         self.graph_end = time.time()
         logging.info('Graph created and TSP calculated.')
+        # TODO update path so that it includes the first 10 articles
+        # TODO update the most_similar with the last one
         self.path = path
         ind = self.path.index(self.most_similar.iloc[0])
         if ind >= num_articles:
@@ -476,7 +491,6 @@ class BeeLitReview:
                         ,citation = 1):
 
         """
-        TODO update here 
         Create two types of clustering - HDBSCAN and agglomerative. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover we can choose those are highly correlated with the originally chosen abstracts.  
         :param cosine_threshold: threshold for cosine similarity with the chosen articles. The value is between 0 and 1 
         :type cosine_threshold: float
@@ -543,7 +557,67 @@ class BeeLitReview:
         plt.savefig("dendogram_agg.png")
         logging.info("Agglomeration clustering complete. ")
 
-
+    def pdf_graph(self,pdf, x, y, w, h, with_code=True, plot_code='', filename=''):
+        """
+        Generates in the pdf file
+        :param pdf: FPDF instance
+        :type pdf: FPDF
+        :param x: x-coordinate of the plot
+        :type x: int
+        :param y: y-coordinate of the plot
+        :type y: int
+        :param w: w-coordinate of the plot
+        :type w: int0
+        :param h: h-coordinate of the plot
+        :type h: int
+        :param with_code: if code will be executed for teh plot to be created or the plot is saved as a picture
+        :type with_code:  bool
+        :param plot_code: code to be executed for the plot to be created
+        :type plot_code: str
+        :param filename: name of the saved picture
+        :type filename: str
+        :return: a graph in the pdf file
+        """
+        if type(plot_code) != str:
+            raise ValueError(
+                'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
+        if type(pdf) != FPDF:
+            raise ValueError(
+                'Invalid pdf type. It is type %s and expected type is FPDF.' % type(pdf).__name__)
+        if type(x) != int:
+            raise ValueError(
+                'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+        if type(y) != int:
+            raise ValueError(
+                'Invalid y type. It is type %s and expected type is int.' % type(y).__name__)
+        if type(w) != int:
+            raise ValueError(
+                'Invalid w type. It is type %s and expected type is int.' % type(w).__name__)
+        if type(h) != int:
+            raise ValueError(
+                'Invalid x type. It is type %s and expected type is int.' % type(x).__name__)
+        if type(with_code) != bool:
+            raise ValueError(
+                'Invalid with_code type. It is type %s and expected type is bool.' % type(with_code).__name__)
+        if type(plot_code) != str:
+            raise ValueError(
+                'Invalid plot_code type. It is type %s and expected type is str.' % type(plot_code).__name__)
+        if type(filename) != str:
+            raise ValueError(
+                'Invalid filename type. It is type %s and expected type is str.' % type(filename).__name__)
+        if (not with_code) & (not filename.endswith('png')):
+            # if not filename.endswith('png'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .png extension' % filename)
+        if with_code:
+            plt.figure()
+            exec(plot_code)
+            # Converting Figure to an image:
+            img_buf = BytesIO()  # Create image object
+            plt.savefig(img_buf, dpi=100)  # Save the image
+            pdf.image(img_buf, x=x, y=y, w=w, h=h)
+        else:
+            pdf.image(filename, x=x, y=y, w=w, h=h)
 
     def pdf_report_generate(self, report_file_name='lit_report.pdf'):
         """
@@ -615,7 +689,7 @@ class BeeLitReview:
         normal_text(text, pdf)
 
         plot_code = "self.df['Abstract Count Words'].hist()"
-        pdf_graph(pdf, plot_code=plot_code, x=50, y=206, w=110, h=0)
+        self.pdf_graph(pdf,with_code=True, plot_code=plot_code, x=50, y=206, w=110, h=0)
         logging.info("Add word distribution ")
         # NEW PAGE
         start_page(pdf)
@@ -710,11 +784,11 @@ class BeeLitReview:
                 word_freq[word] += 1
             else:
                 word_freq[word] = 1
-        wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
+        self.wordcloud = WordCloud(width=800, height=400, background_color='white').generate_from_frequencies(word_freq)
 
-        plot_code = ("plt.imshow(wordcloud, interpolation='bilinear') \n"
+        plot_code = ("plt.imshow(self.wordcloud, interpolation='bilinear') \n"
                      "plt.axis('off')")
-        pdf_graph(pdf, plot_code=plot_code, x=0, y=100, w=200, h=0)
+        self.pdf_graph(pdf, with_code=True, plot_code=plot_code, x=0, y=100, w=200, h=0)
         pdf.ln(115)
         normal_text(
             'The next step is to look into the TSP results and identify those which are of interest for the research.'
@@ -735,7 +809,7 @@ class BeeLitReview:
 
         normal_text('Let us see the dendogram of the HDBSCAN clusters.', pdf)
         start_page(pdf)
-        pdf_graph(pdf, with_code=False, filename="dendogram_hdbscan.png", x=0, y=10, w=200, h=0)
+        self.pdf_graph(pdf, with_code=False, filename="dendogram_hdbscan.png", x=0, y=10, w=200, h=0)
 
         pdf.ln(130)
         normal_text("Let us see the distribution of the Agglomeration clusters.", pdf)
@@ -746,7 +820,7 @@ class BeeLitReview:
         logging.info("Add Agglomeration clustering overview")
         normal_text('Let us see the dendogram of the Agglomeration clusters.', pdf)
         start_page(pdf)
-        pdf_graph(pdf, with_code=False, filename="dendogram_agg.png", x=0, y=10, w=200, h=0)
+        self.pdf_graph(pdf, with_code=False, filename="dendogram_agg.png", x=0, y=10, w=200, h=0)
 
         pdf.ln(140)
         h1('Suggested Reads', pdf)

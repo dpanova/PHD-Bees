@@ -5,11 +5,12 @@ review.scraped_data_enhancement()
 review.encode_with_transformers()
 review.calculate_similarity()
 review.calculate_TSP()
-#TODO
+#TODO Manual step
 
 
 #%%
 #review.most_similar.iloc[0]
+#TODO we can add these details to the pdf report, as well as graph plot for the results?
 
 review.clustering_evaluation( cosine_threshold = 0.5
                         ,year=2023
