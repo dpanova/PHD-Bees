@@ -77,6 +77,7 @@ class BeeLitReview:
         self.to_cluster_embeddings = None
         self.ce_hdbscan_results = None
         self.ce_agg_results = None
+        self.raw_similarity_df = None
         self.to_review_file_name = to_review_file_name
         self.scraped_file_validation = scraped_file_validation
         logging.basicConfig(filename=logname
@@ -337,7 +338,7 @@ class BeeLitReview:
             raise ValueError(
                 'Invalid date_col type. It is type %s and expected type is str.' % type(date_col).__name__)
         #create a new data frame to host the raw data
-        self.df_raw = self.df
+        self.df_raw = self.df.copy()
         #ensure we don't have duplicates
         self.df.drop_duplicates(subset=[key_col], keep='last', inplace=True)
         self.df['Citations'] = self.df[stats_col].apply(lambda x: citations(x))
@@ -415,10 +416,7 @@ class BeeLitReview:
         pairs = list(itertools.combinations(embeddings_index, 2))
         similarity = pool.map(partial(cos_sim_func, embedding_list=self.embeddings), pairs)
         similarity_df = pd.DataFrame(similarity)
-
-        #TODO remove the similarity if one of the pairs have index from 0-8
-        # update the cosine for the similarity between 8 and 9 to be 0
-        # remove every tuple if it has 8,e xcept 8-9, actually we can add it artificially
+        self.raw_similarity_df = similarity_df.copy()
 
         #calculate the similarity of each abstract and the query
         pairs = [((query_index - 1), x) for x in embeddings_index]
@@ -426,11 +424,18 @@ class BeeLitReview:
         most_similar_df = pd.DataFrame(most_similar)
         #identify the most similar one and add it with cosine zero, this will be our initial point
         most_similar_df = most_similar_df[most_similar_df['cos'] == most_similar_df['cos'].max()]
-        most_similar_df['cos'] = 0
+        # most_similar_df['cos'] = 0
         self.most_similar = most_similar_df['pair1']
 
+        # remove the similarity of the first 9 results
+        similarity_df = similarity_df[(~similarity_df['pair0'].isin([0, 1, 2, 3, 4, 5, 6, 7, 8])) & (
+            ~similarity_df['pair1'].isin([0, 1, 2, 3, 4, 5, 6, 7, 8]))]
+
+        #create an artificial 0-cosine connection between 8th and 9th to artificially start the TSP from there
+        artificial_similarity = pd.DataFrame([[8, 9, 0]], columns=['pair0', 'pair1', 'cos'])
+
         # add it to the similarity df
-        self.similarity_df = pd.concat([similarity_df, most_similar_df], ignore_index=True)
+        self.similarity_df = pd.concat([similarity_df, artificial_similarity], ignore_index=True)
         #save the similarity data locally
         similarity_df.to_csv('similarity_df.csv', index=False)
         logging.info('Pairwise cosine similarity calculated.')
@@ -462,10 +467,12 @@ class BeeLitReview:
         path = tsp(G, cycle=False)
         self.graph_end = time.time()
         logging.info('Graph created and TSP calculated.')
-        # TODO update path so that it includes the first 10 articles
-        # TODO update the most_similar with the last one
+        #remove if any duplications occur
+        path = list(dict.fromkeys(path))
         self.path = path
-        ind = self.path.index(self.most_similar.iloc[0])
+        #Note this is the artificial first step
+        ind = 9
+        # ind = self.path.index(self.most_similar.iloc[0])
         if ind >= num_articles:
             left_length = len(self.path[ind:-1])
             left = self.path[ind:-1]
@@ -473,6 +480,20 @@ class BeeLitReview:
             to_review_path = left + right
         else:
             to_review_path = self.path[:num_articles]
+
+        #add the first 9 articles
+        to_review_path = [0,1,2,3,4,5,6,7,8] + to_review_path
+
+
+        graph_similarity = pd.DataFrame()
+        graph_similarity['pair0'] = to_review_path[:-1]
+        graph_similarity['pair1'] = to_review_path[1:]
+        graph_similarity = pd.merge(graph_similarity,self.raw_similarity_df, how='left', left_on = ['pair0','pair1'],
+                                    right_on = ['pair0','pair1'])
+        G_updated = nx.from_pandas_edgelist(graph_similarity, source='pair0', target='pair1', edge_attr='cos')
+        nx.draw(G_updated, pos=nx.spring_layout(G_updated), with_labels=True)
+        plt.savefig("Graph.png", format="PNG")
+
 
         pd.DataFrame(path).to_csv(path_file_name, index=False)
         # get the first 50th
@@ -629,7 +650,7 @@ class BeeLitReview:
             - Travelling Salesman Problem Solution
             - Similarity Difference
             - Time Saved
-            - TSP Results of Interest
+            - TSP Results of Interest and graph visual representation
             - Clustering Results
         - Suggested Reads
         :return: pdf file
@@ -715,36 +736,36 @@ class BeeLitReview:
         h1('Optimal ML Path', pdf)
         h2('Traveling Salesmen Problem (TSP)', pdf)
 
-        initial_point = str(self.most_similar.iloc[0])
-        text = ("Each abstract is turned into an embedding, using the HuggingFace Transformer. The default one is "
-                "all-mpnet-base-v2.After we calculate similarity between each scraped result with each another one, we apply TSP "
-                "for finding the shortest path. The time for calculating it is %s ms. Additionally, to optimize the performance "
-                "of the algorithm by creating an artificial connection in the graph between the query %s and the most similar "
-                "result in terms of cosine similarity between embeddings. Then we artificially assigned similarity 0 to "
-                "impose the algorithm to start from there. The result index is %s"
-                % (str((self.graph_end - self.graph_start) * 10 ** 3), self.query, initial_point))
+
+        text = ("Each abstract is turned into an embedding, using the HuggingFace Transformer. The default transformer is "
+                "all-mpnet-base-v2. After we calculate similarity between each scraped result with each another one, we apply TSP "
+                "for finding the shortest path. The time for calculating it is %s ms. Additionally, to optimize the TSP performance  "
+                "by artificially taking the first 9 results from the ResearchGate suggestions, then set to zero the connection between 9tha nd 10th,"
+                "thus forcing the next TSP step to be there."
+                % (str((self.graph_end - self.graph_start) * 10 ** 3)))
 
         normal_text(text, pdf)
         logging.info("Add TSP")
         h2('Similarity Difference', pdf)
 
 
-        path = pd.DataFrame(self.path[:50])
+        path = pd.DataFrame(self.path[9:50])
         # create tuples based on the path pairs
         path_similarity = pd.DataFrame()
         path_similarity['pair0'] = list(path.iloc[:-1, 0])
         path_similarity['pair1'] = list(path.iloc[1:, 0])
-        path_similarity = path_similarity.merge(self.similarity_df, how='inner', on=['pair0', 'pair1'])
+        path_similarity = path_similarity.merge(self.raw_similarity_df, how='inner', on=['pair0', 'pair1'])
 
         # let us do the same for the original research order
         original_similarity = pd.DataFrame()
-        original_similarity['pair0'] = list(range(0, 49))
-        original_similarity['pair1'] = list(range(1, 50))
-        original_similarity = original_similarity.merge(self.similarity_df, how='inner', on=['pair0', 'pair1'])
+        original_similarity['pair0'] = list(range(9, 49))
+        original_similarity['pair1'] = list(range(10, 50))
+        original_similarity = original_similarity.merge(self.raw_similarity_df, how='inner', on=['pair0', 'pair1'])
 
         text = (
                     "In order to investigate what is the added value of TSP, we check what is the average similarity measure"
-                    "in the first 50 TSP-suggested articles and the first 50 ResearchGate articles. TSP is %s and ResearchGate is %s."
+                    "in the first 50 TSP-suggested articles and the first 50 ResearchGate articles. However, we remove from "
+                    "calculation, the first 10 results. TSP is %s and ResearchGate is %s."
                     % (str(round(path_similarity['cos'].mean(), 2)), str(round(original_similarity['cos'].mean(), 2))))
 
         normal_text(text, pdf)
@@ -765,10 +786,18 @@ class BeeLitReview:
 
         normal_text(text, pdf)
         logging.info("Add time saved")
+
+        h2('Graph',pdf)
+        normal_text('Let us look at the graph of the first 50 articles from the TSP algorithm.', pdf)
+        self.pdf_graph(pdf, with_code=False, filename="Graph.png", x=0, y=90, w=200, h=0)
+        logging.info('Added graph.png')
+
+        start_page(pdf)
+
+
         h2('TSP Results of Interest', pdf)
         normal_text('Let us look into the wordcloud of the TSP-results abstracts to see what those are in one look.',
                     pdf, x=0)
-
 
         words = nltk.word_tokenize(' . '.join(list(self.to_review_df['Title'])))
 
@@ -788,8 +817,8 @@ class BeeLitReview:
 
         plot_code = ("plt.imshow(self.wordcloud, interpolation='bilinear') \n"
                      "plt.axis('off')")
-        self.pdf_graph(pdf, with_code=True, plot_code=plot_code, x=0, y=100, w=200, h=0)
-        pdf.ln(115)
+        self.pdf_graph(pdf, with_code=True, plot_code=plot_code, x=0, y=10, w=200, h=0)
+        pdf.ln(120)
         normal_text(
             'The next step is to look into the TSP results and identify those which are of interest for the research.'
             'We have identified those:', pdf)
@@ -799,7 +828,17 @@ class BeeLitReview:
             normal_text('Original Index: ' + str(row['index']), pdf)
             normal_text('Title: ' + row['Title'], pdf)
         logging.info("Add results of interest")
+
+        start_page(pdf)
         h2('Clustering Results', pdf)
+        normal_text('We decided to look into results with the following parameters: '
+                    'cosine similarity > than %d, '
+                    'year > than %d, '
+                    'type of results %s, '
+                    'number of reads > %d '
+                    'and number of citations > %d.'
+                    % (self.cosine_clustering_threshold, self.year, ' , '.join(self.type), self.read, self.citation), pdf)
+
         normal_text("Let us see the distribution of the HDBSCAN clusters.", pdf)
 
         hdbscan_data = pd_to_tuple(pd.DataFrame(self.ce_hdbscan_results['labx'], columns=['Label']), 'Label')
@@ -822,14 +861,14 @@ class BeeLitReview:
         start_page(pdf)
         self.pdf_graph(pdf, with_code=False, filename="dendogram_agg.png", x=0, y=10, w=200, h=0)
 
-        pdf.ln(140)
-        h1('Suggested Reads', pdf)
+
+        start_page(pdf)
+        h1('Agglomeration Suggested Reads', pdf)
 
         text = (
-            "We will remove the outlier results (those which are classified from HDBSCAN) and show the rest as per the "
+            "First, we will remove the outlier results (those which are classified from HDBSCAN) and show the rest as per the "
             "Agglomeration clustering technique.")
         normal_text(text, pdf)
-
 
 
         clustered_df = self.df[self.df['index'].isin(self.clustering_indices)]
@@ -838,6 +877,7 @@ class BeeLitReview:
         clustered_df = clustered_df[clustered_df['HDBSCAN Labels'] != -1]
         # clustered_df.sort_values(by=['AGG Labels'],inplace=True)
         clusters = clustered_df['AGG Labels'].unique()
+        clusters_hdb = clustered_df['HDBSCAN Labels'].unique()
 
         for cluster in clusters:
             h2('Cluster ' + str(cluster), pdf)
@@ -845,12 +885,26 @@ class BeeLitReview:
                 try:
                     normal_text('Original Index: ' + str(row['index']), pdf)
                     normal_text('Title: ' + row['Title'], pdf)
-                    normal_text(row['URL'], pdf)
+                    normal_text('Click here for the article', pdf, link_text=row['URL'])
+
                 except:
-                    print(row['index'])
+                    pass
+
+
+        start_page(pdf)
+        h1('HDBSCAN Suggested Reads',pdf)
+        for cluster in clusters_hdb:
+            h2('Cluster ' + str(cluster), pdf)
+            for idx, row in clustered_df[clustered_df['HDBSCAN Labels'] == cluster].iterrows():
+                try:
                     normal_text('Original Index: ' + str(row['index']), pdf)
-                    normal_text('No Title: ', pdf)
-                    normal_text(row['URL'], pdf)
-        logging.info("Add suggsted reads")
+                    normal_text('Title: ' + row['Title'], pdf)
+                    normal_text('Click here for the article', pdf, link_text=row['URL'])
+                except:
+                    pass
+
+
+        logging.info("Add suggested reads")
+
 
         pdf.output(report_file_name, 'F')
