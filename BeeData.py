@@ -304,6 +304,7 @@ class BeeData:
 
 
     def data_quality(self
+                     ,nobee = False
                      , path='data'
                      ,  min_duration=2.0):
         """
@@ -339,7 +340,14 @@ class BeeData:
         self.annotation_df_data_quality = self.annotation_df_data_quality[self.annotation_df_data_quality[self.duration_col_name] > min_duration]
         # ensure that only the supported formats are present
         self.annotation_df_data_quality = self.annotation_df_data_quality [(self.annotation_df_data_quality['MP3 Flag']) | (self.annotation_df_data_quality['WAV Flag'])]
-        logging.info('Annotation data quality created.')
+
+        if not nobee:
+            annotation_df_sliced = self.annotation_df_data_quality[self.annotation_df_data_quality[self.bee_col] == 'bee']
+        else:
+            annotation_df_sliced = self.annotation_df_data_quality
+
+        self.annotation_df_data_quality.to_csv(self.file_name, index=False)
+        logging.info('Annotation data quality created and saved.')
 
     def time_slice(self
                    ,nobee=False
@@ -451,7 +459,7 @@ class BeeData:
         if sliced:
             df = pd.DataFrame(self.annotation_df_sliced.dtypes)
         else:
-            df = pd.DataFrame(self.annotation_df)
+            df = pd.DataFrame(self.annotation_df_data_quality.dtypes)
         df.reset_index(inplace=True)
         df.columns = ['col_name','col_type']
         df.to_csv(file_name, index=False)

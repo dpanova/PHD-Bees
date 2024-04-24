@@ -373,7 +373,8 @@ class BeeClassification:
                 return  samples, sample_rate
 
         except:
-            raise ValueError('File %s DOES NOT exist in %s' %(file_name, self.acoustic_folder))
+            logging.info('File %s DOES NOT exist in %s' %(file_index, self.acoustic_folder))
+            # raise ValueError('File %s DOES NOT exist in %s' %(file_name, self.acoustic_folder))
 
         try:
             file_name = [x for x in self.augmented_files if x.find('index' + str(file_index) + '.wav') != -1][0]
@@ -386,7 +387,8 @@ class BeeClassification:
                 return  samples, sample_rate
 
         except:
-            raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
+            logging.info('File %s DOES NOT exist in %s' % (file_index, self.acoustic_folder))
+            # raise ValueError('File %s DOES NOT exist in %s' % (file_name, self.augment_folder))
 
 
     def dataframe_to_dataset_split_save(self,df, split_type,file_name):
@@ -412,24 +414,28 @@ class BeeClassification:
             raise ValueError('Column index is not part of df. It is a requirement. The index should provide the file index of the file to be read.')
         dataset = pd.DataFrame({})
         for train_index, row in df.iterrows():
-            temp_dataset = pd.DataFrame({})
-            path, sample, sample_rate = self.file_read(row['index'],output_file_name=True)
+            print(split_type)
+            print(train_index)
+            try:
+                temp_dataset = pd.DataFrame({})
+                path, sample, sample_rate = self.file_read(row['index'],output_file_name=True)
 
-            temp_dataset['audio'] = [{'path':path,
-                                     'array':sample,
-            'sampling_rate':sample_rate}]
+                temp_dataset['audio'] = [{'path':path,
+                                         'array':sample,
+                'sampling_rate':sample_rate}]
 
-            # to update here to have path as an array with everything below
-            temp_dataset['train_index'] = train_index
-            temp_dataset['file_index'] = row['index']
-            if split_type == 'train':
-                temp_dataset['label'] = self.y_train.loc[train_index, self.y_col]
-            else:
-                temp_dataset['label'] = self.y_test.loc[train_index, self.y_col]
-            dataset = pd.concat([dataset, temp_dataset], axis=0)
-
+                # to update here to have path as an array with everything below
+                temp_dataset['train_index'] = train_index
+                temp_dataset['file_index'] = row['index']
+                if split_type == 'train':
+                    temp_dataset['label'] = self.y_train.loc[train_index, self.y_col]
+                else:
+                    temp_dataset['label'] = self.y_test.loc[train_index, self.y_col]
+                dataset = pd.concat([dataset, temp_dataset], axis=0)
+            except:
+                pass
         data = Dataset.from_pandas(dataset, split=split_type)
-        data = data.class_encode_column("label")
+        # data = data.class_encode_column("label")
         logging.info('Dataframe transformed to dataset.')
         #save the file with the first and the last index
         #Note: we use this function because it takes less than a sec to load the data, for .json functions, it took 3 min per chunk
@@ -488,7 +494,10 @@ class BeeClassification:
             time.sleep(3)
             # save the file with the first and the last index
             file_name = "data%s_%s.hf"%(str(set_indices[0]),str(set_indices[len(set_indices)-1]))
-            self.dataframe_to_dataset_split_save(df.loc[set_indices,],split_type=split_type,file_name=file_name)
+            try:
+                self.dataframe_to_dataset_split_save(df.loc[set_indices,],split_type=split_type,file_name=file_name)
+            except:
+                pass
         logging.info('All Dataframes transformed to dataset and saved to %s' %self.datadict_folder)
 
         # concatinate all sub-data into one data and save it
@@ -501,6 +510,7 @@ class BeeClassification:
             data_temp = datasets.load_from_disk(self.datadict_folder+split_folder+f)
             data = datasets.concatenate_datasets([data, data_temp])
         logging.info('All data is loaded.')
+        data = data.class_encode_column("label")
         return data
 
     def dataframe_to_datadict(self,train_df, test_df):
@@ -517,14 +527,14 @@ class BeeClassification:
         # self.test_df_dataset = self.dataframe_to_dataset(test_df, split_type='test')
         train_df_dataset = self.dataframe_to_dataset(train_df, split_type='train')
         test_df_dataset = self.dataframe_to_dataset(test_df, split_type='test')
-        self.datadict_data = datasets.DatasetDict(
+        datadict_data = datasets.DatasetDict(
             {
                 "train": train_df_dataset,
                 "test": test_df_dataset,
             }
         )
         logging.info('Data dictionary is created.')
-
+        return datadict_data
 
     def data_augmentation_row(self,arg):
         """
@@ -539,7 +549,7 @@ class BeeClassification:
         """
         if type(arg) != tuple:
             raise ValueError('Invalid arg type. arg is type %s and expected type is list.' %type(arg).__name__)
-        train_index, row = arg
+        train_index, row= arg
 
         # get the necessary indices to trace files easily
         file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
@@ -556,7 +566,7 @@ class BeeClassification:
                 Shift(min_shift=-0.5, max_shift=0.5, p=0.5),
             ])
             augmented_samples = augment(samples=samples, sample_rate=sample_rate)
-            rand_index = random.randint(max(self.X_train_index['index'])*10,max(self.X_train_index['index'])*100)
+            rand_index = random.randint(max(self.X_train_index['index'])*100,max(self.X_train_index['index'])*100000)
             augmented_file_index = file_index + rand_index
             augmented_file_name = 'index' + str(augmented_file_index) + '.wav'
             sf.write(self.augment_folder + augmented_file_name, augmented_samples, sample_rate)
@@ -570,7 +580,7 @@ class BeeClassification:
         A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.
         :param N: the number of times the augmentation process should happen
         :type N: int
-        # """
+        """
 
         if type(N) != int:
             raise ValueError('Invalid N type. arg is type %s and expected type is int.' %type(N).__name__)
@@ -598,6 +608,7 @@ class BeeClassification:
             logging.info('X_train index is updated.')
             # split y
             y_train = pd.DataFrame(augmented_df['label'])
+            y_train.columns = [self.y_train.columns[0]]
             # add the augmented data to the existing data
             self.y_train = pd.concat([self.y_train,y_train])
             logging.info('Y_train is updated.')
@@ -708,7 +719,8 @@ class BeeClassification:
         logging.info('Whole data frame transformed.')
         return X_df
 
-    def transformer_classification(self, max_duration=30 , model_id ='facebook/hubert-base-ls960'):
+    def transformer_classification(self, data, max_duration=30 , model_id ='facebook/hubert-base-ls960'):
+    #TODO check what is this max_duration doing
 
 
         #create the feature extractor
@@ -717,14 +729,15 @@ class BeeClassification:
         )
         # resample the data to have the same sampling rate as the pretrained model
         sampling_rate = feature_extractor.sampling_rate
-        data = self.datadict_data.cast_column("audio", Audio(sampling_rate=sampling_rate)) #TODO maybe it is good to save the data within the object
+        data = data.cast_column("audio", Audio(sampling_rate=sampling_rate))
 
         #create numeric labels
-        id2label_fn = self.datadict_data["train"].features[self.bee_col].int2str
+        id2label_fn = data["train"].features[self.bee_col].int2str
 
+        id2label_fn = data["train"].features[self.bee_col].int2str
         id2label = {
             str(i): id2label_fn(i)
-            for i in range(len(self.datadict_data["train"].features[self.bee_col].names))
+            for i in range(len(data["train"].features[self.bee_col].names))
         }
         label2id = {v: k for k, v in id2label.items()}
 
@@ -756,16 +769,17 @@ class BeeClassification:
             num_train_epochs=num_train_epochs,
             warmup_ratio=0.1,
             logging_steps=5,
+            # torch_compile=False,
             load_best_model_at_end=True,
             metric_for_best_model="accuracy",
-            fp16=True,
+            fp16=False,
             push_to_hub=False,
             dataloader_pin_memory=False
         )
 
         #encode the data
         # TODO this may not work
-        data_encoded = self.datadict_data.map(
+        data_encoded = data.map(
             preprocess_function,
             remove_columns=["audio", "file_index"],
             batched=True,

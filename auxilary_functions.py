@@ -74,8 +74,8 @@ def get_file_names(dir_name, specific_extension = False, extension=('.wav','.mp3
                 continue
     else:
         extension_files_list = list_of_files
-    if len(extension_files_list)==0:
-        raise ValueError('Extension list is empty. Please, check the %s folder' % dir)
+    # if len(extension_files_list)==0:
+    #     raise ValueError('Extension list is empty. Please, check the %s folder' % dir)
     return extension_files_list
 
 def clean_directory(path, folder=False):
@@ -93,11 +93,15 @@ def clean_directory(path, folder=False):
         raise ValueError(
             'Invalid folder type. It is type %s and expected type is bool.' % type(folder).__name__)
     to_delete = get_file_names(path)
-    for item in to_delete:
-        if folder:
-            shutil.rmtree(os.path.join(path+item))
-        else:
-            os.remove(item)
+    try:
+        for item in to_delete:
+            if folder:
+                shutil.rmtree(os.path.join(path+item))
+            else:
+                os.remove(item)
+    except:
+        pass
+
 
 def compute_metrics(eval_pred):
     """

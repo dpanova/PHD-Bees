@@ -837,7 +837,7 @@ class BeeLitReview:
                     'type of results %s, '
                     'number of reads > %d '
                     'and number of citations > %d.'
-                    % (self.cosine_clustering_threshold, self.year, ' , '.join(self.type), self.read, self.citation), pdf)
+                    % (round(self.cosine_clustering_threshold,2), self.year, ' , '.join(self.type), self.read, self.citation), pdf)
 
         normal_text("Let us see the distribution of the HDBSCAN clusters.", pdf)
 

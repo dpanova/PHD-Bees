@@ -1,138 +1,125 @@
 #TODO add the augmentation data as well and test it after that
 
 from BeeData import BeeData
+
 from BeeClassification import BeeClassification
-step = 30.0
-for step in range(5,60,1):
-    try:
-        print(step)
-        # from BeeData import BeeData
-        #Get the data
-        beedata = BeeData()
-        beedata.annotation_data_creation()
-        beedata.data_quality('data',float(step)) #This could be the investigation part - how long should the recording be
-        beedata.time_slice(step = int(step)*1000)
-        beedata.split_acoustic_data_sliced()
-        beedata.create_validate_data() # we need to save it locally at the end
 
+#need to check the labels for this 60 seconds
 
-
-    # from BeeClassification import BeeClassification
-        beeclass = BeeClassification()
-        # read and validate the annotation data
-        beeclass.read_annotation_csv()
-        #create the new label
-        beeclass.new_y_label_creation()
-        # split the data
-        beeclass.split_annotation_data()
-
-
-        beeclass.dataframe_to_datadict(beeclass.X_train_index,beeclass.X_test_index)
-    # beeclass.datadict_creation()
-
-
-        beeclass.transformer_classification(data = beeclass.datadict_data)
-
-    except:
-        print("Doesn't work")
-
-
-
-
-
+# from BeeData import BeeData
+#Get the data
+beedata = BeeData()
+beedata.annotation_data_creation()
+beedata.data_quality(path='data',min_duration=float(30))
+beedata.time_slice(step = int(30)*1000)
+beedata.split_acoustic_data_sliced()
+beedata.create_validate_data(sliced=True)
 
 #%%
 
+
+# from BeeClassification import BeeClassification
+beeclass = BeeClassification()
+# read and validate the annotation data
+beeclass.read_annotation_csv()
+#create the new label
+beeclass.new_y_label_creation()
+
+# split the data
+beeclass.split_annotation_data()
+#here should be added the data augmentation information
+#%%
+beeclass.data_augmentation_df(N=1) #does not clean correctly the folder, to check
+# we should play around with N to remove duplictaive index
+
+# pd.DataFrame(beeclass.X_train_index.index).value_counts()
+
+#%%
+data = beeclass.dataframe_to_datadict(beeclass.X_train_index,beeclass.X_test_index)
+
+#%%
+beeclass.transformer_classification(data = data)
+
+#%%
 from transformers import AutoFeatureExtractor, AutoModelForAudioClassification, TrainingArguments, Trainer
-from datasets import Dataset, Audio
-from auxilary_functions import get_file_names, clean_directory, compute_metrics, preprocess_function
-# model.config.to_json_file("config.json")
+from datasets import Dataset, Audio, ClassLabel
+model_id ='facebook/hubert-base-ls960'
 
-#%%
-# create the feature extractor
+#create the feature extractor
 feature_extractor = AutoFeatureExtractor.from_pretrained(
-    'facebook/hubert-base-ls960', do_normalize=True, return_attention_mask=True
+    model_id,
+    do_normalize=True,
+    return_attention_mask=True
 )
 # resample the data to have the same sampling rate as the pretrained model
 sampling_rate = feature_extractor.sampling_rate
-data = beeclass.datadict_data.cast_column("audio",
-                        Audio(sampling_rate=sampling_rate))  # TODO maybe it is good to save the data within the object
+data = data.cast_column("audio", Audio(sampling_rate=sampling_rate))
 
-# create numeric labels
-id2label_fn = beeclass.datadict_data["train"].features[beeclass.bee_col].int2str
-
+#create numeric labels
+id2label_fn = data["train"].features[beeclass.bee_col].int2str
 id2label = {
     str(i): id2label_fn(i)
-    for i in range(len(beeclass.datadict_data["train"].features[beeclass.bee_col].names))
+    for i in range(len(data["train"].features[beeclass.bee_col].names))
 }
 label2id = {v: k for k, v in id2label.items()}
 
 num_labels = len(id2label)
 
-# construct the model
+#construct the model
 model = AutoModelForAudioClassification.from_pretrained(
-    'facebook/hubert-base-ls960',
+    model_id,
     num_labels=num_labels,
     label2id=label2id,
-    id2label=id2label,
+    id2label=id2label
 )
 
-model_name = 'facebook/hubert-base-ls960'.split("/")[-1]
-batch_size = 8
-gradient_accumulation_steps = 1
-# num_train_epochs = 10
-num_train_epochs = 7 #playaround with the learning rate for optimization
-
-#playaround with the warmup ratio
-#TODO - for optimization, playaround with the learning rate, warmup ration, num epochs and accuracy
-#TODO - test for the min length of the recording
-#TODO - add the augmented data
-#TODO - understand what is loss and grad_norm
+#add the train arguments
+#TODO we need to add them as an input to the function
+model_name = model_id.split("/")[-1]
+batch_size = 32
+gradient_accumulation_steps = 4
+num_train_epochs = 10
 
 training_args = TrainingArguments(
     f"{model_name}-finetuned-bee",
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=1e-5,
-    # learning_rate=5e-5,
+    learning_rate=3e-5,
     per_device_train_batch_size=batch_size,
     gradient_accumulation_steps=gradient_accumulation_steps,
     per_device_eval_batch_size=batch_size,
     num_train_epochs=num_train_epochs,
     warmup_ratio=0.1,
-    logging_steps=5,
+    logging_steps=10,
+    # torch_compile=False,
     load_best_model_at_end=True,
     metric_for_best_model="accuracy",
-    fp16=True,
+    # fp16=True,
     push_to_hub=False,
-    dataloader_pin_memory=False
-
+    # dataloader_pin_memory=False
 )
-
+from auxilary_functions import get_file_names, clean_directory, compute_metrics, preprocess_function
 #encode the data
+max_duration = 30
 # TODO this may not work
-data_encoded = beeclass.datadict_data.map(
+data_encoded = data.map(
     preprocess_function,
     remove_columns=["audio", "file_index"],
     batched=True,
     batch_size=100,
     num_proc=1,
-    fn_kwargs={"feature_extractor": feature_extractor, "max_duration": 30}
+    fn_kwargs={"feature_extractor": feature_extractor, "max_duration": max_duration}
 )
 
 trainer = Trainer(
-    model,
-    training_args,
+    model=model,
+    args=training_args,
     train_dataset=data_encoded["train"],
     eval_dataset=data_encoded["test"],
     tokenizer=feature_extractor,
     compute_metrics=compute_metrics
-
 )
 
 trainer.train()
 
-#with these parametersm we have shano results but it runs properly
-
-
-
+trainer.evaluate()
