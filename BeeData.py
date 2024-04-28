@@ -381,6 +381,10 @@ class BeeData:
             raise ValueError(
                 'Invalid step type. It is type %s and expected type is int.' % type(step).__name__)
 
+        #update the start and end columns
+        self.start_col_name = start_sliced_col_name
+        self.end_col_name = end_sliced_col_name
+
         if not nobee:
             annotation_df_sliced = self.annotation_df_data_quality[self.annotation_df_data_quality[self.bee_col] == 'bee']
         else:

@@ -98,7 +98,7 @@ def clean_directory(path, folder=False):
             if folder:
                 shutil.rmtree(os.path.join(path+item))
             else:
-                os.remove(item)
+                os.remove(path+item)
     except:
         pass
 

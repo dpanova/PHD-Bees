@@ -1,5 +1,6 @@
 #%%
 from datasets import load_dataset, Audio
+from ray import tune
 
 minds = load_dataset("PolyAI/minds14", name="en-US", split="train")
 
@@ -15,7 +16,8 @@ for i, label in enumerate(labels):
 from transformers import AutoFeatureExtractor
 
 # model_id = "facebook/wav2vec2-base"
-model_id = "facebook/hubert-base-ls960"
+# model_id = "facebook/hubert-base-ls960"
+model_id = 'MIT/ast-finetuned-audioset-10-10-0.4593'
 feature_extractor = AutoFeatureExtractor.from_pretrained(model_id)
 minds = minds.cast_column("audio", Audio(sampling_rate=16_000))
 #%%
@@ -34,6 +36,7 @@ encoded_minds = encoded_minds.rename_column("intent_class", "label")
 import evaluate
 
 accuracy = evaluate.load("accuracy")
+#f1
 import numpy as np
 
 
@@ -51,14 +54,18 @@ model = AutoModelForAudioClassification.from_pretrained(
 
 #%%
 training_args = TrainingArguments(
-    output_dir="my_awesome_mind_model",
+    output_dir='bla',
+    do_train=True,
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=3e-5,
-    per_device_train_batch_size=32,
+    save_steps=0,
+    learning_rate=tune.uniform(1e-5, 5e-5),
+    per_device_train_batch_size=tune.choice([16, 32, 64]),
     gradient_accumulation_steps=4,
     per_device_eval_batch_size=32,
-    num_train_epochs=10,
+    weight_decay = tune.uniform(0.0, 0.3),
+    max_steps=-1,
+    num_train_epochs=tune.choice([2, 3, 4, 5,10]),
     warmup_ratio=0.1,
     logging_steps=10,
     load_best_model_at_end=True,
@@ -66,13 +73,24 @@ training_args = TrainingArguments(
     push_to_hub=False,
 )
 
+#%%
+def model_init():
+    return AutoFeatureExtractor.from_pretrained(model_id,return_dict=True)
+#%%
+
 trainer = Trainer(
-    model=model,
+    # model=model,
     args=training_args,
     train_dataset=encoded_minds["train"],
     eval_dataset=encoded_minds["test"],
     tokenizer=feature_extractor,
     compute_metrics=compute_metrics,
+    model_init=model_init
 )
 
-trainer.train()
+
+trainer.hyperparameter_search(
+    direction="maximize",
+    backend="ray",
+    n_trials=10 # number of trials
+)

@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import randint
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 import matplotlib.pyplot as plt
-from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, Shift
+from audiomentations import Compose, AddGaussianNoise, TanhDistortion, GainTransition,AirAbsorption
 import soundfile as sf
 import random
 from datasets import Dataset, Audio, ClassLabel
@@ -414,8 +414,6 @@ class BeeClassification:
             raise ValueError('Column index is not part of df. It is a requirement. The index should provide the file index of the file to be read.')
         dataset = pd.DataFrame({})
         for train_index, row in df.iterrows():
-            print(split_type)
-            print(train_index)
             try:
                 temp_dataset = pd.DataFrame({})
                 path, sample, sample_rate = self.file_read(row['index'],output_file_name=True)
@@ -549,7 +547,7 @@ class BeeClassification:
         """
         if type(arg) != tuple:
             raise ValueError('Invalid arg type. arg is type %s and expected type is list.' %type(arg).__name__)
-        train_index, row= arg
+        train_index, row,n= arg
 
         # get the necessary indices to trace files easily
         file_index = row[self.x_col]  # this index is necessary to ensure we have the correct file name (coming from the annotation file)
@@ -558,24 +556,28 @@ class BeeClassification:
         try:
             # read the file
             samples, sample_rate = self.file_read(file_index)
-            # TODO update the parameters here
+            # TODO update the parameters here optimize
             augment = Compose([
                 AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
-                TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
-                PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
-                Shift(min_shift=-0.5, max_shift=0.5, p=0.5),
+                # TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
+                # PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
+                # Shift(min_shift=-0.5, max_shift=0.5, p=0.5),
+                TanhDistortion(min_distortion=0.01,max_distortion=0.7,p=0.5),
+                GainTransition(p=0.5),
+                AirAbsorption(min_distance=1.0,max_distance=10.0,p=0.5)
+
             ])
             augmented_samples = augment(samples=samples, sample_rate=sample_rate)
-            rand_index = random.randint(max(self.X_train_index['index'])*100,max(self.X_train_index['index'])*100000)
-            augmented_file_index = file_index + rand_index
+            # rand_index = random.randint(max(self.X_train_index['index'])*100,max(self.X_train_index['index'])*100000)
+            augmented_file_index = int(str(n) + str(0) + str(train_index))
             augmented_file_name = 'index' + str(augmented_file_index) + '.wav'
             sf.write(self.augment_folder + augmented_file_name, augmented_samples, sample_rate)
-            return [augmented_file_index, rand_index, label, train_index]
+            return [augmented_file_index, label, train_index]
         except:
-            return [train_index, file_index]
+            return  [None, None, None]
             logging.warning('File with index %s is NOT augmented' % str(file_index))
 
-    def data_augmentation_df(self,N=3):
+    def data_augmentation_df(self,N=1):
         """
         A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.
         :param N: the number of times the augmentation process should happen
@@ -590,13 +592,18 @@ class BeeClassification:
 
         logging.info('Augmented folder is cleaned.')
         self.augmented_df = pd.DataFrame()
-        for n in range(N):
+
+        for n in range(1,N+1,1):
             # create the augmented files
             pool = mp.Pool(processes=mp.cpu_count())
             augmented = pool.map(self.data_augmentation_row,
-                                     [(train_index, row) for train_index, row in self.X_train_index.iterrows()])
-            augmented_df = pd.DataFrame(augmented, columns=['augmented_file_index', 'rand_index', 'label', 'train_index'])
-            augmented_df.index = augmented_df['rand_index']
+                                     [(train_index, row, n) for train_index, row in self.X_train_index.iterrows()])
+            augmented_df = pd.DataFrame(augmented, columns=['augmented_file_index', 'label', 'train_index'])
+            augmented_df.dropna(inplace=True)
+            augmented_df['augmented_file_index'] = augmented_df['augmented_file_index'].astype(int)
+            augmented_df['train_index'] = augmented_df['train_index'].astype(int)
+            augmented_df.index = augmented_df['augmented_file_index']
+            # augmented_df.dropna(inplace=True)
             self.augmented_df = pd.concat([self.augmented_df,augmented_df])
 
             logging.info('Augmented data is created.')
@@ -605,6 +612,7 @@ class BeeClassification:
             X_train_index.columns = self.X_train_index.columns
             # add the augmented data to the existing data
             self.X_train_index = pd.concat([X_train_index, self.X_train_index])
+
             logging.info('X_train index is updated.')
             # split y
             y_train = pd.DataFrame(augmented_df['label'])
@@ -656,12 +664,16 @@ class BeeClassification:
             elif func == 'mfcc':
                 # TODO change the mean value to something else
                 # TODO change the n_mfcc to something else
-                sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate, n_mfcc=100).T, axis=0)
+                sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate,
+                                                                  n_mfcc=100, n_fft = 1000).T, axis=0)
+                # sample_transformed = np.insert(sample_transformed, 0, file_index) #TODO remove this
+                sample_transformed = np.insert(sample_transformed, 0, train_index)
             elif func == 'mel spec':
                 # TODO change the mean value to something else
                 #TODO change the fixed values
                 try:
-                    mel = librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048, hop_length=512, n_mels=128)
+                    mel = librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048,
+                                                         hop_length=512, n_mels=128)
                     sample_transformed = mel
                     # sample_transformed = librosa.power_to_db(mel) #TODO update here to remove the power to db potentially
                     # sample_transformed = sample_transformed.reshape(1,-1)
@@ -719,14 +731,24 @@ class BeeClassification:
         logging.info('Whole data frame transformed.')
         return X_df
 
-    def transformer_classification(self, data, max_duration=30 , model_id ='facebook/hubert-base-ls960'):
-    #TODO check what is this max_duration doing
+
+    def transformer_classification(self
+                                   , data
+                                   , max_duration=30
+                                   , model_id ='facebook/hubert-base-ls960'
+                                    ,batch_size = 32
+                                    ,gradient_accumulation_steps = 4
+                                    ,num_train_epochs = 10
+                                   ,warmup_ratio=0.1
+                                   ,logging_steps = 10
+                                   ,learning_rate = 3e-5
+                                   ,name='finetuned-bee'
+                                    ):
 
 
         #create the feature extractor
         feature_extractor = AutoFeatureExtractor.from_pretrained(
-            model_id, do_normalize=True, return_attention_mask=True
-        )
+            model_id, do_normalize=True, return_attention_mask=True )
         # resample the data to have the same sampling rate as the pretrained model
         sampling_rate = feature_extractor.sampling_rate
         data = data.cast_column("audio", Audio(sampling_rate=sampling_rate))
@@ -748,37 +770,29 @@ class BeeClassification:
             model_id,
             num_labels=num_labels,
             label2id=label2id,
-            id2label=id2label,
+            id2label=id2label
         )
 
         #add the train arguments
-        #TODO we need to add them as an input to the function
         model_name = model_id.split("/")[-1]
-        batch_size = 8
-        gradient_accumulation_steps = 1
-        num_train_epochs = 10
 
         training_args = TrainingArguments(
-            f"{model_name}-finetuned-bee",
+            "%s-%s" %(model_name,name),
             evaluation_strategy="epoch",
             save_strategy="epoch",
-            learning_rate=5e-5,
+            learning_rate=learning_rate,
             per_device_train_batch_size=batch_size,
             gradient_accumulation_steps=gradient_accumulation_steps,
             per_device_eval_batch_size=batch_size,
             num_train_epochs=num_train_epochs,
-            warmup_ratio=0.1,
-            logging_steps=5,
-            # torch_compile=False,
+            warmup_ratio=warmup_ratio,
+            logging_steps=logging_steps,
             load_best_model_at_end=True,
             metric_for_best_model="accuracy",
-            fp16=False,
             push_to_hub=False,
-            dataloader_pin_memory=False
         )
 
         #encode the data
-        # TODO this may not work
         data_encoded = data.map(
             preprocess_function,
             remove_columns=["audio", "file_index"],
@@ -794,10 +808,13 @@ class BeeClassification:
             train_dataset=data_encoded["train"],
             eval_dataset=data_encoded["test"],
             tokenizer=feature_extractor,
-            compute_metrics=compute_metrics,
+            compute_metrics=compute_metrics
         )
 
         trainer.train()
+        # trainer.evaluate()
+
+
         return trainer
 
     def best_model(self, model, param_dist):
@@ -880,9 +897,10 @@ class BeeClassification:
                       , model
                       , param_dist
                       , cm_title
-                      , cm_file_name):
+                      , cm_file_name
+                      ,func='mfcc'):
         """Provide a full picture of the model performance and accuracy
-
+        TODO update
         :param model: an initiated machine learning model
         :type model: Any
         :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
@@ -899,20 +917,20 @@ class BeeClassification:
             rand_search = self.best_model(model=model, param_dist=param_dist)
 
             # transform the X_train and then get only the correct entries
-            self.X_train = self.data_transformation_df(self.X_train_index, self.y_train)
+            self.X_train = self.data_transformation_df(self.X_train_index, func=func)
             # subset the index for inspection
-            self.X_train_fail = self.X_train[self.X_train['col0'].isnull()]
+            # self.X_train_fail = self.X_train[self.X_train['col0'].isnull()]
             #subset the data for the training
-            self.X_train = self.X_train[~self.X_train['col0'].isnull()]
+            # self.X_train = self.X_train[~self.X_train['col0'].isnull()]
 
-            self.X_test = self.data_transformation_df(self.X_test_index, self.y_test)
-            self.X_test_fail = self.X_test[self.X_test['col0'].isnull()]
+            self.X_test = self.data_transformation_df(self.X_test_index, func = func)
+            # self.X_test_fail = self.X_test[self.X_test['col0'].isnull()]
             # subset the data for the training
-            self.X_test = self.X_test[~self.X_test['col0'].isnull()]
+            # self.X_test = self.X_test[~self.X_test['col0'].isnull()]
 
             #subset the y variables
-            self.y_train = self.y_train.loc[self.X_train['train_index'].astype(int)]
-            self.y_test = self.y_test.loc[self.X_test['train_index'].astype(int)]
+            # self.y_train = self.y_train.loc[self.X_train['train_index'].astype(int)]
+            # self.y_test = self.y_test.loc[self.X_test['train_index'].astype(int)]
             #here we need to make sure we subset the y variable for the correct index and remove the first two columns from X
 
             # fit the best model
@@ -928,14 +946,14 @@ class BeeClassification:
                                                            cm_file_name=cm_file_name)
 
             # check the misclassified datapoints
-            misclassified = self.misclassified_analysis(y_pred=y_pred)
+            # misclassified = self.misclassified_analysis(y_pred=y_pred)
 
             logging.info('Model Results Calculated')
         except Exception as error:
             logging.error(error)
 
-        return acc, precision, recall,  rand_search , misclassified
-
+        return acc, precision, recall,  rand_search #, misclassified
+    #TODO add the func here as well
     def random_forest_results(self):
         """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
 
@@ -957,33 +975,33 @@ class BeeClassification:
             importances = best_model.feature_importances_
             self.forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
 
-            code_str = """
-            self.forest_importances.sort_values(ascending=False).plot(kind='barh')
-            plt.ylabel('Importance')
-            plt.xlabel('Features')
-                        """
-
-            self.plot_figure(
-                plot_title='RF Feature Importance'
-                , file_title='rf_feature_importance.png'
-                , plot_code=code_str
-            )
-            logging.info('Random forest results calculated')
-
-            # create a plot for the misclassified
-            self.misclass_rf = pd.DataFrame(misclassified)
-            self.misclass_rf.reset_index(inplace=True)
+            # code_str = """
+            # self.forest_importances.sort_values(ascending=False).plot(kind='barh')
+            # plt.ylabel('Importance')
+            # plt.xlabel('Features')
+            #             """
+            #
+            # self.plot_figure(
+            #     plot_title='RF Feature Importance'
+            #     , file_title='rf_feature_importance.png'
+            #     , plot_code=code_str
+            # )
+            # logging.info('Random forest results calculated')
+            #
+            # # create a plot for the misclassified
+            # self.misclass_rf = pd.DataFrame(misclassified)
+            # self.misclass_rf.reset_index(inplace=True)
             #self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
 
-            code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+            # code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
+            #
+            # self.plot_figure(
+            #     plot_title='Random Forest Misclassified Distribution'
+            #     , file_title='misclassified_rf.png'
+            #     , plot_code=code_str
+            # )
+            # logging.info("Random Forest misclassified distribution plot created")
 
-            self.plot_figure(
-                plot_title='Random Forest Misclassified Distribution'
-                , file_title='misclassified_rf.png'
-                , plot_code=code_str
-            )
-            logging.info("Random Forest misclassified distribution plot created")
-
-            return acc, precision, recall , misclassified
+            return acc, precision, recall # , misclassified
         except Exception as error:
             logging.error(error)
