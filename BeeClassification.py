@@ -24,24 +24,26 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class BeeClassification:
     """BeeNotBee class ....
-    # TODO: update the documentation
-    :param annotation_path: path to the annotation data
+    Class to conduct modelling based on labeled audio data, using HuggingFace transformers and Random Forest
+    :param annotation_path: path to the annotation data which holds the labeled audio data
     :type annotation_path: str
-    :param y_col: column label for the dependent variable in the annotation file
+    :param y_col: column label for the dependent variable in the annotation file, the label
     :type y_col: str
     :param x_col: column label for the independent variable in the annotation file. It is used to read the wav file.
     :type x_col: str
     :param acoustic_folder: folder name where acoustic files are stored
     :type acoustic_folder: str
-
-
-
-
+    :bee_col: column which indicates the dependent variable in the annotation. In the beginning bothe bee_col and y_col are the same, but y_col can be updated during specific actions.
+    :type bee_col: str
+    :param acoustic_folder: folder name where the split files are stored
+    :type acoustic_folder: str
+    :param augment_folder: folder name where the augment files are stored
+    :type augment_folder: str
+    :param datadict_folder: folder name where the datadict files are stored
     :param logname: path to the log file
     :type logname: str
-
-    :return: BeeNotBee object
-    :rtype: BeeNotBee
+    :return: BeeClassification object
+    :rtype: BeeClassification
     """
 
     def __init__(self
@@ -80,11 +82,49 @@ class BeeClassification:
                             , datefmt='%H:%M:%S'
                             , level=logging.DEBUG)
 
+        #validate the inputs
+        if type(annotation_path) != str:
+            raise ValueError(
+                'Invalid annotation_path type. It is type %s and expected type is str.' % type(annotation_path).__name__)
+        if not annotation_path.endswith('csv'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .csv extension' % annotation_path)
+        if type(annotation_dtypes_path) != str:
+            raise ValueError(
+                'Invalid annotation_dtypes_path type. It is type %s and expected type is str.' % type(
+                    annotation_dtypes_path).__name__)
+        if not annotation_dtypes_path.endswith('csv'):
+            raise ValueError(
+                '%s input is not the correct type. It should be .csv extension' % annotation_dtypes_path)
+        if type(y_col) != str:
+            raise ValueError(
+                'Invalid y_col type. It is type %s and expected type is str.' % type(
+                    y_col).__name__)
+        if type(bee_col) != str:
+            raise ValueError(
+                'Invalid bee_col type. It is type %s and expected type is str.' % type(
+                    bee_col).__name__)
+        if type(logname) != str:
+            raise ValueError(
+                'Invalid logname type. It is type %s and expected type is str.' % type(
+                    logname).__name__)
+        if type(acoustic_folder) != str:
+            raise ValueError(
+                'Invalid acoustic_folder type. It is type %s and expected type is str.' % type(
+                    acoustic_folder).__name__)
+        if type(augment_folder) != str:
+            raise ValueError(
+                'Invalid augment_folder type. It is type %s and expected type is str.' % type(
+                    augment_folder).__name__)
+        if type(datadict_folder) != str:
+            raise ValueError(
+                'Invalid datadict_folder type. It is type %s and expected type is str.' % type(
+                    datadict_folder).__name__)
+
     def read_annotation_csv(self):
         """
         Read annotation data
         :return: pandas data frame with the annotations
-        :rtype: pandas.DataFrame
         """
 
         try:
@@ -103,8 +143,8 @@ class BeeClassification:
         :param new_col: new column name
         :type new_col: str
         :return: updated annotation dataframe with a new column and updated y_col in the class
-        :rtype: pandas.DataFrame
         """
+
         if type(old_col) != list:
             raise ValueError('old_col input is not the correct type. It is type %s, but it should be a list.' %type(old_col))
         if type(new_col) != str:
@@ -121,7 +161,6 @@ class BeeClassification:
         """"
         Validate annotation data
         :return: warning if the data is as expected
-        :rtype: log
         """
         dtypes_df = pd.read_csv(self.annotation_dtypes_path)
         cols = dtypes_df['col_name']
@@ -155,8 +194,7 @@ class BeeClassification:
         :type perc: float
         :param stratified: Boolean value to indicate if the split should be stratified
         :type stratified: bool
-        :return:annotation_df_updated with the final data which is splitted. X train, X test, y train and y test pandas data frames
-        :rtype: pandas.DataFrame
+        :return:annotation_df_updated with the final data which is split. X train, X test, y train and y test pandas data frames
         """
         if type(perc) != float:
             raise ValueError(
@@ -192,141 +230,6 @@ class BeeClassification:
         self.y_test.to_csv('y_test.csv')
 
 
-
-    def harley_transformation_with_window(self,x,window = np.hanning):
-        """
-        Transform np.array to fast harley transformation with a window function
-        :param x: time sequence
-        :type x: numpy array
-        :param window: windowing function from the list np.hanning, np.bartlett, np.blackman, np.hamming. More information for the windows functions here https://numpy.org/doc/stable/reference/routines.window.html
-        :type window: numpy function
-        :return:
-        """
-
-
-        window_list = [np.hanning, np.bartlett, np.blackman, np.hamming]
-        if window not in window_list:
-            raise ValueError('Invalid window type. Expected one of: %s' %['np.'+w.__name__ for w in window_list])
-        elif type(x) != np.ndarray:
-            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
-        else:
-            x_trans = fft(x * window(len(x)))  # adding window function
-            x_trans = np.real(x_trans) - np.imag(x_trans)
-            logging.info('Harley transformation is completed for the array conducted with window function %s' %window.__name__ )
-        return x_trans
-
-    def freq_powerspect_func(self,x, dt, npnts, denoise=True, cutoff=0):
-        """
-        Transform the FFT harley vector into frequency and power vectors
-        :param x: time sequence
-        :type x: numpy array
-        :param t: time vector
-        :type t: numpy array
-        :param dt: sampling interval
-        :type dt: list
-        :param npnts: number of time points
-        :type npnts:  int
-        :param denoise: filter out noise
-        :type denoise: bool
-        :param cutoff: denoise below the cutoff amplitude
-        :type cutoff: int
-        :return: frequency list and power specter list
-        :rtype: list
-        """
-        if type(x) != np.ndarray:
-            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
-        elif type(npnts) != int:
-            raise ValueError('Invalid npnts type. npnts is type %s and expected type is int.' %type(npnts).__name__)
-        elif type(dt) != float:
-            raise ValueError('Invalid dt type. dt is type %s and expected type is float.' %type(dt).__name__)
-        elif type(denoise) != bool:
-            raise ValueError('Invalid denoise type. denoise is type %s and expected type is bool.' %type(denoise).__name__)
-        elif type(cutoff) != int:
-            raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
-        else:
-
-            # TODO Maybe we can use this piece of code instead https://huggingface.co/learn/audio-course/en/chapter1/audio_data
-            # # get the amplitude spectrum in decibels
-            # amplitude = np.abs(dft)
-            # amplitude_db = librosa.amplitude_to_db(amplitude, ref=np.max)
-
-
-
-            X = self.harley_transformation_with_window(x)
-            #n = np.arange(npnts)
-            #T = npnts * dt
-            freq = rfftfreq(npnts, dt)
-            #freq = n / T
-            powerspect = 2 * np.abs(X) / npnts
-            if denoise:
-                powerspect = powerspect * (powerspect > cutoff)  # Zero all frequencies with small power
-                X = X * (powerspect > cutoff)  # Zero small Fourier coefficients
-            logging.info('Frequency and power specter is calculated for the time vector')
-            return freq, powerspect
-
-
-    def binning(self, x, dt, npnts, n_bins =128, n_start = 0.0 , n_end = 2000.0, denoise=True, cutoff=0):
-        #TODO - we may not need this any more
-        """
-        Transform a time to frequency using the freq_powerspect_func and then binning it to a specific number of frequency vectors. The power in every bin is the average of the original frequency vector.
-        :param x: time sequence
-        :type x: numpy array
-        :param dt: sampling interval
-        :type dt: list
-        :param npnts: number of time points
-        :type npnts:  int
-        :param n_bins: number of bins in the new array
-        :type n_bins: int
-        :param n_start: from where the binning to start
-        :type n_start: float
-        :param n_end: until where the binning to stop
-        :type n_end: float
-        :param denoise: filter out noise
-        :type denoise: bool
-        :param cutoff: denoise below the cutoff amplitude
-        :type cutoff: int
-        :return: list of the binned inputs
-        :rtype: list
-        """
-        if type(x) != np.ndarray:
-            raise ValueError('Invalid x type. x is type %s and expected type is np.array.' %type(x).__name__)
-        elif type(npnts) != int:
-            raise ValueError('Invalid npnts type. npnts is type %s and expected type is int.' %type(npnts).__name__)
-        elif type(dt) != float:
-            raise ValueError('Invalid dt type. dt is type %s and expected type is float.' %type(dt).__name__)
-        elif type(denoise) != bool:
-            raise ValueError('Invalid denoise type. denoise is type %s and expected type is bool.' %type(denoise).__name__)
-        elif type(cutoff) != int:
-            raise ValueError('Invalid cutoff type. cutoff is type %s and expected type is int.' %type(cutoff).__name__)
-        elif type(n_bins) != int:
-            raise ValueError('Invalid n_bins type. n_bins is type %s and expected type is int.' % type(n_bins).__name__)
-        elif type(n_start) != float:
-            raise ValueError('Invalid n_start type. n_start is type %s and expected type is float.' % type(n_start).__name__)
-        elif type(n_end) != float:
-            raise ValueError('Invalid n_end type. n_end is type %s and expected type is float.' % type(n_end).__name__)
-        else:
-            # to ensure the length of the bins is unchanged, add 1
-            n_bins=n_bins+1
-            freq, powerspect = self.freq_powerspect_func(x=x,npnts=npnts, dt=dt,denoise=denoise,cutoff=cutoff)
-            bins = np.linspace(n_start, n_end, n_bins)
-            bins_list = [(bins[i], bins[i + 1]) for i in (range(len(bins) - 1))]
-            binned_x = list()
-            for pair in bins_list:
-                b0 = pair[0]
-                b1 = pair[1]
-                index = ([b0] + [i for i, e in enumerate(freq) if e < b1])[-1]
-                try:
-                    old_index
-                except NameError:
-                    old_index = 0
-                try:
-                    p = sum(powerspect[old_index:index]) / len(powerspect[old_index:index])
-                except:
-                    p = 0
-                binned_x.append(p)
-                old_index = index
-            logging.info('Frequency vector binned.')
-            return binned_x
     def file_read(self, file_index, output_file_name=False):
         """
         Read a wav file from the acoustic_folder where the name of the file has an index.
@@ -341,7 +244,7 @@ class BeeClassification:
             raise ValueError('Invalid file_index type. file_index is type %s and expected type is int.' % type(file_index).__name__)
         try:
             file_name = [x for x in self.accoustic_files if x.find('index' + str(file_index) + '.wav') != -1][0]
-            file_name = self.acoustic_folder + file_name #TODO what about the augmented data? is the data folder ok? or it should be an input
+            file_name = self.acoustic_folder + file_name
             logging.info('%s file exists.' % file_name)
             samples, sample_rate = librosa.load(file_name, sr=None, mono=True, offset=0.0, duration=None)
             if output_file_name:
@@ -370,14 +273,14 @@ class BeeClassification:
 
     def dataframe_to_dataset_split_save(self,df, split_type,file_name):
         """
-        Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to %s
+        Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to the datadict_folder.
         :param df: pandas data frame which has to be converted
         :type df: pd.DataFrame
         :param split_type: 'train' or 'test' for training and testing sets
         :type split_type: str
         :param file_name: name of the file to be saved
         :type file_name: str
-        """%self.datadict_folder
+        """
         split_type_list = ['train','test']
         if type(df) != pd.core.frame.DataFrame:
             raise ValueError('Invalid df type. df is type %s and expected type is pd.core.frame.DataFrame.' %type(df).__name__)
@@ -410,11 +313,9 @@ class BeeClassification:
             except:
                 pass
         data = Dataset.from_pandas(dataset, split=split_type)
-        # data = data.class_encode_column("label")
         logging.info('Dataframe transformed to dataset.')
         #save the file with the first and the last index
         #Note: we use this function because it takes less than a sec to load the data, for .json functions, it took 3 min per chunk
-
 
         if split_type == 'train':
             data.save_to_disk(self.datadict_folder+"/train/"+file_name)
@@ -426,7 +327,6 @@ class BeeClassification:
         logging.info('Save the data set.')
     def dataframe_to_dataset(self,df, split_type, num_chunks=10):
         """
-        TODO test the raise error part for the list
         Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.
         :param df: pandas data frame which has to be converted
         :type df: pd.DataFrame
@@ -533,19 +433,14 @@ class BeeClassification:
         try:
             # read the file
             samples, sample_rate = self.file_read(file_index)
-            # TODO update the parameters here optimize
             augment = Compose([
                 AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
-                # TimeStretch(min_rate=0.8, max_rate=1.25, p=0.5),
-                # PitchShift(min_semitones=-4, max_semitones=4, p=0.5),
-                # Shift(min_shift=-0.5, max_shift=0.5, p=0.5),
                 TanhDistortion(min_distortion=0.01,max_distortion=0.7,p=0.5),
                 GainTransition(p=0.5),
                 AirAbsorption(min_distance=1.0,max_distance=10.0,p=0.5)
 
             ])
             augmented_samples = augment(samples=samples, sample_rate=sample_rate)
-            # rand_index = random.randint(max(self.X_train_index['index'])*100,max(self.X_train_index['index'])*100000)
             augmented_file_index = int(str(n) + str(0) + str(train_index))
             augmented_file_name = 'index' + str(augmented_file_index) + '.wav'
             sf.write(self.augment_folder + augmented_file_name, augmented_samples, sample_rate)
@@ -559,6 +454,7 @@ class BeeClassification:
         A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.
         :param N: the number of times the augmentation process should happen
         :type N: int
+        :return: the augmented data is saved
         """
 
         if type(N) != int:
@@ -604,7 +500,7 @@ class BeeClassification:
 
     def data_transformation_row(self, arg):
         """
-        A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data to binned harley fft vector. Stores the index from the annotation data frame (the key) and the df index to track the associated y values.
+        A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data with mfcc or mel spec. n_fft is set to 1000 due to the nature of the audio data.
         :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable
         :type arg: tuple
 
@@ -630,31 +526,17 @@ class BeeClassification:
             else:
                 logging.warning('File with index %s DOES NOT have the correct duration.' %str(file_index))
 
-            if func == 'binning':
-                # transform the file
-                dt = 1 / sample_rate
-                t = np.arange(0, duration_of_sound, dt)
-                npnts = len(t)
-                sample_transformed = self.binning(x=samples, dt=dt, npnts=npnts)
-                sample_transformed = np.insert(sample_transformed, 0, file_index)
-                sample_transformed = np.insert(sample_transformed, 0, train_index)
-            elif func == 'mfcc':
-                # TODO change the mean value to something else
-                # TODO change the n_mfcc to something else
+            if func == 'mfcc':
                 sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate,
                                                                   n_mfcc=100, n_fft = 1000).T, axis=0)
-                # sample_transformed = np.insert(sample_transformed, 0, file_index) #TODO remove this
                 sample_transformed = np.insert(sample_transformed, 0, train_index)
             elif func == 'mel spec':
-                # TODO change the mean value to something else
-                #TODO change the fixed values
                 try:
-                    mel = librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=2048,
+                    mel = librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=1000,
                                                          hop_length=512, n_mels=128)
-                    sample_transformed = mel
-                    # sample_transformed = librosa.power_to_db(mel) #TODO update here to remove the power to db potentially
-                    # sample_transformed = sample_transformed.reshape(1,-1)
-                    # sample_transformed = sample_transformed[0][:400]#TODO update here
+                    sample_transformed = librosa.power_to_db(mel)
+                    sample_transformed = sample_transformed.reshape(1,-1)
+                    sample_transformed = sample_transformed[0]
                 # we need to add the indices for tracking purposes
                 except:
                     sample_transformed= np.zeros()
@@ -672,16 +554,16 @@ class BeeClassification:
 
     def data_transformation_df(self, X, func):
         """
-        Find the correct file from the annotation data frame and then transform the acoustic data using binning, mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
+        Find the correct file from the annotation data frame and then transform the acoustic data using mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
         :type X: pandas.DataFrame
-        :param func: function for audio files transformation. One can choose from a list of options ['binning', 'mfcc','mel spec']
+        :param func: function for audio files transformation. One can choose from a list of options ['mfcc','mel spec']
         :type func: function or method
 
         :return: data frame with the transformed data
         :rtype:pandas.dataFrame
         """
-        func_list = ['binning', 'mfcc','mel spec']
+        func_list = ['mfcc','mel spec']
         if type(X) != pd.core.frame.DataFrame:
             raise ValueError('Invalid arg type. arg is type %s and expected type is pandas.core.frame.DataFrame.' % type(X).__name__)
         if 'index' not in X.columns.to_list():
@@ -740,6 +622,8 @@ class BeeClassification:
         :type logging_steps: float
         :param learning_rate:  The initial learning rate.
         :type learning_rate: float
+        :param name: name of the newly created model
+        :type name: str
         :return: trained model
         :rtype: HuggingFace.models
         """
@@ -748,6 +632,8 @@ class BeeClassification:
             raise ValueError('Invalid arg type. arg is type %s and expected type is datasets.dataset_dict.DatasetDict.' % type(data).__name__)
         if type(model_id) != str:
             raise ValueError('Invalid arg type. arg is type %s and expected type is str.' % type(model_id).__name__)
+        if type(name) != str:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is str.' % type(name).__name__)
         if type(batch_size) != int:
             raise ValueError('Invalid arg type. arg is type %s and expected type is int.' % type(batch_size).__name__)
         if type(max_duration) != int:
@@ -912,7 +798,8 @@ class BeeClassification:
     def model_results(self
                       , model
                       , param_dist
-                      ,func='mfcc'):
+                      ,func='mfcc'
+                      ,do_pca=True):
         """Provide a full picture of the model performance and accuracy
         :param model: an initiated machine learning model such as Random Forest
         :type model: Any
@@ -920,12 +807,17 @@ class BeeClassification:
         :type param_dist: dict
         :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
         :type func: str
-        :return: the best model with its accuracy metrics, misclassified analysis and pca explained variance
+        :param do_pca: whether to run pca on the data and take the first two dimensions
+        :type do_pca: bool
+        :return: the best model with its accuracy metrics, misclassified analysis and pca explained variance (do_pca = True)
         :rtype: tuple
         """
         if type(param_dist) != dict:
             raise ValueError(
                 'Invalid arg type. arg is type %s and expected type is dict.' % type(param_dist).__name__)
+        if type(do_pca) != bool:
+            raise ValueError(
+                'Invalid arg type. arg is type %s and expected type is dict.' % type(do_pca).__name__)
         if func not in ['mfcc', 'mel spec']:
             raise ValueError(
                 'Invalid arg type. arg is expected to be either mfcc or mel spec but it is' % func)
@@ -939,54 +831,77 @@ class BeeClassification:
 
             self.X_test = self.data_transformation_df(self.X_test_index, func = func)
 
-            #standardise the values
+            # standardise the values
             x = self.X_train[[x for x in self.X_train.columns if x not in ['train_index', 'file_index']]]
             y = np.array(self.y_train).ravel()
             x = StandardScaler().fit_transform(x)
             x_test = self.X_test[[x for x in self.X_test.columns if x not in ['train_index', 'file_index']]]
             x_test = StandardScaler().fit_transform(x_test)
 
-            #conduct PCA to reduce overfitting
+            if do_pca:
 
-            pca = PCA(n_components=2)
-            principalComponents = pca.fit_transform(x)
-            pca_variance = pca.explained_variance_ratio_
-            principalDf = pd.DataFrame(data=principalComponents
-                                       , columns=['principal component 1', 'principal component 2'])
-            principalComponents_test = pca.transform(x_test)
-            principalDf_test = pd.DataFrame(data=principalComponents_test
-                                            , columns=['principal component 1', 'principal component 2'])
+                #conduct PCA to reduce overfitting
 
-            # fit the best model
-            rand_search.fit(principalDf,y)
+                pca = PCA(n_components=2)
+                principalComponents = pca.fit_transform(x)
+                pca_variance = pca.explained_variance_ratio_
+                principalDf = pd.DataFrame(data=principalComponents
+                                           , columns=['principal component 1', 'principal component 2'])
+                principalComponents_test = pca.transform(x_test)
+                principalDf_test = pd.DataFrame(data=principalComponents_test
+                                                , columns=['principal component 1', 'principal component 2'])
 
-            # generate predictions with the best model
-            y_pred = rand_search.predict(principalDf_test)
+                # fit the best model
+                rand_search.fit(principalDf,y)
 
-            # calculate model accuracy
-            acc, precision, recall = self.accuracy_metrics(y_pred=y_pred)
+                # generate predictions with the best model
+                y_pred = rand_search.predict(principalDf_test)
 
-            # check the misclassified datapoints
-            misclassified = self.misclassified_analysis(y_pred=y_pred)
+                # calculate model accuracy
+                acc, precision, recall = self.accuracy_metrics(y_pred=y_pred)
+
+                # check the misclassified datapoints
+                misclassified = self.misclassified_analysis(y_pred=y_pred)
 
 
-            logging.info('Model Results Calculated')
+                logging.info('Model Results Calculated')
+                return acc, precision, recall, rand_search, misclassified, pca_variance
+            else:
+                # fit the best model
+                rand_search.fit(x, y)
+
+                # generate predictions with the best model
+                y_pred = rand_search.predict(x_test)
+
+                # calculate model accuracy
+                acc, precision, recall = self.accuracy_metrics(y_pred=y_pred)
+
+                # check the misclassified datapoints
+                misclassified = self.misclassified_analysis(y_pred=y_pred)
+
+                logging.info('Model Results Calculated')
+                return acc, precision, recall, rand_search, misclassified
         except Exception as error:
             logging.error(error)
 
-        return acc, precision, recall,  rand_search , misclassified, pca_variance
 
 
-    def random_forest_results(self, func):
+
+    def random_forest_results(self, func, do_pca = True):
         """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
         :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
         :type func: str
-        :return: accuracy, precision, recall, misclassified analysis, pca variance and feature importance
+        :param do_pca: whether to run pca on the data and take the first two dimensions
+        :type do_pca: bool
+        :return: accuracy, precision, recall, misclassified analysis, pca variance (do_pca=True) and feature importance
         :rtype: tuple
         """
         if func not in ['mfcc', 'mel spec']:
             raise ValueError(
                 'Invalid arg type. arg is expected to be either mfcc or mel spec but it is' % func)
+        if type(do_pca) != bool:
+            raise ValueError(
+                'Invalid arg type. arg is type %s and expected type is dict.' % type(do_pca).__name__)
         try:
             param_dist = {'n_estimators': [20, 30, 40],
                           'max_depth': [2, 8, 10, 12, 14, 16, 18, 20]}
@@ -994,14 +909,22 @@ class BeeClassification:
             rf = RandomForestClassifier()
 
             # check the model results
-            acc, precision, recall,  rand_search,misclassified, pca_variance = self.model_results(model=rf, param_dist=param_dist)
+            if do_pca:
+                acc, precision, recall,  rand_search,misclassified, pca_variance = self.model_results(model=rf
+                                                                                                      , param_dist=param_dist
+                                                                                                      ,do_pca=True)
+            else:
+                acc, precision, recall, rand_search, misclassified = self.model_results(model=rf ,param_dist=param_dist
+                                                                                                      ,do_pca=False)
             logging.info('Accuracy metrics are calculated.')
             # # check the features importance
             best_model = rand_search.best_estimator_
             importances = best_model.feature_importances_
             forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
             logging.info('Importance is calculated.')
-
-            return acc, precision, recall , misclassified, pca_variance, forest_importances
+            if do_pca:
+                return acc, precision, recall , misclassified, pca_variance, forest_importances
+            else:
+                return acc, precision, recall, misclassified, forest_importances
         except Exception as error:
             logging.error(error)
