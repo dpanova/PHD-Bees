@@ -1,20 +1,21 @@
 # libraries
 import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
 from auxilary_functions import get_file_names, clean_directory, compute_metrics, preprocess_function
 from sklearn.model_selection import train_test_split,RandomizedSearchCV
 import logging
 import numpy as np
-from scipy.fft import fft,rfftfreq, fftfreq
+from scipy.fft import fft,rfftfreq
 import librosa
 import multiprocessing as mp
 from sklearn.ensemble import RandomForestClassifier
-from scipy.stats import randint
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 import matplotlib.pyplot as plt
 from audiomentations import Compose, AddGaussianNoise, TanhDistortion, GainTransition,AirAbsorption
 import soundfile as sf
-import random
-from datasets import Dataset, Audio, ClassLabel
+from datasets import Dataset, Audio
 import datasets
 import time
 from transformers import AutoFeatureExtractor, AutoModelForAudioClassification, TrainingArguments, Trainer
@@ -53,6 +54,9 @@ class BeeClassification:
                  ,acoustic_folder = 'data/SplitData/'
                  ,augment_folder = 'data/augment/'
                  ,datadict_folder = 'data/DataDict/'):
+        self.X_test = None
+        self.X_train = None
+        self.forest_importances = None
         self.annotation_path =annotation_path
         self.annotation_df = pd.DataFrame()
         self.annotation_dtypes_path = annotation_dtypes_path
@@ -75,33 +79,6 @@ class BeeClassification:
                             , format='%(asctime)s %(levelname)s %(message)s'
                             , datefmt='%H:%M:%S'
                             , level=logging.DEBUG)
-
-
-
-
-    def plot_figure(self
-                    , plot_title
-                    , file_title
-                    , plot_code):
-        """ Plotting a figure based on dynamic code
-
-        :param plot_title: plot title
-        :type plot_title: str
-        :param file_title: title of the saved file
-        :type file_title: str
-        :param plot_code: code to be executed for the plot to visualize
-        :type plot_code: str
-        :return: saved file with the requested plot
-        """
-        try:
-            plt.figure(figsize=(16, 6))
-            exec(plot_code)
-            plt.title(plot_title)
-            plt.savefig(file_title, dpi=300, bbox_inches='tight')
-            logging.info("Graph is plotted")
-        except Exception as error:
-            logging.error(error)
-
 
     def read_annotation_csv(self):
         """
@@ -726,7 +703,7 @@ class BeeClassification:
             if len(x) == max_length:
                 X_df.loc[len(X_df)] = x
             else:
-                x_updated = list(x)+list([1]*(max_length-len(x))) #TODO update here the 1
+                x_updated = list(x)+list([1]*(max_length-len(x)))
                 X_df.loc[len(X_df)] = x_updated
         logging.info('Whole data frame transformed.')
         return X_df
@@ -734,9 +711,9 @@ class BeeClassification:
 
     def transformer_classification(self
                                    , data
-                                   , max_duration=30
+                                   , max_duration=5
                                    , model_id ='facebook/hubert-base-ls960'
-                                    ,batch_size = 32
+                                    ,batch_size = 8
                                     ,gradient_accumulation_steps = 4
                                     ,num_train_epochs = 10
                                    ,warmup_ratio=0.1
@@ -744,14 +721,54 @@ class BeeClassification:
                                    ,learning_rate = 3e-5
                                    ,name='finetuned-bee'
                                     ):
-
-
+        """Execute huggingface transformer pre-trained classification model for audio data
+        :param data: DataDict for audio data with train and test
+        :type data: DataDict
+        :param max_duration: maximum duration of the data file
+        :type max_duration: int
+        :model_id: the name of the HiggingFace model
+        :type model_id: str
+        :param batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training/testing.
+        :type batch_size: int
+        :param gradient_accumulation_steps: Number of updates steps to accumulate the gradients for, before performing a backward/update pass.
+        :type gradient_accumulation_steps: int
+        :param num_train_epochs:Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).
+        :type num_train_epochs: float
+        :param warmup_ratio: Ratio of total training steps used for a linear warmup from 0 to learning_rate.
+        :type warmup_ratio: float
+        :param logging_steps:Number of update steps between two logs if logging_strategy="steps". Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.
+        :type logging_steps: float
+        :param learning_rate:  The initial learning rate.
+        :type learning_rate: float
+        :return: trained model
+        :rtype: HuggingFace.models
+        """
+        #checks for the correct inputs
+        if type(data) != datasets.dataset_dict.DatasetDict:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is datasets.dataset_dict.DatasetDict.' % type(data).__name__)
+        if type(model_id) != str:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is str.' % type(model_id).__name__)
+        if type(batch_size) != int:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is int.' % type(batch_size).__name__)
+        if type(max_duration) != int:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is int.' % type(max_duration).__name__)
+        if type(gradient_accumulation_steps) != int:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is int.' % type(gradient_accumulation_steps).__name__)
+        if type(num_train_epochs) != float:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(num_train_epochs).__name__)
+        if type(warmup_ratio) != float:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(warmup_ratio).__name__)
+        if type(logging_steps) != float:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(logging_steps).__name__)
+        if type(learning_rate) != float:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(learning_rate).__name__)
         #create the feature extractor
         feature_extractor = AutoFeatureExtractor.from_pretrained(
             model_id, do_normalize=True, return_attention_mask=True )
         # resample the data to have the same sampling rate as the pretrained model
         sampling_rate = feature_extractor.sampling_rate
         data = data.cast_column("audio", Audio(sampling_rate=sampling_rate))
+        logging.info('Data is transformed to the required sampling rate.')
 
         #create numeric labels
         id2label_fn = data["train"].features[self.bee_col].int2str
@@ -764,6 +781,7 @@ class BeeClassification:
         label2id = {v: k for k, v in id2label.items()}
 
         num_labels = len(id2label)
+        logging.info('Labels are constructed')
 
         #construct the model
         model = AutoModelForAudioClassification.from_pretrained(
@@ -772,7 +790,7 @@ class BeeClassification:
             label2id=label2id,
             id2label=id2label
         )
-
+        logging.warning('Model is initiated.')
         #add the train arguments
         model_name = model_id.split("/")[-1]
 
@@ -787,11 +805,13 @@ class BeeClassification:
             num_train_epochs=num_train_epochs,
             warmup_ratio=warmup_ratio,
             logging_steps=logging_steps,
+            fp16=True,
+            gradient_checkpointing=True,
             load_best_model_at_end=True,
             metric_for_best_model="accuracy",
             push_to_hub=False,
         )
-
+        logging.info('Training arguments are set.')
         #encode the data
         data_encoded = data.map(
             preprocess_function,
@@ -801,7 +821,7 @@ class BeeClassification:
             num_proc=1,
             fn_kwargs={"feature_extractor": feature_extractor, "max_duration": max_duration}
         )
-
+        logging.info('Data is encoded with the feature extractor.')
         trainer = Trainer(
             model,
             training_args,
@@ -812,8 +832,7 @@ class BeeClassification:
         )
 
         trainer.train()
-        # trainer.evaluate()
-
+        logging.info('Model is trained.')
 
         return trainer
 
@@ -827,6 +846,11 @@ class BeeClassification:
         :return: RandomizedSearchCV object
         :rtype: RandomizedSearchCV
         """
+
+        if type(param_dist) != dict:
+            raise ValueError(
+                'Invalid arg type. arg is type %s and expected type is dict.' % type(param_dist).__name__)
+
         try:
             best_model = RandomizedSearchCV(model,
                                             param_distributions=param_dist,
@@ -837,35 +861,24 @@ class BeeClassification:
             logging.error(error)
         return best_model
 
-    def accuracy_metrics(self, y_pred, cm_title, cm_file_name):
+    def accuracy_metrics(self, y_pred):
         """ Provide accuracy metrics to compare the different models
 
         :param y_pred: predicted dependent values
         :type y_pred: list
-        :param cm_title: title for the confusion matrix plot
-        :type cm_title: str
-        :param cm_file_name: title for the confusion matrix plot
-        :type cm_file_name: str
-        :return: accuracy, precision, recall and saved graph for the confusion matrix
-        :rtype: list
+        :return: accuracy, precision, recall
+        :rtype: tuple
         """
+        if type(y_pred) != np.ndarray:
+            raise ValueError(
+                'Invalid arg type. arg is type %s and expected type is np.ndarray.' % type(y_pred).__name__)
         try:
             # accuracy score
             acc = accuracy_score(self.y_test, y_pred)
             # calculate the precision score
             precision = precision_score(self.y_test, y_pred, average='macro')
             recall = recall_score(self.y_test, y_pred, average='macro')
-            # confusion matrix
 
-            self.cm = confusion_matrix(self.y_test, y_pred)
-
-            code_str = "sns.heatmap(self.cm, annot=True, fmt='.3f', linewidths=.5, square=True, cmap='Blues_r')"
-
-            self.plot_figure(
-                plot_title=cm_title
-                , file_title=cm_file_name
-                , plot_code=code_str
-            )
             logging.info('Accuracy metrics calculated')
         except Exception as error:
             logging.error(error)
@@ -878,8 +891,11 @@ class BeeClassification:
         :param y_pred: predicted dependent values
         :type y_pred: list
         :return: misclassified values
-        :rtype: list
+        :rtype: pandas.Series
         """
+        if type(y_pred) != np.ndarray:
+            raise ValueError(
+                'Invalid arg type. arg is type %s and expected type is np.ndarray.' % type(y_pred).__name__)
         try:
 
             # check the misclassified datapoints
@@ -896,112 +912,96 @@ class BeeClassification:
     def model_results(self
                       , model
                       , param_dist
-                      , cm_title
-                      , cm_file_name
                       ,func='mfcc'):
         """Provide a full picture of the model performance and accuracy
-        TODO update
-        :param model: an initiated machine learning model
+        :param model: an initiated machine learning model such as Random Forest
         :type model: Any
         :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
         :type param_dist: dict
-        :param cm_title: title for the confusion matrix plot
-        :type cm_title: str
-        :param cm_file_name: title for the confusion matrix plot
-        :type cm_file_name: str
-        :return: the best model with its accuracy metrics and misclassified analysis
-        :rtype: list
+        :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
+        :type func: str
+        :return: the best model with its accuracy metrics, misclassified analysis and pca explained variance
+        :rtype: tuple
         """
+        if type(param_dist) != dict:
+            raise ValueError(
+                'Invalid arg type. arg is type %s and expected type is dict.' % type(param_dist).__name__)
+        if func not in ['mfcc', 'mel spec']:
+            raise ValueError(
+                'Invalid arg type. arg is expected to be either mfcc or mel spec but it is' % func)
+
         try:
             # Use random search to find the best hyperparameters
             rand_search = self.best_model(model=model, param_dist=param_dist)
 
             # transform the X_train and then get only the correct entries
             self.X_train = self.data_transformation_df(self.X_train_index, func=func)
-            # subset the index for inspection
-            # self.X_train_fail = self.X_train[self.X_train['col0'].isnull()]
-            #subset the data for the training
-            # self.X_train = self.X_train[~self.X_train['col0'].isnull()]
 
             self.X_test = self.data_transformation_df(self.X_test_index, func = func)
-            # self.X_test_fail = self.X_test[self.X_test['col0'].isnull()]
-            # subset the data for the training
-            # self.X_test = self.X_test[~self.X_test['col0'].isnull()]
 
-            #subset the y variables
-            # self.y_train = self.y_train.loc[self.X_train['train_index'].astype(int)]
-            # self.y_test = self.y_test.loc[self.X_test['train_index'].astype(int)]
-            #here we need to make sure we subset the y variable for the correct index and remove the first two columns from X
+            #standardise the values
+            x = self.X_train[[x for x in self.X_train.columns if x not in ['train_index', 'file_index']]]
+            y = np.array(self.y_train).ravel()
+            x = StandardScaler().fit_transform(x)
+            x_test = self.X_test[[x for x in self.X_test.columns if x not in ['train_index', 'file_index']]]
+            x_test = StandardScaler().fit_transform(x_test)
+
+            #conduct PCA to reduce overfitting
+
+            pca = PCA(n_components=2)
+            principalComponents = pca.fit_transform(x)
+            pca_variance = pca.explained_variance_ratio_
+            principalDf = pd.DataFrame(data=principalComponents
+                                       , columns=['principal component 1', 'principal component 2'])
+            principalComponents_test = pca.transform(x_test)
+            principalDf_test = pd.DataFrame(data=principalComponents_test
+                                            , columns=['principal component 1', 'principal component 2'])
 
             # fit the best model
-            rand_search.fit(self.X_train[[x for x in self.X_train.columns if x not in ['train_index', 'file_index'] ]],
-                            np.array(self.y_train).ravel())
+            rand_search.fit(principalDf,y)
 
             # generate predictions with the best model
-            y_pred = rand_search.predict(self.X_test[[x for x in self.X_test.columns if x not in ['train_index', 'file_index'] ]])
+            y_pred = rand_search.predict(principalDf_test)
 
             # calculate model accuracy
-            acc, precision, recall = self.accuracy_metrics(y_pred=y_pred,
-                                                           cm_title=cm_title,
-                                                           cm_file_name=cm_file_name)
+            acc, precision, recall = self.accuracy_metrics(y_pred=y_pred)
 
             # check the misclassified datapoints
-            # misclassified = self.misclassified_analysis(y_pred=y_pred)
+            misclassified = self.misclassified_analysis(y_pred=y_pred)
+
 
             logging.info('Model Results Calculated')
         except Exception as error:
             logging.error(error)
 
-        return acc, precision, recall,  rand_search #, misclassified
-    #TODO add the func here as well
-    def random_forest_results(self):
-        """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+        return acc, precision, recall,  rand_search , misclassified, pca_variance
 
-        :return: accuracy, precision, recall, confusion matrix plot file with the name 'rf_confusion_matrix.png', misclassified analysis, feature importance plot with the name 'rf_feature_importance.png'
-        :rtype: list
+
+    def random_forest_results(self, func):
+        """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+        :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
+        :type func: str
+        :return: accuracy, precision, recall, misclassified analysis, pca variance and feature importance
+        :rtype: tuple
         """
+        if func not in ['mfcc', 'mel spec']:
+            raise ValueError(
+                'Invalid arg type. arg is expected to be either mfcc or mel spec but it is' % func)
         try:
-            param_dist = {'n_estimators': randint(50, 500), 'max_depth': randint(1, 20)}
+            param_dist = {'n_estimators': [20, 30, 40],
+                          'max_depth': [2, 8, 10, 12, 14, 16, 18, 20]}
             # Create a random forest classifier
             rf = RandomForestClassifier()
 
             # check the model results
-            acc, precision, recall,  rand_search,misclassified = self.model_results(model=rf, param_dist=param_dist,
-                                                                                    cm_title='RF Confusion Matrix',
-                                                                                    cm_file_name='rf_confusion_matrix.png')
-
+            acc, precision, recall,  rand_search,misclassified, pca_variance = self.model_results(model=rf, param_dist=param_dist)
+            logging.info('Accuracy metrics are calculated.')
             # # check the features importance
             best_model = rand_search.best_estimator_
             importances = best_model.feature_importances_
-            self.forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
+            forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
+            logging.info('Importance is calculated.')
 
-            # code_str = """
-            # self.forest_importances.sort_values(ascending=False).plot(kind='barh')
-            # plt.ylabel('Importance')
-            # plt.xlabel('Features')
-            #             """
-            #
-            # self.plot_figure(
-            #     plot_title='RF Feature Importance'
-            #     , file_title='rf_feature_importance.png'
-            #     , plot_code=code_str
-            # )
-            # logging.info('Random forest results calculated')
-            #
-            # # create a plot for the misclassified
-            # self.misclass_rf = pd.DataFrame(misclassified)
-            # self.misclass_rf.reset_index(inplace=True)
-            #self.misclass_rf.sort_values(ascending=False, by=self.old_col_name, inplace=True)
-
-            # code_str = "sns.barplot(self.misclass_rf, x=self.old_col_name, y='count')"
-            #
-            # self.plot_figure(
-            #     plot_title='Random Forest Misclassified Distribution'
-            #     , file_title='misclassified_rf.png'
-            #     , plot_code=code_str
-            # )
-            # logging.info("Random Forest misclassified distribution plot created")
-
-            return acc, precision, recall # , misclassified
+            return acc, precision, recall , misclassified, pca_variance, forest_importances
         except Exception as error:
             logging.error(error)
