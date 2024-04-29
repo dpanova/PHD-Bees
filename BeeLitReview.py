@@ -49,6 +49,8 @@ class BeeLitReview:
     :type scraped_file_validation: str
     :param to_review_file_name: name of the file to validate TSP results
     :type to_review_file_name: excel
+    :return: BeeLitReview object
+    :rtype: BeeLitReview
     """
     def __init__(self
                  ,logname='BeeLitReview.log'
