@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeData:
     """"
-    TODO update documentation
+    Class to conduct data manipulation on audio files.
     :param annotation_file: name of the .mlf file to be read
     :type annotation_file: str
     :param start_col_name: name of the column with the start time
@@ -82,36 +82,6 @@ class BeeData:
         self.duration_col_name = duration_col_name
         self.key_col_name = key_col_name
         self.acoustic_folder = acoustic_folder
-
-    # def split_list(self,row, column_name):
-    #     """
-    #     The goal of this function is to split a column which consists of a list into several columns
-    #     :param row: row from a data frame
-    #     :type row: pd.Series
-    #     :param column_name: name of the column withthe list
-    #     :type column_name: str
-    #     :return: pd.Series with the unpacked list
-    #     :rtype: pd.Series
-    #     """
-    #     return pd.Series(row[column_name])
-    #
-    # def file_name_extract(self,row, column_name1, column_name2):
-    #     """
-    #     The goal of this function is to extract the file name and add it to the DF
-    #     :param row: row from a data frame
-    #     :type row: pd.Series
-    #     :param column_name1: column name which has a label
-    #     :type column_name1: str
-    #     :param column_name2: another column which has a label
-    #     :type column_name2: str
-    #     :return: extracted file name
-    #     :rtype: str
-    #     """
-    #     if pd.isnull(row[column_name2]):
-    #         label = row[column_name1]
-    #     else:
-    #         label = math.nan
-    #     return label
 
     def mlf_data_read(self):
         """
@@ -269,40 +239,6 @@ class BeeData:
         #save the data locally
         data.to_csv(self.file_name, index=False)
 
-    # def get_file_names(self, dir_name, extension=('.wav','.mp3')):
-    #     """
-    #     Create a list of files in a specific directory with specified extension
-    #     :param dir_name: directory which contains the files
-    #     :type dir_name: str
-    #     :param extension: tuple with strings indicating the file extension
-    #     :type extension: tuple
-    #     :return: a list of files
-    #     :rtype: list
-    #     """
-    #     if type(dir_name) != str:
-    #         raise ValueError(
-    #             'Invalid dir_name type. It is type %s and expected type is str.' % type(dir_name).__name__)
-    #     if type(extension) != tuple:
-    #         raise ValueError(
-    #             'Invalid extension type. It is type %s and expected type is str.' % type(extension).__name__)
-    #     for a in extension:
-    #         if type(a) != str:
-    #             raise ValueError(
-    #                 'Invalid string type. It is type %s and expected type is str.' % type(a).__name__)
-    #     list_of_files = os.listdir(dir_name)
-    #     logging.info('Files in the directory are stores in a list - %s'% dir)
-    #     extension_files_list = []
-    #     for file in list_of_files:
-    #         if file.endswith(extension):
-    #             extension_files_list.append(file)
-    #         else:
-    #             continue
-    #     if len(extension_files_list)==0:
-    #         raise ValueError('Extension list is empty. Please, check the %s folder' % dir)
-    #     return extension_files_list
-
-
-
     def data_quality(self
                      ,nobee = False
                      , path='data'
@@ -346,7 +282,7 @@ class BeeData:
         else:
             annotation_df_sliced = self.annotation_df_data_quality
 
-        self.annotation_df_data_quality.to_csv(self.file_name, index=False)
+        annotation_df_sliced.to_csv(self.file_name, index=False)
         logging.info('Annotation data quality created and saved.')
 
     def time_slice(self

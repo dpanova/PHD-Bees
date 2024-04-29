@@ -887,7 +887,7 @@ class BeeClassification:
 
 
 
-    def random_forest_results(self, func, do_pca = True):
+    def random_forest_results(self, func='mfcc', do_pca = True):
         """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
         :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
         :type func: str
