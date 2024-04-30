@@ -1,4 +1,6 @@
 # libraries
+import os
+import wandb
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -530,13 +532,13 @@ class BeeClassification:
                 sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate,
                                                                   n_mfcc=100, n_fft = 1000).T, axis=0)
                 sample_transformed = np.insert(sample_transformed, 0, train_index)
-            elif func == 'mel spec':
+            else:
                 try:
-                    mel = librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=1000,
-                                                         hop_length=512, n_mels=128)
-                    sample_transformed = librosa.power_to_db(mel)
-                    sample_transformed = sample_transformed.reshape(1,-1)
-                    sample_transformed = sample_transformed[0]
+                    mel = np.mean(librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=1000,
+                                                         hop_length=512, n_mels=128).T, axis = 0)
+                    # sample_transformed = librosa.power_to_db(mel)
+                    # sample_transformed = sample_transformed.reshape(1,-1)
+                    # sample_transformed = sample_transformed[0]
                 # we need to add the indices for tracking purposes
                 except:
                     sample_transformed= np.zeros()
@@ -603,7 +605,7 @@ class BeeClassification:
                                    ,learning_rate = 3e-5
                                    ,name='finetuned-bee'
                                     ):
-        """Execute huggingface transformer pre-trained classification model for audio data
+        """Execute huggingface transformer pre-trained classification model for audio data. It has been integrated with Weights & Bises for further development and monitoring.
         :param data: DataDict for audio data with train and test
         :type data: DataDict
         :param max_duration: maximum duration of the data file
@@ -648,6 +650,16 @@ class BeeClassification:
             raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(logging_steps).__name__)
         if type(learning_rate) != float:
             raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(learning_rate).__name__)
+        #create WANDM environment
+        model_name = model_id.split("/")[-1]
+        # set the wandb project where this run will be logged
+        os.environ["WANDB_PROJECT"] = model_name
+
+        # save your trained model checkpoint to wandb
+        os.environ["WANDB_LOG_MODEL"] = "true"
+
+        # turn off watch to log faster
+        os.environ["WANDB_WATCH"] = "false"
         #create the feature extractor
         feature_extractor = AutoFeatureExtractor.from_pretrained(
             model_id, do_normalize=True, return_attention_mask=True )
@@ -678,10 +690,12 @@ class BeeClassification:
         )
         logging.warning('Model is initiated.')
         #add the train arguments
-        model_name = model_id.split("/")[-1]
+
 
         training_args = TrainingArguments(
-            "%s-%s" %(model_name,name),
+            # "%s-%s" %(model_name,name),
+            output_dir='models',
+            report_to="wandb",
             evaluation_strategy="epoch",
             save_strategy="epoch",
             learning_rate=learning_rate,
@@ -718,6 +732,7 @@ class BeeClassification:
         )
 
         trainer.train()
+
         logging.info('Model is trained.')
 
         return trainer
@@ -919,12 +934,19 @@ class BeeClassification:
             logging.info('Accuracy metrics are calculated.')
             # # check the features importance
             best_model = rand_search.best_estimator_
+
             importances = best_model.feature_importances_
-            forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if x not in ['train_index', 'file_index']])
             logging.info('Importance is calculated.')
             if do_pca:
+
+                forest_importances = pd.Series(importances, index=['principal component 1', 'principal component 2'])
+
+                logging.info('Importance is calculated.')
                 return acc, precision, recall , misclassified, pca_variance, forest_importances
             else:
+                forest_importances = pd.Series(importances, index=[x for x in self.X_train.columns if
+                                                                   x not in ['train_index', 'file_index']])
+                logging.info('Importance is calculated.')
                 return acc, precision, recall, misclassified, forest_importances
         except Exception as error:
             logging.error(error)
