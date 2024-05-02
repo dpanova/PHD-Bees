@@ -9,12 +9,10 @@ from auxilary_functions import get_file_names, clean_directory, compute_metrics,
 from sklearn.model_selection import train_test_split,RandomizedSearchCV
 import logging
 import numpy as np
-from scipy.fft import fft,rfftfreq
 import librosa
 import multiprocessing as mp
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
-import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 from audiomentations import Compose, AddGaussianNoise, TanhDistortion, GainTransition,AirAbsorption
 import soundfile as sf
 from datasets import Dataset, Audio
@@ -520,14 +518,6 @@ class BeeClassification:
         try:
             # read the file
             samples, sample_rate = self.file_read(file_index)
-            # check if the data extraction is correct through the duration of the sample
-            duration_of_sound = round(len(samples) / sample_rate, 2)
-            annotation_duration = self.annotation_df.loc[self.annotation_df['index'] == file_index, 'duration']
-            if duration_of_sound == round(annotation_duration.loc[train_index,], 2):
-                logging.info('File with index %s has the correct duration.' %str(file_index))
-            else:
-                logging.warning('File with index %s DOES NOT have the correct duration.' %str(file_index))
-
             if func == 'mfcc':
                 sample_transformed = np.mean(librosa.feature.mfcc(y=samples, sr=sample_rate,
                                                                   n_mfcc=100, n_fft = 1000).T, axis=0)
@@ -536,10 +526,6 @@ class BeeClassification:
                 try:
                     mel = np.mean(librosa.feature.melspectrogram(y = samples, sr=sample_rate, n_fft=1000,
                                                          hop_length=512, n_mels=128).T, axis = 0)
-                    # sample_transformed = librosa.power_to_db(mel)
-                    # sample_transformed = sample_transformed.reshape(1,-1)
-                    # sample_transformed = sample_transformed[0]
-                # we need to add the indices for tracking purposes
                 except:
                     sample_transformed= np.zeros()
 
@@ -604,6 +590,7 @@ class BeeClassification:
                                    ,logging_steps = 10
                                    ,learning_rate = 3e-5
                                    ,name='finetuned-bee'
+                                   ,wandb=True
                                     ):
         """Execute huggingface transformer pre-trained classification model for audio data. It has been integrated with Weights & Bises for further development and monitoring.
         :param data: DataDict for audio data with train and test
@@ -626,6 +613,8 @@ class BeeClassification:
         :type learning_rate: float
         :param name: name of the newly created model
         :type name: str
+        :param wandb: indicates if the is Weights & Biases connected profile.
+        :type wandb: bool
         :return: trained model
         :rtype: HuggingFace.models
         """
@@ -650,16 +639,19 @@ class BeeClassification:
             raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(logging_steps).__name__)
         if type(learning_rate) != float:
             raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(learning_rate).__name__)
-        #create WANDM environment
-        model_name = model_id.split("/")[-1]
-        # set the wandb project where this run will be logged
-        os.environ["WANDB_PROJECT"] = model_name
+        if type(wandb) != bool:
+            raise ValueError('Invalid arg type. arg is type %s and expected type is bool.' % type(wandb).__name__)
+        if wandb:
+            #create WANDM environment
+            model_name = model_id.split("/")[-1]
+            # set the wandb project where this run will be logged
+            os.environ["WANDB_PROJECT"] = model_name
 
-        # save your trained model checkpoint to wandb
-        os.environ["WANDB_LOG_MODEL"] = "true"
+            # save your trained model checkpoint to wandb
+            os.environ["WANDB_LOG_MODEL"] = "true"
 
-        # turn off watch to log faster
-        os.environ["WANDB_WATCH"] = "false"
+            # turn off watch to log faster
+            os.environ["WANDB_WATCH"] = "false"
         #create the feature extractor
         feature_extractor = AutoFeatureExtractor.from_pretrained(
             model_id, do_normalize=True, return_attention_mask=True )
@@ -691,26 +683,45 @@ class BeeClassification:
         logging.warning('Model is initiated.')
         #add the train arguments
 
+        if wandb:
+            training_args = TrainingArguments(
+                # "%s-%s" %(model_name,name),
+                output_dir='models',
+                report_to="wandb",
+                evaluation_strategy="epoch",
+                save_strategy="epoch",
+                learning_rate=learning_rate,
+                per_device_train_batch_size=batch_size,
+                gradient_accumulation_steps=gradient_accumulation_steps,
+                per_device_eval_batch_size=batch_size,
+                num_train_epochs=num_train_epochs,
+                warmup_ratio=warmup_ratio,
+                logging_steps=logging_steps,
+                fp16=True,
+                gradient_checkpointing=True,
+                load_best_model_at_end=True,
+                metric_for_best_model="accuracy",
+                push_to_hub=False,
+            )
+        else:
+            training_args = TrainingArguments(
+                # "%s-%s" %(model_name,name),
+                output_dir='models',
+                evaluation_strategy="epoch",
+                save_strategy="epoch",
+                learning_rate=learning_rate,
+                per_device_train_batch_size=batch_size,
+                gradient_accumulation_steps=gradient_accumulation_steps,
+                per_device_eval_batch_size=batch_size,
+                num_train_epochs=num_train_epochs,
+                warmup_ratio=warmup_ratio,
+                logging_steps=logging_steps,
+                fp16=True,
+                gradient_checkpointing=True,
+                load_best_model_at_end=True,
+                metric_for_best_model="accuracy",
+                push_to_hub=False,)
 
-        training_args = TrainingArguments(
-            # "%s-%s" %(model_name,name),
-            output_dir='models',
-            report_to="wandb",
-            evaluation_strategy="epoch",
-            save_strategy="epoch",
-            learning_rate=learning_rate,
-            per_device_train_batch_size=batch_size,
-            gradient_accumulation_steps=gradient_accumulation_steps,
-            per_device_eval_batch_size=batch_size,
-            num_train_epochs=num_train_epochs,
-            warmup_ratio=warmup_ratio,
-            logging_steps=logging_steps,
-            fp16=True,
-            gradient_checkpointing=True,
-            load_best_model_at_end=True,
-            metric_for_best_model="accuracy",
-            push_to_hub=False,
-        )
         logging.info('Training arguments are set.')
         #encode the data
         data_encoded = data.map(
