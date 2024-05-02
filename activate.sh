@@ -1,5 +1,7 @@
 #!/bin/bash
 
-activate() {
-  . ./venv/Scripts/activate
+main() {
+  . ../../.virtualenvs/AcousticData/bin/activate
 }
+
+main
