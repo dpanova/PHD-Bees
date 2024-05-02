@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BeeData &mdash; Bee Transformer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Bee Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">AcousticData</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Bee Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">BeeData</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for BeeData</h1><div class="highlight"><pre>
+<span></span><span class="c1"># import libraries</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">auxilary_functions</span> <span class="kn">import</span> <span class="n">split_list</span><span class="p">,</span><span class="n">file_name_extract</span><span class="p">,</span> <span class="n">get_file_names</span><span class="p">,</span> <span class="n">clean_directory</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pydub</span> <span class="kn">import</span> <span class="n">AudioSegment</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">)</span>
+<div class="viewcode-block" id="BeeData">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData">[docs]</a>
+<span class="k">class</span> <span class="nc">BeeData</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;&quot;</span>
+<span class="sd">    Class to conduct data manipulation on audio files.</span>
+<span class="sd">    :param annotation_file: name of the .mlf file to be read</span>
+<span class="sd">    :type annotation_file: str</span>
+<span class="sd">    :param start_col_name: name of the column with the start time</span>
+<span class="sd">    :type start_col_name: str</span>
+<span class="sd">    :param end_col_name: name of the column with the end time</span>
+<span class="sd">    :type end_col_name: str</span>
+<span class="sd">    :param label_col_name: name of the column with the bee/nobee label</span>
+<span class="sd">    :type label_col_name: str</span>
+<span class="sd">    :param file_col_name: name of the column with the file name</span>
+<span class="sd">    :type file_col_name: str</span>
+<span class="sd">    :param duration_col_name: column name for the duration</span>
+<span class="sd">    :type duration_col_name: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span>
+                 <span class="p">,</span><span class="n">acoustic_folder</span> <span class="o">=</span> <span class="s1">&#39;data/SplitData/&#39;</span>
+                 <span class="p">,</span><span class="n">logname</span><span class="o">=</span><span class="s1">&#39;BeeData.log&#39;</span>
+                 <span class="p">,</span><span class="n">bee_col</span><span class="o">=</span><span class="s1">&#39;label&#39;</span>
+                 <span class="p">,</span><span class="n">file_name</span> <span class="o">=</span> <span class="s1">&#39;beeAnnotations_enhanced.csv&#39;</span>
+                <span class="p">,</span> <span class="n">annotation_file</span><span class="o">=</span><span class="s1">&#39;beeAnnotations.mlf&#39;</span>
+                <span class="p">,</span> <span class="n">start_col_name</span><span class="o">=</span><span class="s1">&#39;start&#39;</span>
+                <span class="p">,</span> <span class="n">end_col_name</span><span class="o">=</span><span class="s1">&#39;end&#39;</span>
+                <span class="p">,</span> <span class="n">file_col_name</span><span class="o">=</span><span class="s1">&#39;file name&#39;</span>
+                <span class="p">,</span><span class="n">duration_col_name</span> <span class="o">=</span> <span class="s1">&#39;duration&#39;</span>
+                 <span class="p">,</span><span class="n">key_col_name</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">logname</span>
+                            <span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span>
+                            <span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+                            <span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s1">&#39;%H:%M:%S&#39;</span>
+                            <span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">annotation_file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;mlf&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .mlf extension&#39;</span> <span class="o">%</span> <span class="n">annotation_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">annotation_file</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid annotation_file type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">annotation_file</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">start_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid start_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">start_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">end_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid end_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">end_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">bee_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid bee_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">bee_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">file_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid file_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">file_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;csv&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .csv extension&#39;</span> <span class="o">%</span> <span class="n">file_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">duration_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid duration_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">duration_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">key_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid key_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">key_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span> <span class="o">=</span> <span class="n">bee_col</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_name</span> <span class="o">=</span> <span class="n">file_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span> <span class="o">=</span> <span class="n">start_col_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_file</span> <span class="o">=</span> <span class="n">annotation_file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span> <span class="o">=</span> <span class="n">end_col_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span> <span class="o">=</span> <span class="n">file_col_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration_col_name</span> <span class="o">=</span> <span class="n">duration_col_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span> <span class="o">=</span> <span class="n">key_col_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acoustic_folder</span> <span class="o">=</span> <span class="n">acoustic_folder</span>
+
+<div class="viewcode-block" id="BeeData.mlf_data_read">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.mlf_data_read">[docs]</a>
+    <span class="k">def</span> <span class="nf">mlf_data_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read a file with .mlf extension. The file is expected to have the following format:</span>
+<span class="sd">        - acoustic file name to be on a new row</span>
+<span class="sd">        - each column entry to be separated by a tab</span>
+<span class="sd">        - each tow to end with a new row sign</span>
+<span class="sd">        - columns - start, end (in min and seconds format) and label -bee and nobee</span>
+<span class="sd">        :return: a pandas dataframe</span>
+<span class="sd">        :rtype: pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="c1"># read the file</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;File </span><span class="si">%s</span><span class="s1"> read.&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_file</span><span class="p">)</span>
+        <span class="c1">#transform to DF</span>
+        <span class="n">lines_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Data transformed from list of pandas DataFrame.&#39;</span><span class="p">)</span>
+        <span class="c1"># the precessed file consists of one line. each column is seperated by tab, even at pd level</span>
+        <span class="c1"># check if each line has tabs and finishes with new row sign</span>
+        <span class="n">perc_tabs</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lines_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">lines_df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">perc_tabs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The provided files does not split columns with tabs deliminator as expected&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">perc_tabs</span> <span class="o">&lt;</span> <span class="mf">0.9</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;We have less split observations by file.&#39;</span><span class="p">)</span>
+
+        <span class="c1">#check if there is a new row sign to each entry, as expected</span>
+        <span class="n">perc_new_row</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lines_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">))</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines_df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">perc_new_row</span> <span class="o">!=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The provided files does not end in each row with new row sign as expected.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># first we create a list of values for each row</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="s1">&#39;all&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines_df</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Create a list by tabs.&#39;</span><span class="p">)</span>
+        <span class="c1"># then we split the list into a separate columns</span>
+        <span class="n">lines_df</span> <span class="o">=</span> <span class="n">lines_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">split_list</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Split the list into different columns.&#39;</span><span class="p">)</span>
+        <span class="c1"># check if the name of the file is on a new row, this should result in rows with NaN entries except the first column</span>
+        <span class="n">nan_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">lines_df</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">nan_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">nan_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">nan_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The provided files does not have the file name in a separate row.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># add column names</span>
+        <span class="n">lines_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Add column names.&#39;</span><span class="p">)</span>
+        <span class="c1"># add the file name to each relevant row</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines_df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">file_name_extract</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">ffill</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Added file name as a separate column.&#39;</span><span class="p">)</span>
+        <span class="c1"># remove empty rows, since the original file had rows containing only the file name</span>
+        <span class="n">lines_df</span> <span class="o">=</span> <span class="n">lines_df</span><span class="p">[(</span><span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;.</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="o">~</span><span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">())]</span>
+
+        <span class="c1"># remove new line character</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="c1">#ensure that only bee and nobee are the labels</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">([</span><span class="s1">&#39;bee&#39;</span><span class="p">,</span> <span class="s1">&#39;nobee&#39;</span><span class="p">])))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The provided files has different labels than bee and nobee.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># change data types</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">lines_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+        <span class="c1"># add the index since it will be easier to refer to the piece of recording later on</span>
+        <span class="n">lines_df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Data is read correctly.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lines_df</span></div>
+
+
+
+<div class="viewcode-block" id="BeeData.calc_duration">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.calc_duration">[docs]</a>
+    <span class="k">def</span> <span class="nf">calc_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the duration between two time periods</span>
+<span class="sd">        :param df: The dataframe to calculate duration in</span>
+<span class="sd">        :type df: pandas.DataFrame</span>
+<span class="sd">        :return: pd.Series containing the duration</span>
+<span class="sd">        :rtype: pandas.Series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">!=</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid df type. df is type </span><span class="si">%s</span><span class="s1"> and expected type is pd.core.frame.DataFrame.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="n">duration</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span><span class="p">]</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Duration is calculated.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">duration</span></div>
+
+
+<div class="viewcode-block" id="BeeData.create_actions">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.create_actions">[docs]</a>
+    <span class="k">def</span> <span class="nf">create_actions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">dict_actions</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates new columns with labels based on  the provided dictionary</span>
+<span class="sd">        :param df: The dataframe to calculate duration in</span>
+<span class="sd">        :type df: pandas.DataFrame</span>
+<span class="sd">        :param dict_actions: dictionary with the new column names as the key and the string match to be searched.Note that each string should be in a list</span>
+<span class="sd">        :type dict_actions: dict</span>
+<span class="sd">        :return: data frame with the new columns</span>
+<span class="sd">        :rtype: pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">!=</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid df type. df is type </span><span class="si">%s</span><span class="s1"> and expected type is pd.core.frame.DataFrame.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">dict_actions</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid dict_actions type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">dict_actions</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">dict_actions</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s1">&#39;Invalid string type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is list.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">dict_actions</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dict_actions</span><span class="p">[</span><span class="n">label</span><span class="p">]))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Action columns created.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+
+
+
+<div class="viewcode-block" id="BeeData.annotation_data_creation">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.annotation_data_creation">[docs]</a>
+    <span class="k">def</span> <span class="nf">annotation_data_creation</span><span class="p">(</span><span class="bp">self</span>
+                                 <span class="p">,</span> <span class="n">special_action_column</span><span class="o">=</span><span class="kc">True</span>
+                                 <span class="p">,</span><span class="n">dict_actions</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;missing queen&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;missing queen&#39;</span><span class="p">,</span> <span class="s1">&#39;no_queen&#39;</span><span class="p">],</span><span class="s1">&#39;active day&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;active - day&#39;</span><span class="p">],</span><span class="s1">&#39;swarming&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;swarming&#39;</span><span class="p">]}</span>
+                                 <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to create the dataset for annotation and save it locally under the specified file name.</span>
+
+<span class="sd">        :param special_action_column: boolean which indicates if the special action column will be calculated</span>
+<span class="sd">        :type special_action_column: bool</span>
+<span class="sd">        :param dict_actions: dictionary with the new column names as the key and the string match to be searched.Note that each string should be in a list</span>
+<span class="sd">        :type dict_actions: dict</span>
+<span class="sd">        :return: pandas.DataFrame containing the filename, start time, end time, duration between both, bee/nobee label and action columns. The data is stores in the object.</span>
+<span class="sd">        :rtype: pandas.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">dict_actions</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid dict_actions type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">dict_actions</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">special_action_column</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;special_action_column input is not the correct type. It is type </span><span class="si">%s</span><span class="s1">, but it should be a boolean.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">special_action_column</span><span class="p">))</span>
+
+        <span class="c1"># read the data</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mlf_data_read</span><span class="p">()</span>
+        <span class="c1">#calculate the duration</span>
+        <span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">duration_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_duration</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1">#add the action columns</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_actions</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">data</span>
+                                  <span class="p">,</span> <span class="n">dict_actions</span><span class="o">=</span><span class="n">dict_actions</span><span class="p">)</span>
+        <span class="c1">#create a special action column</span>
+        <span class="k">if</span> <span class="n">special_action_column</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s1">&#39;queen&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;queenbee&#39;</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span>
+                <span class="o">~</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;no&#39;</span><span class="p">))</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Created a special action column&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="c1">#save the data locally</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeData.data_quality">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.data_quality">[docs]</a>
+    <span class="k">def</span> <span class="nf">data_quality</span><span class="p">(</span><span class="bp">self</span>
+                     <span class="p">,</span><span class="n">nobee</span> <span class="o">=</span> <span class="kc">False</span>
+                     <span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s1">&#39;data&#39;</span>
+                     <span class="p">,</span>  <span class="n">min_duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param path: directory path for the wav and mp3 files</span>
+<span class="sd">        :type path: str</span>
+<span class="sd">        :param min_duration: minimum duration of the file segment in order to make sense to work with it</span>
+<span class="sd">        :type min_duration: float</span>
+
+<span class="sd">        :return: data frame with data quality annotation_df_quality, stored in the object</span>
+<span class="sd">        :rtype: pd.DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid path type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">min_duration</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid min_duration type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is float.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">min_duration</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+
+        <span class="c1">#get the existing files in the directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extension_files_list</span> <span class="o">=</span> <span class="n">get_file_names</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">existing_files_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="n">existing_files_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extension_files_list</span>
+        <span class="n">existing_files_df</span><span class="p">[</span><span class="s1">&#39;Dir Exist&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">existing_files_df</span><span class="p">[</span><span class="s1">&#39;WAV Flag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">existing_files_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;.wav&#39;</span><span class="p">)</span>
+        <span class="n">existing_files_df</span><span class="p">[</span><span class="s1">&#39;MP3 Flag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">existing_files_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;.mp3&#39;</span><span class="p">)</span>
+        <span class="n">existing_files_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">existing_files_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.wav&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.mp3&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">existing_files_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">,</span>
+                                                      <span class="n">right_on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span><span class="p">[</span><span class="s1">&#39;Dir Exist&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df</span><span class="p">[</span><span class="s1">&#39;Dir Exist&#39;</span><span class="p">]]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">duration_col_name</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">min_duration</span><span class="p">]</span>
+        <span class="c1"># ensure that only the supported formats are present</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span> <span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="s1">&#39;MP3 Flag&#39;</span><span class="p">])</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="s1">&#39;WAV Flag&#39;</span><span class="p">])]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">nobee</span><span class="p">:</span>
+            <span class="n">annotation_df_sliced</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;bee&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">annotation_df_sliced</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span>
+
+        <span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Annotation data quality created and saved.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeData.time_slice">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.time_slice">[docs]</a>
+    <span class="k">def</span> <span class="nf">time_slice</span><span class="p">(</span><span class="bp">self</span>
+                   <span class="p">,</span><span class="n">nobee</span><span class="o">=</span><span class="kc">False</span>
+                   <span class="p">,</span><span class="n">step</span> <span class="o">=</span> <span class="mi">2000</span>
+                   <span class="p">,</span><span class="n">start_sliced_col_name</span><span class="o">=</span><span class="s1">&#39;start_sliced&#39;</span>
+                   <span class="p">,</span><span class="n">end_sliced_col_name</span><span class="o">=</span><span class="s1">&#39;end_sliced&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to split the annotation data into smaller segments based on the step size</span>
+<span class="sd">        :param nobee: Boolean value to indicate if nobee files to be added in the data set. True means nobee files are included.</span>
+<span class="sd">        :type nobee: bool</span>
+<span class="sd">        :param step: time step in miliseconds</span>
+<span class="sd">        :type step: float</span>
+<span class="sd">        :param start_sliced_col_name: name of the column for the start sliced</span>
+<span class="sd">        :type start_sliced_col_name: str</span>
+<span class="sd">        :param end_sliced_col_name: name of the column for the end sliced</span>
+<span class="sd">        :type end_sliced_col_name: str</span>
+<span class="sd">        :return: pd.DataFrame with an annotation data which is sliced, stored in self.annotation_df_sliced</span>
+<span class="sd">        :rtype: pd.DataFrame</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">nobee</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid nobee type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is bool.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">nobee</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">start_sliced_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid start_sliced_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">start_sliced_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">end_sliced_col_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid end_sliced_col_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">end_sliced_col_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid step type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is int.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">step</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1">#update the start and end columns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span> <span class="o">=</span> <span class="n">start_sliced_col_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span> <span class="o">=</span> <span class="n">end_sliced_col_name</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">nobee</span><span class="p">:</span>
+            <span class="n">annotation_df_sliced</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bee_col</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;bee&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">annotation_df_sliced</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span>
+
+        <span class="c1"># loop over every row and split it appropriately</span>
+        <span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1000</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1000</span>
+            <span class="n">time_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">temp_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+            <span class="n">temp_df</span><span class="p">[</span><span class="n">start_sliced_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_range</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">temp_df</span><span class="p">[</span><span class="n">end_sliced_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_range</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">temp_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span><span class="p">]</span>
+            <span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">new_df</span><span class="p">,</span> <span class="n">temp_df</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span> <span class="o">=</span> <span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">new_df</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;outer&#39;</span><span class="p">)</span>
+        <span class="c1"># rename the old index column since it is related to the original file, not the current one and then add the current index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span><span class="o">+</span><span class="s1">&#39;_original_file&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1">#save the sliced data into a csv file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Annotation data is sliced.&#39;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BeeData.split_acoustic_data_sliced">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.split_acoustic_data_sliced">[docs]</a>
+    <span class="k">def</span> <span class="nf">split_acoustic_data_sliced</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Splits the original files based on the annotation data sliced and saves it in the %s</span>
+<span class="sd">        :return: wav files </span>
+<span class="sd">        &quot;&quot;&quot;</span> <span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">acoustic_folder</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">clean_directory</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acoustic_folder</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Old files are deleted.&#39;</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;No previous files in </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">acoustic_folder</span><span class="p">)</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+
+            <span class="n">to_label_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">file_col_name</span><span class="p">]</span> <span class="o">==</span> <span class="n">f</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">to_label_df</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> is not properly sliced.&#39;</span> <span class="o">%</span> <span class="n">f</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">to_label_df</span><span class="p">[</span><span class="s1">&#39;WAV Flag&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">recording</span> <span class="o">=</span> <span class="n">AudioSegment</span><span class="o">.</span><span class="n">from_wav</span><span class="p">(</span><span class="s1">&#39;data/&#39;</span> <span class="o">+</span> <span class="n">f</span> <span class="o">+</span> <span class="s1">&#39;.wav&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">recording</span> <span class="o">=</span> <span class="n">AudioSegment</span><span class="o">.</span><span class="n">from_mp3</span><span class="p">(</span><span class="s1">&#39;data/&#39;</span> <span class="o">+</span> <span class="n">f</span> <span class="o">+</span> <span class="s1">&#39;.mp3&#39;</span><span class="p">)</span>
+            <span class="c1"># iterate over one sliced recording. split accordingly and save the resulting files</span>
+            <span class="k">for</span> <span class="n">inx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">to_label_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start_col_name</span><span class="p">]</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">end_col_name</span><span class="p">]</span>
+                <span class="n">file_index</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">key_col_name</span><span class="p">]</span>
+                <span class="n">new_recording</span> <span class="o">=</span> <span class="n">recording</span><span class="p">[</span><span class="n">start_time</span><span class="p">:</span><span class="n">end_time</span><span class="p">]</span>
+                <span class="n">new_recording_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acoustic_folder</span> <span class="o">+</span> <span class="s1">&#39;index&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">file_index</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.wav&#39;</span>
+                <span class="n">new_recording</span><span class="o">.</span><span class="n">export</span><span class="p">(</span><span class="n">new_recording_name</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;wav&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;All files are split.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeData.create_validate_data">
+<a class="viewcode-back" href="../BeeData.html#BeeData.BeeData.create_validate_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">create_validate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sliced</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">file_name</span> <span class="o">=</span> <span class="s1">&#39;annotation_data_type.csv&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates validation data set for the data types.</span>
+<span class="sd">        :param sliced: boolean to indicate whether to create validation based on the sliced data or not</span>
+<span class="sd">        :type sliced: bool</span>
+<span class="sd">        :param file_name: name of the file to be saved to</span>
+<span class="sd">        :type file_name: basestring</span>
+<span class="sd">        :return: csv file with the validation data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">sliced</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid sliced type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is bool.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">sliced</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid file_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.csv&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid file_name is not csv format.&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sliced</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_sliced</span><span class="o">.</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_df_data_quality</span><span class="o">.</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;col_name&#39;</span><span class="p">,</span><span class="s1">&#39;col_type&#39;</span><span class="p">]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Validation data saved to </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">file_name</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Denitsa Panova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

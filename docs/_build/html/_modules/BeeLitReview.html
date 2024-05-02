@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BeeLitReview &mdash; Bee Transformer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Bee Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">AcousticData</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Bee Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Module code</a></li>
+      <li class="breadcrumb-item active">BeeLitReview</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for BeeLitReview</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.common.keys</span> <span class="kn">import</span> <span class="n">Keys</span>
+<span class="c1"># import undetected_chromedriver</span>
+<span class="kn">import</span> <span class="nn">undetected_chromedriver</span> <span class="k">as</span> <span class="nn">uc</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.common.by</span> <span class="kn">import</span> <span class="n">By</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="k">as</span> <span class="nn">mp</span>
+<span class="kn">from</span> <span class="nn">auxilary_functions</span> <span class="kn">import</span> <span class="n">recommendations</span><span class="p">,</span> <span class="n">reads</span><span class="p">,</span> <span class="n">citations</span><span class="p">,</span> <span class="n">include_tuple</span><span class="p">,</span> <span class="n">cos_sim_func</span><span class="p">,</span> <span class="n">start_page</span><span class="p">,</span> <span class="n">h0</span><span class="p">,</span> <span class="n">h1</span><span class="p">,</span> <span class="n">h2</span><span class="p">,</span> <span class="n">normal_text</span><span class="p">,</span> <span class="n">pdf_table</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+
+<span class="kn">from</span> <span class="nn">sentence_transformers</span> <span class="kn">import</span> <span class="n">SentenceTransformer</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">clusteval</span> <span class="kn">import</span> <span class="n">clusteval</span>
+
+<span class="kn">from</span> <span class="nn">auxilary_functions</span> <span class="kn">import</span> <span class="n">pd_to_tuple</span>
+<span class="kn">from</span> <span class="nn">fpdf</span> <span class="kn">import</span> <span class="n">FPDF</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">nltk.corpus</span> <span class="kn">import</span> <span class="n">stopwords</span>
+<span class="kn">from</span> <span class="nn">wordcloud</span> <span class="kn">import</span> <span class="n">WordCloud</span>
+<span class="kn">from</span> <span class="nn">nltk.stem.snowball</span> <span class="kn">import</span> <span class="n">SnowballStemmer</span>
+<span class="kn">import</span> <span class="nn">nltk</span>
+
+
+
+<span class="kn">from</span> <span class="nn">langdetect</span> <span class="kn">import</span> <span class="n">detect</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">DeprecationWarning</span><span class="p">)</span>
+<div class="viewcode-block" id="BeeLitReview">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview">[docs]</a>
+<span class="k">class</span> <span class="nc">BeeLitReview</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class to create an automated pdf report to help facilitate depth and breadth of literature research.</span>
+<span class="sd">    :param logname: name of the log to save the results</span>
+<span class="sd">    :type logname: str</span>
+<span class="sd">    :param already_scraped: whether the data needs to be scraped or already exists locally</span>
+<span class="sd">    :type already_scraped: bool</span>
+<span class="sd">    :param query: query to be scraped from the website</span>
+<span class="sd">    :type query: str</span>
+<span class="sd">    :param scraped_file_name: name of the file to store the scraped data or where the data exists</span>
+<span class="sd">    :type scraped_file_name: str</span>
+<span class="sd">    :param scraped_file_validation: name of the file to validate the existent data in terms of format</span>
+<span class="sd">    :type scraped_file_validation: str</span>
+<span class="sd">    :param to_review_file_name: name of the file to validate TSP results</span>
+<span class="sd">    :type to_review_file_name: excel</span>
+<span class="sd">    :return: BeeLitReview object</span>
+<span class="sd">    :rtype: BeeLitReview</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span>
+                 <span class="p">,</span><span class="n">logname</span><span class="o">=</span><span class="s1">&#39;BeeLitReview.log&#39;</span>
+                 <span class="p">,</span><span class="n">already_scraped</span><span class="o">=</span><span class="kc">True</span>
+                 <span class="p">,</span><span class="n">query</span><span class="o">=</span><span class="s1">&#39;bee acoustic machine learning&#39;</span>
+                 <span class="p">,</span><span class="n">scraped_file_name</span> <span class="o">=</span> <span class="s1">&#39;scraped_articles.csv&#39;</span>
+                 <span class="p">,</span><span class="n">scraped_file_validation</span> <span class="o">=</span> <span class="s1">&#39;scraped_articles_validation.csv&#39;</span>
+                 <span class="p">,</span><span class="n">to_review_file_name</span><span class="o">=</span><span class="s1">&#39;to_review.xlsx&#39;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_name</span> <span class="o">=</span> <span class="n">scraped_file_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">query</span> <span class="o">=</span> <span class="n">query</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wordcloud</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_start</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_end</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">most_similar</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cosine_clustering_threshold</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">citation</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clustering_indices</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_cluster_embeddings</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ce_hdbscan_results</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ce_agg_results</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_similarity_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_review_file_name</span> <span class="o">=</span> <span class="n">to_review_file_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_validation</span> <span class="o">=</span> <span class="n">scraped_file_validation</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">logname</span>
+                            <span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s1">&#39;a&#39;</span>
+                            <span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%(asctime)s</span><span class="s1"> </span><span class="si">%(levelname)s</span><span class="s1"> </span><span class="si">%(message)s</span><span class="s1">&#39;</span>
+                            <span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="s1">&#39;%H:%M:%S&#39;</span>
+                            <span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">already_scraped</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">scraped_file_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">validate_scraped_csv</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid query type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">already_scraped</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid already_scraped type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">already_scraped</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">scraped_file_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid scraped_file_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">scraped_file_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">scraped_file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;csv&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .csv extension&#39;</span> <span class="o">%</span> <span class="n">scraped_file_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">scraped_file_validation</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid scraped_file_validation type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">scraped_file_validation</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">scraped_file_validation</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;csv&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .csv extension&#39;</span> <span class="o">%</span> <span class="n">scraped_file_validation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">to_review_file_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid to_review_file_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">to_review_file_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">to_review_file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;xlsx&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .xlsx extension&#39;</span> <span class="o">%</span> <span class="n">to_review_file_name</span><span class="p">)</span>
+<div class="viewcode-block" id="BeeLitReview.validate_scraped_csv">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.validate_scraped_csv">[docs]</a>
+    <span class="k">def</span> <span class="nf">validate_scraped_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;</span>
+<span class="sd">        Validate scraped data</span>
+<span class="sd">        :return: error if the data is not as expected</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dtypes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_validation</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">dtypes_df</span><span class="p">[</span><span class="s1">&#39;col_name&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">cols</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">)))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All columns are present correctly&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;NOT all required columns are present&#39;</span><span class="p">)</span>
+        <span class="c1"># check that the data types are as expected</span>
+        <span class="n">data_type</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="p">)</span>
+        <span class="n">data_type</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">data_type</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">dtypes_df</span><span class="o">.</span><span class="n">columns</span>
+        <span class="n">check_df</span> <span class="o">=</span> <span class="n">data_type</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">dtypes_df</span><span class="p">,</span>
+                                   <span class="n">right_on</span><span class="o">=</span><span class="n">dtypes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                   <span class="n">left_on</span><span class="o">=</span><span class="n">dtypes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                   <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">)</span>
+        <span class="n">check_df</span><span class="p">[</span><span class="s1">&#39;type check&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">check_df</span><span class="p">[</span><span class="n">dtypes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_x&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">check_df</span><span class="p">[</span>
+            <span class="n">dtypes_df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;_y&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">check_df</span><span class="p">[</span><span class="s1">&#39;type check&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">check_df</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All data is in the correct type&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;NOT all data is in the correct type&#39;</span><span class="p">)</span></div>
+
+            
+
+<div class="viewcode-block" id="BeeLitReview.article_scrape">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.article_scrape">[docs]</a>
+    <span class="k">def</span> <span class="nf">article_scrape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">article</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract</span>
+<span class="sd">        :param article: article result</span>
+<span class="sd">        :type article: undetected_chromedriver.webelement.WebElement</span>
+<span class="sd">        :return: scraped date in the df object</span>
+<span class="sd">        :rtype: dataframe</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">article</span><span class="p">)</span> <span class="o">!=</span> <span class="n">uc</span><span class="o">.</span><span class="n">webelement</span><span class="o">.</span><span class="n">WebElement</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid article type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is undetected_chromedriver.webelement.WebElement.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">article</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1"># access the inner item stack for each result</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">article</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;nova-legacy-v-entity-item__stack-item&#39;</span><span class="p">)</span>
+        <span class="c1"># get the title from the first tile</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;div//a&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="c1"># get the url</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;div//a&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">get_attribute</span><span class="p">(</span><span class="s1">&#39;href&#39;</span><span class="p">)</span>
+
+        <span class="c1"># get the left categories</span>
+        <span class="n">temp_left</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;nova-legacy-v-entity-item__meta-left&#39;</span><span class="p">)</span>
+
+        <span class="c1"># since it may have more than one left category, we will iterate over it</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">temp_left</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">left_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">temp_left</span><span class="p">)):</span>
+                <span class="n">left_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="s1">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">left_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="n">temp_left</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+
+        <span class="c1"># get the date</span>
+        <span class="n">temp_right</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;nova-legacy-v-entity-item__meta-right&#39;</span><span class="p">)</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">temp_right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;ul//li&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+
+        <span class="c1"># get the right category</span>
+        <span class="n">cat</span> <span class="o">=</span> <span class="n">temp_right</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;ul//li&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">right_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat</span><span class="p">)):</span>
+            <span class="n">right_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cat</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">right</span> <span class="o">=</span> <span class="s1">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">right_list</span><span class="p">)</span>
+
+        <span class="c1"># get the authors</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">authors_list</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;ul//li//a//span&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">authors_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">temp_authors_list</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">author</span> <span class="ow">in</span> <span class="n">authors_list</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">author</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="n">temp_authors_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">author</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="n">author</span> <span class="o">=</span> <span class="s1">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">temp_authors_list</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">author</span> <span class="o">=</span> <span class="n">authors_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">author</span> <span class="o">=</span><span class="s1">&#39;No author&#39;</span>
+        <span class="c1"># get the abstract</span>
+        <span class="n">abstract</span> <span class="o">=</span> <span class="n">items</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">text</span>
+
+        <span class="c1"># append the results to the DF</span>
+        <span class="n">page_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Title&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">title</span><span class="p">],</span>
+                     <span class="s1">&#39;URL&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">url</span><span class="p">],</span>
+                     <span class="s1">&#39;Authors&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">author</span><span class="p">],</span>
+                     <span class="s1">&#39;Date&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">date</span><span class="p">],</span>
+                     <span class="s1">&#39;Left Category&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">left</span><span class="p">],</span>
+                     <span class="s1">&#39;Right Category&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">right</span><span class="p">],</span>
+                     <span class="s1">&#39;Abstract&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">abstract</span><span class="p">]</span>
+                     <span class="p">}</span>
+        <span class="n">page_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">page_dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="n">page_df</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BeeLitReview.researchgate_scraper">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.researchgate_scraper">[docs]</a>
+    <span class="k">def</span> <span class="nf">researchgate_scraper</span><span class="p">(</span><span class="bp">self</span>
+                <span class="p">,</span> <span class="n">username</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="p">,</span><span class="n">password</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="p">,</span><span class="n">url</span><span class="o">=</span><span class="s1">&#39;https://www.researchgate.net/login?_sg=ITbsht6C-ko8ZSF49e9deV1BNgFqKApIltdEguj_4uiZ9K_WzI6gYtnTL5xsgogphkn5Z2RJTNuYqd9fMiGJfg&#39;</span>
+
+                 <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to scrape the articles from ResearchGate</span>
+<span class="sd">        :param username: username in the website</span>
+<span class="sd">        :type username: str</span>
+<span class="sd">        :param password: password in the website</span>
+<span class="sd">        :type password: str</span>
+<span class="sd">        :param url: url of the website</span>
+<span class="sd">        :type url: str</span>
+<span class="sd">        :return: scraped date in the df object and saved csv</span>
+<span class="sd">        :rtype: dataframe</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">username</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid username type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">username</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid password type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">password</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid url type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+
+        <span class="n">driver</span> <span class="o">=</span> <span class="n">uc</span><span class="o">.</span><span class="n">Chrome</span><span class="p">()</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="c1"># click the accept button</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;didomi-regular-notice&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span>
+                                                                                 <span class="s1">&#39;didomi-buttons&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span>
+            <span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s2">&quot;didomi-components-button&quot;</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="c1">#add password and username</span>
+        <span class="n">uname</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;input-login&quot;</span><span class="p">)</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">uname</span><span class="o">.</span><span class="n">send_keys</span><span class="p">(</span><span class="n">username</span><span class="p">)</span>
+
+        <span class="n">pword</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;input-password&quot;</span><span class="p">)</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">pword</span><span class="o">.</span><span class="n">send_keys</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+        <span class="c1">#click submit</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">XPATH</span><span class="p">,</span> <span class="s1">&#39;//button[@type=&quot;submit&quot;]&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+        <span class="c1"># search for the specific query</span>
+        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">search</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;query&#39;</span><span class="p">)</span>
+        <span class="n">search</span><span class="o">.</span><span class="n">send_keys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">search</span><span class="o">.</span><span class="n">send_keys</span><span class="p">(</span><span class="n">Keys</span><span class="o">.</span><span class="n">ENTER</span><span class="p">)</span>
+        <span class="c1">#get only those with full text available</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">find_element</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;fulltext-availability-switch&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">click</span><span class="p">()</span>
+        <span class="c1">#create the data frame which will hold the results</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Title&#39;</span><span class="p">,</span> <span class="s1">&#39;URL&#39;</span><span class="p">,</span> <span class="s1">&#39;Authors&#39;</span><span class="p">,</span> <span class="s1">&#39;Date&#39;</span><span class="p">,</span> <span class="s1">&#39;Left Category&#39;</span><span class="p">,</span> <span class="s1">&#39;Right Category&#39;</span><span class="p">,</span> <span class="s1">&#39;Abstract&#39;</span><span class="p">])</span>
+
+        <span class="c1"># get the results for the first page</span>
+        <span class="n">result_items</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;search-box__result-item&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">article</span> <span class="ow">in</span> <span class="n">result_items</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">article_scrape</span><span class="p">(</span><span class="n">article</span><span class="p">)</span>
+
+        <span class="c1">#save the data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1">#get the results for the rest of the pages</span>
+        <span class="n">current_url</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">current_url</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
+            <span class="n">main_url</span> <span class="o">=</span> <span class="n">current_url</span> <span class="o">+</span> <span class="s1">&#39;&amp;limit=10&amp;offset=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">main_url</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">main_url</span><span class="p">)</span>
+            <span class="n">sleep</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">45</span><span class="p">))</span>
+
+            <span class="c1"># do the same steps</span>
+            <span class="n">result_items</span> <span class="o">=</span> <span class="n">driver</span><span class="o">.</span><span class="n">find_elements</span><span class="p">(</span><span class="n">By</span><span class="o">.</span><span class="n">CLASS_NAME</span><span class="p">,</span> <span class="s1">&#39;search-box__result-item&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">article</span> <span class="ow">in</span> <span class="n">result_items</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">article_scrape</span><span class="p">(</span><span class="n">article</span><span class="p">)</span>
+
+            <span class="c1"># save the data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Data scraped successfully!&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeLitReview.scraped_data_enhancement">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.scraped_data_enhancement">[docs]</a>
+    <span class="k">def</span> <span class="nf">scraped_data_enhancement</span><span class="p">(</span><span class="bp">self</span>
+                                 <span class="p">,</span><span class="n">stats_col</span> <span class="o">=</span> <span class="s1">&#39;Right Category&#39;</span>
+                                 <span class="p">,</span><span class="n">cat_col</span> <span class="o">=</span><span class="s1">&#39;Left Category&#39;</span>
+                                 <span class="p">,</span><span class="n">key_col</span> <span class="o">=</span><span class="s1">&#39;Title&#39;</span>
+                                 <span class="p">,</span><span class="n">abstract_col</span> <span class="o">=</span><span class="s1">&#39;Abstract&#39;</span>
+                                 <span class="p">,</span><span class="n">date_col</span><span class="o">=</span><span class="s1">&#39;Date&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text.</span>
+<span class="sd">        :param stats_col: Column which has the stats data</span>
+<span class="sd">        :type stats_col: str</span>
+<span class="sd">        :param cat_col:Column which has the result type</span>
+<span class="sd">        :type cat_col: str</span>
+<span class="sd">        :param key_col: Column which will be used for the duplication reduction (last entry is kept in the data)</span>
+<span class="sd">        :type key_col: str</span>
+<span class="sd">        :param abstract_col: Column which has the abstract of the text</span>
+<span class="sd">        :type abstract_col: str</span>
+<span class="sd">        :param date_col: Colum which has the date information</span>
+<span class="sd">        :type date_col: str</span>
+<span class="sd">        :return: Returns pandas with new columns with the extracted information, refer to the df in the object. Additionally, the data is saved locally to _enhanced file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">stats_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid stats_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">stats_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cat_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid cat_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">cat_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">key_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid key_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">key_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">abstract_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid abstract_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">abstract_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">date_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid date_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">date_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="c1">#create a new data frame to host the raw data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="c1">#ensure we don&#39;t have duplicates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="n">key_col</span><span class="p">],</span> <span class="n">keep</span><span class="o">=</span><span class="s1">&#39;last&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Citations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">stats_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">citations</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Citations extracted successfully&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Recommendations&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">stats_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">recommendations</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Recommendations extracted successfully&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Reads&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">stats_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">reads</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Reads extracted successfully&#39;</span><span class="p">)</span>
+
+        <span class="c1"># extracting type of text from the left category</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Text Type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">cat_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">a</span> <span class="o">!=</span> <span class="s1">&#39;Full-text available&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Text Type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>  <span class="c1"># for teh report</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Text type extracted successfully&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Abstract Count Words&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">abstract_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">nltk</span><span class="o">.</span><span class="n">word_tokenize</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Abstract tokenized successfully&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Datetime&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">date_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="s1">&#39;%B %Y&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Datetime&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">year</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Date extracted successfully&#39;</span><span class="p">)</span>
+
+        <span class="c1">#check what is the language of the abstract</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span><span class="p">[</span><span class="s1">&#39;Language&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span><span class="p">[</span><span class="n">abstract_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">detect</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="c1">#make sure that only English language is left in the enhanced version</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">abstract_col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">detect</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="o">==</span><span class="s1">&#39;en&#39;</span><span class="p">]</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Only English abstracts are left&#39;</span><span class="p">)</span>
+
+        <span class="c1">#reset the index for trackability</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1">#save the new data for tracking purposes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.csv&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;_enhanced.csv&#39;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Data saved successfully to </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span><span class="bp">self</span><span class="o">.</span><span class="n">scraped_file_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.csv&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;_enhanced.csv&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeLitReview.encode_with_transformers">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.encode_with_transformers">[docs]</a>
+    <span class="k">def</span> <span class="nf">encode_with_transformers</span><span class="p">(</span><span class="bp">self</span>
+                                 <span class="p">,</span><span class="n">model_id</span><span class="o">=</span><span class="s1">&#39;sentence-transformers/all-mpnet-base-v2&#39;</span>
+                                 <span class="p">,</span><span class="n">abstract_col</span><span class="o">=</span><span class="s1">&#39;Abstract&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function to encode the abstract text with HuggingFace transformers. Embeddings are saved to embeddings</span>
+<span class="sd">        :param model_id: HuggingFace transformers&#39; model</span>
+<span class="sd">        :type model_id: str</span>
+<span class="sd">        :param abstract_col: Column indicating the abstract</span>
+<span class="sd">        :type abstract_col: str</span>
+<span class="sd">        :return: embeddings in a list format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid model_id type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">abstract_col</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid abstract_col type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">abstract_col</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="c1">#initiate the model</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span>
+        <span class="n">abstract_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">abstract_col</span><span class="p">])</span>
+        <span class="c1">#add the query embedding as the last one</span>
+        <span class="n">abstract_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">embeddings</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">abstract_list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span> <span class="o">=</span> <span class="n">embeddings</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Embeddings created for the abstracts.&#39;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BeeLitReview.calculate_similarity">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.calculate_similarity">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_similarity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings</span>
+<span class="sd">        :return: similarity dataframe with columns pair0, pair1 and cos. Saves the data to similarity_df.csv</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#initiate the multiprocessing</span>
+        <span class="n">pool</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">mp</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">())</span>
+
+        <span class="n">query_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">)</span>
+        <span class="n">embeddings_index</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1">#calculate the similarity of each pair, excluding the query</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">embeddings_index</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">similarity</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">cos_sim_func</span><span class="p">,</span> <span class="n">embedding_list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">),</span> <span class="n">pairs</span><span class="p">)</span>
+        <span class="n">similarity_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">similarity</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">raw_similarity_df</span> <span class="o">=</span> <span class="n">similarity_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1">#calculate the similarity of each abstract and the query</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="p">[((</span><span class="n">query_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">embeddings_index</span><span class="p">]</span>
+        <span class="n">most_similar</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">cos_sim_func</span><span class="p">,</span> <span class="n">embedding_list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">),</span> <span class="n">pairs</span><span class="p">)</span>
+        <span class="n">most_similar_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">most_similar</span><span class="p">)</span>
+        <span class="c1">#identify the most similar one and add it with cosine zero, this will be our initial point</span>
+        <span class="n">most_similar_df</span> <span class="o">=</span> <span class="n">most_similar_df</span><span class="p">[</span><span class="n">most_similar_df</span><span class="p">[</span><span class="s1">&#39;cos&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">most_similar_df</span><span class="p">[</span><span class="s1">&#39;cos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()]</span>
+        <span class="c1"># most_similar_df[&#39;cos&#39;] = 0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">most_similar</span> <span class="o">=</span> <span class="n">most_similar_df</span><span class="p">[</span><span class="s1">&#39;pair1&#39;</span><span class="p">]</span>
+
+        <span class="c1"># remove the similarity of the first 9 results</span>
+        <span class="n">similarity_df</span> <span class="o">=</span> <span class="n">similarity_df</span><span class="p">[(</span><span class="o">~</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]))</span> <span class="o">&amp;</span> <span class="p">(</span>
+            <span class="o">~</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;pair1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]))]</span>
+
+        <span class="c1">#create an artificial 0-cosine connection between 8th and 9th to artificially start the TSP from there</span>
+        <span class="n">artificial_similarity</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span> <span class="s1">&#39;pair1&#39;</span><span class="p">,</span> <span class="s1">&#39;cos&#39;</span><span class="p">])</span>
+
+        <span class="c1"># add it to the similarity df</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">similarity_df</span><span class="p">,</span> <span class="n">artificial_similarity</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1">#save the similarity data locally</span>
+        <span class="n">similarity_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s1">&#39;similarity_df.csv&#39;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Pairwise cosine similarity calculated.&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeLitReview.calculate_TSP">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.calculate_TSP">[docs]</a>
+    <span class="k">def</span> <span class="nf">calculate_TSP</span><span class="p">(</span><span class="bp">self</span>
+                      <span class="p">,</span><span class="n">num_articles</span> <span class="o">=</span> <span class="mi">50</span>
+                      <span class="p">,</span><span class="n">path_file_name</span> <span class="o">=</span> <span class="s1">&#39;path.csv&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the Travel Salesmen Path based on the similarity between the abstracts.</span>
+<span class="sd">        :param num_articles: number of articles to bee looked into</span>
+<span class="sd">        :type num_articles: int</span>
+<span class="sd">        :param path_file_name: name of the file to store the path</span>
+<span class="sd">        :type path_file_name: str</span>
+<span class="sd">        :return: Returns dataframe with the first num_articles and saves to data to to_review_file_name.csv for further inspection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">num_articles</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid num_articles type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is int.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">num_articles</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">path_file_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid path_file_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">path_file_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path_file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;csv&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .csv extension&#39;</span> <span class="o">%</span> <span class="n">path_file_name</span><span class="p">)</span>
+
+        <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">from_pandas_edgelist</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s1">&#39;pair1&#39;</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s1">&#39;cos&#39;</span><span class="p">)</span>
+        <span class="n">tsp</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">approximation</span><span class="o">.</span><span class="n">traveling_salesman_problem</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">tsp</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">cycle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">graph_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Graph created and TSP calculated.&#39;</span><span class="p">)</span>
+        <span class="c1">#remove if any duplications occur</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+        <span class="c1">#Note this is the artificial first step</span>
+        <span class="n">ind</span> <span class="o">=</span> <span class="mi">9</span>
+        <span class="c1"># ind = self.path.index(self.most_similar.iloc[0])</span>
+        <span class="k">if</span> <span class="n">ind</span> <span class="o">&gt;=</span> <span class="n">num_articles</span><span class="p">:</span>
+            <span class="n">left_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="n">ind</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">left</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="n">ind</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">right</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[:(</span><span class="n">num_articles</span><span class="o">-</span><span class="n">left_length</span><span class="p">)]</span>
+            <span class="n">to_review_path</span> <span class="o">=</span> <span class="n">left</span> <span class="o">+</span> <span class="n">right</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">to_review_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[:</span><span class="n">num_articles</span><span class="p">]</span>
+
+        <span class="c1">#add the first 9 articles</span>
+        <span class="n">to_review_path</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">8</span><span class="p">]</span> <span class="o">+</span> <span class="n">to_review_path</span>
+
+
+        <span class="n">graph_similarity</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="n">graph_similarity</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_review_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">graph_similarity</span><span class="p">[</span><span class="s1">&#39;pair1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_review_path</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">graph_similarity</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">graph_similarity</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_similarity_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">left_on</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span><span class="s1">&#39;pair1&#39;</span><span class="p">],</span>
+                                    <span class="n">right_on</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span><span class="s1">&#39;pair1&#39;</span><span class="p">])</span>
+        <span class="n">G_updated</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">from_pandas_edgelist</span><span class="p">(</span><span class="n">graph_similarity</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s1">&#39;pair1&#39;</span><span class="p">,</span> <span class="n">edge_attr</span><span class="o">=</span><span class="s1">&#39;cos&#39;</span><span class="p">)</span>
+        <span class="n">nx</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span><span class="n">G_updated</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="n">nx</span><span class="o">.</span><span class="n">spring_layout</span><span class="p">(</span><span class="n">G_updated</span><span class="p">),</span> <span class="n">with_labels</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;Graph.png&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;PNG&quot;</span><span class="p">)</span>
+
+
+        <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">path_file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># get the first 50th</span>
+        <span class="n">to_review_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">to_review_path</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">,</span> <span class="s1">&#39;Title&#39;</span><span class="p">,</span> <span class="s1">&#39;Abstract&#39;</span><span class="p">]]</span>
+        <span class="n">to_review_df</span><span class="p">[</span><span class="s1">&#39;Choose&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># self.to_review_df = to_review_df</span>
+        <span class="n">to_review_df</span><span class="o">.</span><span class="n">to_excel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_review_file_name</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> file saved.&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_review_file_name</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="BeeLitReview.clustering_evaluation">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.clustering_evaluation">[docs]</a>
+    <span class="k">def</span> <span class="nf">clustering_evaluation</span><span class="p">(</span><span class="bp">self</span>
+                        <span class="p">,</span> <span class="n">cosine_threshold</span> <span class="o">=</span> <span class="mf">0.3</span>
+                        <span class="p">,</span><span class="n">year</span><span class="o">=</span><span class="mi">2023</span>
+                        <span class="p">,</span><span class="nb">type</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Article&#39;</span><span class="p">,</span> <span class="s1">&#39;Conference Paper&#39;</span><span class="p">,</span><span class="s1">&#39;Preprint&#39;</span><span class="p">,</span><span class="s1">&#39;Patent&#39;</span><span class="p">,</span><span class="s1">&#39;Thesis&#39;</span><span class="p">]</span>
+                        <span class="p">,</span><span class="n">read</span> <span class="o">=</span> <span class="mi">10</span>
+                        <span class="p">,</span><span class="n">citation</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create two types of clustering - HDBSCAN and agglomerative. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover we can choose those are highly correlated with the originally chosen abstracts.  </span>
+<span class="sd">        :param cosine_threshold: threshold for cosine similarity with the chosen articles. The value is between 0 and 1 </span>
+<span class="sd">        :type cosine_threshold: float</span>
+<span class="sd">        :param year: year of the abstract to filter</span>
+<span class="sd">        :type year: int</span>
+<span class="sd">        :param type: type of the abstract to filter. You can choose from  %s</span>
+<span class="sd">        :type type: list</span>
+<span class="sd">        :param read: number of reads an abstract should be associated with </span>
+<span class="sd">        :type read: int</span>
+<span class="sd">        :param citation: number of citations an abstract should be associated with</span>
+<span class="sd">        :type citation: int</span>
+<span class="sd">        :return: pandas data frame with the results (labeled abstracts) </span>
+<span class="sd">        :rtype: pandas data frame</span>
+<span class="sd">        &quot;&quot;&quot;</span> <span class="o">%</span> <span class="s1">&#39;;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Text Type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cosine_clustering_threshold</span> <span class="o">=</span> <span class="n">cosine_threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">year</span> <span class="o">=</span> <span class="n">year</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="nb">type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">read</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">citation</span> <span class="o">=</span> <span class="n">citation</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Save cluster parameters for articles&#39; filtering&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_review_file_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span><span class="s1">&#39;Choose&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span><span class="s1">&#39;Choose&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Identify articles of interest&quot;</span><span class="p">)</span>
+        <span class="n">index_chosen</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span><span class="s1">&#39;Choose&#39;</span><span class="p">]][</span><span class="s1">&#39;index&#39;</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;Under Inspection&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;pair1&#39;</span><span class="p">]))</span>
+
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">index</span><span class="p">,</span> <span class="s1">&#39;Under Inspection&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">include_tuple</span><span class="p">(</span><span class="n">index_chosen</span><span class="p">,</span> <span class="n">row</span><span class="p">,</span> <span class="n">t_limit</span><span class="o">=</span><span class="n">cosine_threshold</span><span class="p">)</span>
+
+        <span class="n">pair0</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;Under Inspection&#39;</span><span class="p">]][</span><span class="s1">&#39;pair0&#39;</span><span class="p">])</span>
+        <span class="n">pair1</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">similarity_df</span><span class="p">[</span><span class="s1">&#39;Under Inspection&#39;</span><span class="p">]][</span><span class="s1">&#39;pair1&#39;</span><span class="p">])</span>
+        <span class="n">pair</span> <span class="o">=</span> <span class="n">pair0</span><span class="o">+</span><span class="n">pair1</span>
+        <span class="n">filter_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Year&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">year</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Text Type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="nb">type</span><span class="p">))</span> <span class="o">&amp;</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Citations&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">citation</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Reads&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">read</span><span class="p">)][</span><span class="s1">&#39;index&#39;</span><span class="p">])</span>
+        <span class="n">common_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">filter_index</span><span class="p">))</span>
+
+        <span class="c1">#save the clustering indices in the object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clustering_indices</span><span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">index_chosen</span> <span class="o">+</span> <span class="n">common_index</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_cluster_embeddings</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">embeddings</span><span class="p">[</span><span class="n">x</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">clustering_indices</span><span class="p">])</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Extract the results of interest&quot;</span><span class="p">)</span>
+        <span class="c1">#HDBSAN</span>
+        <span class="n">ce_hdbscan</span> <span class="o">=</span> <span class="n">clusteval</span><span class="p">(</span><span class="n">cluster</span><span class="o">=</span><span class="s1">&#39;hdbscan&#39;</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="s1">&#39;silhouette&#39;</span><span class="p">,</span> <span class="n">linkage</span><span class="o">=</span><span class="s1">&#39;complete&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ce_hdbscan_results</span> <span class="o">=</span> <span class="n">ce_hdbscan</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_cluster_embeddings</span><span class="p">)</span>
+        <span class="n">ce_hdbscan</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_cluster_embeddings</span><span class="p">)</span>
+        <span class="c1"># ce_hdbscan.plot()[0].savefig(&quot;sil_score_hdbsan.png&quot;)</span>
+
+        <span class="n">ce_hdbscan</span><span class="o">.</span><span class="n">dendrogram</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;dendogram_hdbscan.png&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;HDBSCAN clustering complete&quot;</span><span class="p">)</span>
+
+        <span class="c1">#Hierarchical</span>
+        <span class="n">ce_agg</span> <span class="o">=</span> <span class="n">clusteval</span><span class="p">(</span><span class="n">cluster</span><span class="o">=</span><span class="s1">&#39;agglomerative&#39;</span><span class="p">,</span> <span class="n">evaluate</span><span class="o">=</span><span class="s1">&#39;silhouette&#39;</span><span class="p">,</span> <span class="n">linkage</span><span class="o">=</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;cosine&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Cluster evaluation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ce_agg_results</span> <span class="o">=</span> <span class="n">ce_agg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_cluster_embeddings</span><span class="p">)</span>
+        <span class="c1">#save plots for the report</span>
+        <span class="n">ce_agg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_cluster_embeddings</span><span class="p">)</span>
+
+
+        <span class="n">ce_agg</span><span class="o">.</span><span class="n">dendrogram</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;dendogram_agg.png&quot;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Agglomeration clustering complete. &quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeLitReview.pdf_graph">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.pdf_graph">[docs]</a>
+    <span class="k">def</span> <span class="nf">pdf_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pdf</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">with_code</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_code</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates in the pdf file</span>
+<span class="sd">        :param pdf: FPDF instance</span>
+<span class="sd">        :type pdf: FPDF</span>
+<span class="sd">        :param x: x-coordinate of the plot</span>
+<span class="sd">        :type x: int</span>
+<span class="sd">        :param y: y-coordinate of the plot</span>
+<span class="sd">        :type y: int</span>
+<span class="sd">        :param w: w-coordinate of the plot</span>
+<span class="sd">        :type w: int0</span>
+<span class="sd">        :param h: h-coordinate of the plot</span>
+<span class="sd">        :type h: int</span>
+<span class="sd">        :param with_code: if code will be executed for teh plot to be created or the plot is saved as a picture</span>
+<span class="sd">        :type with_code:  bool</span>
+<span class="sd">        :param plot_code: code to be executed for the plot to be created</span>
+<span class="sd">        :type plot_code: str</span>
+<span class="sd">        :param filename: name of the saved picture</span>
+<span class="sd">        :type filename: str</span>
+<span class="sd">        :return: a graph in the pdf file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">plot_code</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid plot_code type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">plot_code</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span> <span class="o">!=</span> <span class="n">FPDF</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid pdf type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is FPDF.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid x type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is int.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid y type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is int.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid w type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is int.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">w</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">int</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid x type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is int.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">with_code</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid with_code type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is bool.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">with_code</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">plot_code</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid plot_code type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">plot_code</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid filename type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">with_code</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="ow">not</span> <span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;png&#39;</span><span class="p">)):</span>
+            <span class="c1"># if not filename.endswith(&#39;png&#39;):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .png extension&#39;</span> <span class="o">%</span> <span class="n">filename</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">with_code</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+            <span class="n">exec</span><span class="p">(</span><span class="n">plot_code</span><span class="p">)</span>
+            <span class="c1"># Converting Figure to an image:</span>
+            <span class="n">img_buf</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>  <span class="c1"># Create image object</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">img_buf</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Save the image</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="n">img_buf</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">image</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="n">w</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="n">h</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BeeLitReview.pdf_report_generate">
+<a class="viewcode-back" href="../BeeLitReview.html#BeeLitReview.BeeLitReview.pdf_report_generate">[docs]</a>
+    <span class="k">def</span> <span class="nf">pdf_report_generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_file_name</span><span class="o">=</span><span class="s1">&#39;lit_report.pdf&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate automated pdf report based on the results from the class</span>
+<span class="sd">        The report has:</span>
+<span class="sd">        - INTRO: Report title, author, data of the report and disclaimer and dependant variable distribution</span>
+<span class="sd">        - DATA OVERVIEW - Time, word, result type, language distributions</span>
+<span class="sd">        - Optimal ML Path</span>
+<span class="sd">            - Travelling Salesman Problem Solution</span>
+<span class="sd">            - Similarity Difference</span>
+<span class="sd">            - Time Saved</span>
+<span class="sd">            - TSP Results of Interest and graph visual representation</span>
+<span class="sd">            - Clustering Results</span>
+<span class="sd">        - Suggested Reads</span>
+<span class="sd">        :return: pdf file</span>
+<span class="sd">        :rtype: pdf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">report_file_name</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Invalid report_file_name type. It is type </span><span class="si">%s</span><span class="s1"> and expected type is str.&#39;</span> <span class="o">%</span> <span class="nb">type</span><span class="p">(</span><span class="n">report_file_name</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">report_file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;pdf&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> input is not the correct type. It should be .pdf extension&#39;</span> <span class="o">%</span> <span class="n">report_file_name</span><span class="p">)</span>
+
+        <span class="c1"># Generate the PDF report and save it</span>
+        <span class="n">pdf</span> <span class="o">=</span> <span class="n">FPDF</span><span class="p">(</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="s1">&#39;mm&#39;</span><span class="p">,</span> <span class="s1">&#39;A4&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Create pdf.&quot;</span><span class="p">)</span>
+        <span class="c1"># PAGE 1</span>
+
+        <span class="c1"># INTRO</span>
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">h0</span><span class="p">(</span><span class="s1">&#39;Literature self Automated Report&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Author: Denitsa Panova&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">italics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Date: &#39;</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m-</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">italics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s1">&#39;Disclaimer: The objective of this report is to present the outcomes generated by automated literature research. &#39;</span>
+            <span class="s1">&#39;A specialized interpretation is essential to derive accurate conclusions regarding correct articles to &#39;</span>
+            <span class="s1">&#39;be selfed.&#39;</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add intro.&quot;</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">italics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+        <span class="n">h1</span><span class="p">(</span><span class="s1">&#39;Data Overview&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;Query &quot;</span><span class="si">%s</span><span class="s1">&quot; has been executed in researchgate.com and all available results are scraped - in total </span><span class="si">%s</span><span class="s1">. &#39;</span>
+                <span class="s1">&#39;Note, that in the context of this report, a result is a search result, it can be an article, &#39;</span>
+                <span class="s1">&#39;presentation, etc.&#39;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">)))</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add data overview&quot;</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Time Distribution&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s2">&quot;Firstly, we will investigate how the results&#39;s distribution over the years.&quot;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="c1"># Table for the time distribution over years</span>
+        <span class="n">year_data</span> <span class="o">=</span> <span class="n">pd_to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Year&#39;</span><span class="p">)</span>
+
+        <span class="n">pdf_table</span><span class="p">(</span><span class="n">year_data</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add time distribution&quot;</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Word Distribution&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Then, we will investigate what is the average count of words per abstract. Here the goal is to see if the &quot;</span>
+                    <span class="s2">&quot;default transformer model is still an adequate solution.The default model is all-mpnet-base-v2 and if the &quot;</span>
+                    <span class="s2">&quot;word count is above 384, it truncates the text and we wouldn&#39;t have full results in the encoding stage. &quot;</span>
+                    <span class="s2">&quot;We have </span><span class="si">%s</span><span class="s2"> of the results consenting the criteria.&quot;</span>
+                    <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;Abstract Count Words&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">384.0</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">),</span> <span class="mi">2</span><span class="p">)))</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">plot_code</span> <span class="o">=</span> <span class="s2">&quot;self.df[&#39;Abstract Count Words&#39;].hist()&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdf_graph</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span><span class="n">with_code</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_code</span><span class="o">=</span><span class="n">plot_code</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">206</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">110</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add word distribution &quot;</span><span class="p">)</span>
+        <span class="c1"># NEW PAGE</span>
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Result type&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;Investigate what type of results are extracted. This will help in the correct choice for clustering the results. &quot;</span>
+            <span class="s2">&quot;The default types for clustering are: Article and Conference Paper.&quot;</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">type_data</span> <span class="o">=</span> <span class="n">pd_to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">,</span> <span class="s1">&#39;Text Type&#39;</span><span class="p">)</span>
+        <span class="n">pdf_table</span><span class="p">(</span><span class="n">type_data</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Language&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Investigate what languages the results are in. We are considering only English languages for the purposes of &quot;</span>
+                    <span class="s2">&quot;this research After removing non-English results, we lose </span><span class="si">%s</span><span class="s2"> of the data.&quot;</span>
+                    <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span><span class="p">[</span><span class="s1">&#39;Language&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;en&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span><span class="p">),</span> <span class="mi">2</span><span class="p">)))</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">language_data</span> <span class="o">=</span> <span class="n">pd_to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df_raw</span><span class="p">,</span> <span class="s1">&#39;Language&#39;</span><span class="p">)</span>
+        <span class="n">pdf_table</span><span class="p">(</span><span class="n">language_data</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add language distribution &quot;</span><span class="p">)</span>
+        <span class="n">h1</span><span class="p">(</span><span class="s1">&#39;Optimal ML Path&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Traveling Salesmen Problem (TSP)&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Each abstract is turned into an embedding, using the HuggingFace Transformer. The default transformer is &quot;</span>
+                <span class="s2">&quot;all-mpnet-base-v2. After we calculate similarity between each scraped result with each another one, we apply TSP &quot;</span>
+                <span class="s2">&quot;for finding the shortest path. The time for calculating it is </span><span class="si">%s</span><span class="s2"> ms. Additionally, to optimize the TSP performance  &quot;</span>
+                <span class="s2">&quot;by artificially taking the first 9 results from the ResearchGate suggestions, then set to zero the connection between 9tha nd 10th,&quot;</span>
+                <span class="s2">&quot;thus forcing the next TSP step to be there.&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">graph_end</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph_start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)))</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add TSP&quot;</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Similarity Difference&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+
+        <span class="n">path</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="mi">9</span><span class="p">:</span><span class="mi">50</span><span class="p">])</span>
+        <span class="c1"># create tuples based on the path pairs</span>
+        <span class="n">path_similarity</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="n">path_similarity</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">path_similarity</span><span class="p">[</span><span class="s1">&#39;pair1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">path_similarity</span> <span class="o">=</span> <span class="n">path_similarity</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_similarity_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span> <span class="s1">&#39;pair1&#39;</span><span class="p">])</span>
+
+        <span class="c1"># let us do the same for the original research order</span>
+        <span class="n">original_similarity</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
+        <span class="n">original_similarity</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">49</span><span class="p">))</span>
+        <span class="n">original_similarity</span><span class="p">[</span><span class="s1">&#39;pair1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">))</span>
+        <span class="n">original_similarity</span> <span class="o">=</span> <span class="n">original_similarity</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_similarity_df</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span><span class="p">,</span> <span class="n">on</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;pair0&#39;</span><span class="p">,</span> <span class="s1">&#39;pair1&#39;</span><span class="p">])</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;In order to investigate what is the added value of TSP, we check what is the average similarity measure&quot;</span>
+                    <span class="s2">&quot;in the first 50 TSP-suggested articles and the first 50 ResearchGate articles. However, we remove from &quot;</span>
+                    <span class="s2">&quot;calculation, the first 10 results. TSP is </span><span class="si">%s</span><span class="s2"> and ResearchGate is </span><span class="si">%s</span><span class="s2">.&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">path_similarity</span><span class="p">[</span><span class="s1">&#39;cos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="mi">2</span><span class="p">)),</span> <span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">original_similarity</span><span class="p">[</span><span class="s1">&#39;cos&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="mi">2</span><span class="p">))))</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add similarity&quot;</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Time Saved&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">all_not_read_indix</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]))))</span>
+        <span class="n">all_not_read_indix_max</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">all_not_read_indix</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="nb">max</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])))]</span>
+        <span class="c1"># the cost in terms of time</span>
+        <span class="n">cost_time</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">all_not_read_indix_max</span><span class="p">,</span> <span class="s1">&#39;Abstract Count Words&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="mi">150</span> <span class="o">/</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>  <span class="c1"># 12 hours</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Now we will calculate how much time it is saved by following the 50 articles suggested by TSP. The goal is to &quot;</span>
+                    <span class="s2">&quot;understand how much time is saved and at the same time wider knowledge on the topic is acquired. The metric &quot;</span>
+                    <span class="s2">&quot;encompasses the number of abstracts one should go over to read the same TSP-suggested results. According &quot;</span>
+                    <span class="s2">&quot;to a research, one can read around 150 words per minute. Therefore, the saved time by going with the TSP &quot;</span>
+                    <span class="s2">&quot;suggestion is </span><span class="si">%s</span><span class="s2"> hours.&quot;</span> <span class="o">%</span> <span class="n">cost_time</span><span class="p">)</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add time saved&quot;</span><span class="p">)</span>
+
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Graph&#39;</span><span class="p">,</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Let us look at the graph of the first 50 articles from the TSP algorithm.&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdf_graph</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">with_code</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;Graph.png&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Added graph.png&#39;</span><span class="p">)</span>
+
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+
+
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;TSP Results of Interest&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Let us look into the wordcloud of the TSP-results abstracts to see what those are in one look.&#39;</span><span class="p">,</span>
+                    <span class="n">pdf</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">words</span> <span class="o">=</span> <span class="n">nltk</span><span class="o">.</span><span class="n">word_tokenize</span><span class="p">(</span><span class="s1">&#39; . &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span><span class="s1">&#39;Title&#39;</span><span class="p">])))</span>
+
+        <span class="n">stop_words</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">stopwords</span><span class="o">.</span><span class="n">words</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">))</span>
+
+        <span class="n">stemmer</span> <span class="o">=</span> <span class="n">SnowballStemmer</span><span class="p">(</span><span class="s2">&quot;english&quot;</span><span class="p">)</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="n">stemmer</span><span class="o">.</span><span class="n">stem</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+                 <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span>
+                 <span class="k">if</span> <span class="n">word</span><span class="o">.</span><span class="n">isalnum</span><span class="p">()</span> <span class="ow">and</span> <span class="n">word</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">stop_words</span><span class="p">]</span>
+        <span class="n">word_freq</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">word_freq</span><span class="p">:</span>
+                <span class="n">word_freq</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">word_freq</span><span class="p">[</span><span class="n">word</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wordcloud</span> <span class="o">=</span> <span class="n">WordCloud</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">background_color</span><span class="o">=</span><span class="s1">&#39;white&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">generate_from_frequencies</span><span class="p">(</span><span class="n">word_freq</span><span class="p">)</span>
+
+        <span class="n">plot_code</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;plt.imshow(self.wordcloud, interpolation=&#39;bilinear&#39;) </span><span class="se">\n</span><span class="s2">&quot;</span>
+                     <span class="s2">&quot;plt.axis(&#39;off&#39;)&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdf_graph</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">with_code</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plot_code</span><span class="o">=</span><span class="n">plot_code</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">pdf</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="mi">120</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span>
+            <span class="s1">&#39;The next step is to look into the TSP results and identify those which are of interest for the research.&#39;</span>
+            <span class="s1">&#39;We have identified those:&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add word cloud&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">to_review_df</span><span class="p">[</span><span class="s1">&#39;Choose&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+            <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Original Index: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]),</span> <span class="n">pdf</span><span class="p">)</span>
+            <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Title: &#39;</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;Title&#39;</span><span class="p">],</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add results of interest&quot;</span><span class="p">)</span>
+
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Clustering Results&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;We decided to look into results with the following parameters: &#39;</span>
+                    <span class="s1">&#39;cosine similarity &gt; than </span><span class="si">%d</span><span class="s1">, &#39;</span>
+                    <span class="s1">&#39;year &gt; than </span><span class="si">%d</span><span class="s1">, &#39;</span>
+                    <span class="s1">&#39;type of results </span><span class="si">%s</span><span class="s1">, &#39;</span>
+                    <span class="s1">&#39;number of reads &gt; </span><span class="si">%d</span><span class="s1"> &#39;</span>
+                    <span class="s1">&#39;and number of citations &gt; </span><span class="si">%d</span><span class="s1">.&#39;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cosine_clustering_threshold</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">year</span><span class="p">,</span> <span class="s1">&#39; , &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">citation</span><span class="p">),</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="s2">&quot;Let us see the distribution of the HDBSCAN clusters.&quot;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">hdbscan_data</span> <span class="o">=</span> <span class="n">pd_to_tuple</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ce_hdbscan_results</span><span class="p">[</span><span class="s1">&#39;labx&#39;</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Label&#39;</span><span class="p">]),</span> <span class="s1">&#39;Label&#39;</span><span class="p">)</span>
+        <span class="n">hdbscan_table</span> <span class="o">=</span> <span class="n">pdf_table</span><span class="p">(</span><span class="n">hdbscan_data</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add HDBSCAN clustering overview&quot;</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s2">&quot;Note: -1 label is for the outliers&quot;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">italics</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Let us see the dendogram of the HDBSCAN clusters.&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdf_graph</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">with_code</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;dendogram_hdbscan.png&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="mi">130</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s2">&quot;Let us see the distribution of the Agglomeration clusters.&quot;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">ln</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="n">agg_data</span> <span class="o">=</span> <span class="n">pd_to_tuple</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ce_agg_results</span><span class="p">[</span><span class="s1">&#39;labx&#39;</span><span class="p">],</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Label&#39;</span><span class="p">]),</span> <span class="s1">&#39;Label&#39;</span><span class="p">)</span>
+        <span class="n">agg_table</span> <span class="o">=</span> <span class="n">pdf_table</span><span class="p">(</span><span class="n">agg_data</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">cols</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add Agglomeration clustering overview&quot;</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Let us see the dendogram of the Agglomeration clusters.&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pdf_graph</span><span class="p">(</span><span class="n">pdf</span><span class="p">,</span> <span class="n">with_code</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;dendogram_agg.png&quot;</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="n">h1</span><span class="p">(</span><span class="s1">&#39;Agglomeration Suggested Reads&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+        <span class="n">text</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;First, we will remove the outlier results (those which are classified from HDBSCAN) and show the rest as per the &quot;</span>
+            <span class="s2">&quot;Agglomeration clustering technique.&quot;</span><span class="p">)</span>
+        <span class="n">normal_text</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">pdf</span><span class="p">)</span>
+
+
+        <span class="n">clustered_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clustering_indices</span><span class="p">)]</span>
+        <span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;HDBSCAN Labels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ce_hdbscan_results</span><span class="p">[</span><span class="s1">&#39;labx&#39;</span><span class="p">]</span>
+        <span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;AGG Labels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ce_agg_results</span><span class="p">[</span><span class="s1">&#39;labx&#39;</span><span class="p">]</span>
+        <span class="n">clustered_df</span> <span class="o">=</span> <span class="n">clustered_df</span><span class="p">[</span><span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;HDBSCAN Labels&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># clustered_df.sort_values(by=[&#39;AGG Labels&#39;],inplace=True)</span>
+        <span class="n">clusters</span> <span class="o">=</span> <span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;AGG Labels&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+        <span class="n">clusters_hdb</span> <span class="o">=</span> <span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;HDBSCAN Labels&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">clusters</span><span class="p">:</span>
+            <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Cluster &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cluster</span><span class="p">),</span> <span class="n">pdf</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">clustered_df</span><span class="p">[</span><span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;AGG Labels&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Original Index: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]),</span> <span class="n">pdf</span><span class="p">)</span>
+                    <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Title: &#39;</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;Title&#39;</span><span class="p">],</span> <span class="n">pdf</span><span class="p">)</span>
+                    <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Click here for the article&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">link_text</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;URL&#39;</span><span class="p">])</span>
+
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+
+        <span class="n">start_page</span><span class="p">(</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="n">h1</span><span class="p">(</span><span class="s1">&#39;HDBSCAN Suggested Reads&#39;</span><span class="p">,</span><span class="n">pdf</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">clusters_hdb</span><span class="p">:</span>
+            <span class="n">h2</span><span class="p">(</span><span class="s1">&#39;Cluster &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">cluster</span><span class="p">),</span> <span class="n">pdf</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">clustered_df</span><span class="p">[</span><span class="n">clustered_df</span><span class="p">[</span><span class="s1">&#39;HDBSCAN Labels&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cluster</span><span class="p">]</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Original Index: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;index&#39;</span><span class="p">]),</span> <span class="n">pdf</span><span class="p">)</span>
+                    <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Title: &#39;</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;Title&#39;</span><span class="p">],</span> <span class="n">pdf</span><span class="p">)</span>
+                    <span class="n">normal_text</span><span class="p">(</span><span class="s1">&#39;Click here for the article&#39;</span><span class="p">,</span> <span class="n">pdf</span><span class="p">,</span> <span class="n">link_text</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;URL&#39;</span><span class="p">])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Add suggested reads&quot;</span><span class="p">)</span>
+
+
+        <span class="n">pdf</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">report_file_name</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Denitsa Panova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
