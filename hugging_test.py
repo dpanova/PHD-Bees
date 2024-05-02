@@ -6,7 +6,7 @@ from auxilary_functions import preprocess_function, compute_metrics
 import os
 #%%
 # set the wandb project where this run will be logged
-os.environ["WANDB_PROJECT"]="hubert-base-ls960-project"
+os.environ["WANDB_PROJECT"]="hubert-animals -project"
 
 # save your trained model checkpoint to wandb
 os.environ["WANDB_LOG_MODEL"]="true"
@@ -14,7 +14,7 @@ os.environ["WANDB_LOG_MODEL"]="true"
 # turn off watch to log faster
 os.environ["WANDB_WATCH"]="false"
 max_duration=5
-model_id ='facebook/hubert-base-ls960'
+model_id ='ardneebwar/wav2vec2-animal-sounds-finetuned-hubert-finetuned-animals'
 batch_size = 8
 gradient_accumulation_steps = 4
 num_train_epochs = 10
