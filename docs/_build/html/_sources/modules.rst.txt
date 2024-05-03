@@ -1,10 +1,10 @@
-AcousticData
-============
+Bee Transformer
+===============
 
 .. toctree::
    :maxdepth: 4
 
-   BeeClassification
-   BeeData
    BeeLitReview
+   BeeData
+   BeeClassification
    auxilary_functions

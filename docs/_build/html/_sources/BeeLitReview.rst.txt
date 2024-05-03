@@ -1,5 +1,5 @@
-BeeLitReview module
-===================
+Bee Literature Review module
+============================
 
 .. automodule:: BeeLitReview
    :members:

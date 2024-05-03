@@ -1,5 +1,5 @@
-BeeClassification module
-========================
+Bee Classification module
+=========================
 
 .. automodule:: BeeClassification
    :members:

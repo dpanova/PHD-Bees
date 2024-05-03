@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BeeLitReview module &mdash; Bee Transformer  documentation</title>
+  <title>Bee Literature Review module &mdash; Bee Transformer  documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
@@ -21,8 +21,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="auxilary_functions module" href="auxilary_functions.html" />
-    <link rel="prev" title="BeeData module" href="BeeData.html" /> 
+    <link rel="next" title="Bee Data module" href="BeeData.html" />
+    <link rel="prev" title="Bee Transformer" href="modules.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -46,10 +46,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="modules.html">AcousticData</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="BeeClassification.html">BeeClassification module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="BeeData.html">BeeData module</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">BeeLitReview module</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Bee Transformer</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Bee Literature Review module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#BeeLitReview.BeeLitReview"><code class="docutils literal notranslate"><span class="pre">BeeLitReview</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#BeeLitReview.BeeLitReview.article_scrape"><code class="docutils literal notranslate"><span class="pre">BeeLitReview.article_scrape()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#BeeLitReview.BeeLitReview.calculate_TSP"><code class="docutils literal notranslate"><span class="pre">BeeLitReview.calculate_TSP()</span></code></a></li>
@@ -65,7 +63,9 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="auxilary_functions.html">auxilary_functions module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="BeeData.html">Bee Data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="BeeClassification.html">Bee Classification module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="auxilary_functions.html">Auxiliary Functions module</a></li>
 </ul>
 </li>
 </ul>
@@ -84,8 +84,8 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="modules.html">AcousticData</a></li>
-      <li class="breadcrumb-item active">BeeLitReview module</li>
+          <li class="breadcrumb-item"><a href="modules.html">Bee Transformer</a></li>
+      <li class="breadcrumb-item active">Bee Literature Review module</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/BeeLitReview.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -96,7 +96,7 @@
            <div itemprop="articleBody">
              
   <section id="module-BeeLitReview">
-<span id="beelitreview-module"></span><h1>BeeLitReview module<a class="headerlink" href="#module-BeeLitReview" title="Link to this heading"></a></h1>
+<span id="bee-literature-review-module"></span><h1>Bee Literature Review module<a class="headerlink" href="#module-BeeLitReview" title="Link to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">BeeLitReview.</span></span><span class="sig-name descname"><span class="pre">BeeLitReview</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BeeLitReview.log'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">already_scraped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bee</span> <span class="pre">acoustic</span> <span class="pre">machine</span> <span class="pre">learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scraped_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scraped_articles.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scraped_file_validation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scraped_articles_validation.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_review_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'to_review.xlsx'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview" title="Link to this definition"></a></dt>
@@ -260,8 +260,8 @@ Validate scraped data
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="BeeData.html" class="btn btn-neutral float-left" title="BeeData module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="auxilary_functions.html" class="btn btn-neutral float-right" title="auxilary_functions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="modules.html" class="btn btn-neutral float-left" title="Bee Transformer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="BeeData.html" class="btn btn-neutral float-right" title="Bee Data module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

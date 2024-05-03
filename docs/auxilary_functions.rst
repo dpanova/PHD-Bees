@@ -1,4 +1,4 @@
-auxilary\_functions module
+Auxiliary Functions module
 ==========================
 
 .. automodule:: auxilary_functions

@@ -1,5 +1,5 @@
-BeeData module
-==============
+Bee Data module
+===============
 
 .. automodule:: BeeData
    :members:
