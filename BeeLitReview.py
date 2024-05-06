@@ -37,6 +37,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeLitReview:
     """
     Class to create an automated pdf report to help facilitate depth and breadth of literature research.
+
     :param logname: name of the log to save the results
     :type logname: str
     :param already_scraped: whether the data needs to be scraped or already exists locally
@@ -119,6 +120,7 @@ class BeeLitReview:
     def validate_scraped_csv(self):
         """"
         Validate scraped data
+
         :return: error if the data is not as expected
         """
         dtypes_df = pd.read_csv(self.scraped_file_validation)
@@ -148,6 +150,7 @@ class BeeLitReview:
     def article_scrape(self, article):
         """
         Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract
+
         :param article: article result
         :type article: undetected_chromedriver.webelement.WebElement
         :return: scraped date in the df object
@@ -226,6 +229,7 @@ class BeeLitReview:
                  ):
         """
         Function to scrape the articles from ResearchGate
+
         :param username: username in the website
         :type username: str
         :param password: password in the website
@@ -312,9 +316,10 @@ class BeeLitReview:
                                  ,date_col='Date'):
         """
         Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text.
+
         :param stats_col: Column which has the stats data
         :type stats_col: str
-        :param cat_col:Column which has the result type
+        :param cat_col: Column which has the result type
         :type cat_col: str
         :param key_col: Column which will be used for the duplication reduction (last entry is kept in the data)
         :type key_col: str
@@ -381,6 +386,7 @@ class BeeLitReview:
                                  ,abstract_col='Abstract'):
         """
         Function to encode the abstract text with HuggingFace transformers. Embeddings are saved to embeddings
+
         :param model_id: HuggingFace transformers' model
         :type model_id: str
         :param abstract_col: Column indicating the abstract
@@ -406,6 +412,7 @@ class BeeLitReview:
     def calculate_similarity(self):
         """
         Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings
+
         :return: similarity dataframe with columns pair0, pair1 and cos. Saves the data to similarity_df.csv
         """
         #initiate the multiprocessing
@@ -447,6 +454,7 @@ class BeeLitReview:
                       ,path_file_name = 'path.csv'):
         """
         Calculates the Travel Salesmen Path based on the similarity between the abstracts.
+
         :param num_articles: number of articles to bee looked into
         :type num_articles: int
         :param path_file_name: name of the file to store the path
@@ -515,6 +523,7 @@ class BeeLitReview:
 
         """
         Create two types of clustering - HDBSCAN and agglomerative. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover we can choose those are highly correlated with the originally chosen abstracts.  
+        
         :param cosine_threshold: threshold for cosine similarity with the chosen articles. The value is between 0 and 1 
         :type cosine_threshold: float
         :param year: year of the abstract to filter
@@ -583,6 +592,7 @@ class BeeLitReview:
     def pdf_graph(self,pdf, x, y, w, h, with_code=True, plot_code='', filename=''):
         """
         Generates in the pdf file
+
         :param pdf: FPDF instance
         :type pdf: FPDF
         :param x: x-coordinate of the plot
@@ -645,16 +655,20 @@ class BeeLitReview:
     def pdf_report_generate(self, report_file_name='lit_report.pdf'):
         """
         Generate automated pdf report based on the results from the class
+
         The report has:
-        - INTRO: Report title, author, data of the report and disclaimer and dependant variable distribution
-        - DATA OVERVIEW - Time, word, result type, language distributions
-        - Optimal ML Path
-            - Travelling Salesman Problem Solution
-            - Similarity Difference
-            - Time Saved
-            - TSP Results of Interest and graph visual representation
-            - Clustering Results
-        - Suggested Reads
+        INTRO - Report title, author, data of the report and disclaimer and dependant variable distribution
+        DATA OVERVIEW - Time, word, result type, language distributions
+        Optimal ML Path
+        - Travelling Salesman Problem Solution
+        - Similarity Difference
+        - Time Saved
+        - TSP Results of Interest and graph visual representation
+        - Clustering Results
+        Suggested Reads
+
+        :param report_file_name: name of the report file
+        :type report_file_name: str
         :return: pdf file
         :rtype: pdf
         """

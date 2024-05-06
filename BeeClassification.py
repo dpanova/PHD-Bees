@@ -25,6 +25,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeClassification:
     """BeeNotBee class ....
     Class to conduct modelling based on labeled audio data, using HuggingFace transformers and Random Forest
+
     :param annotation_path: path to the annotation data which holds the labeled audio data
     :type annotation_path: str
     :param y_col: column label for the dependent variable in the annotation file, the label
@@ -124,6 +125,7 @@ class BeeClassification:
     def read_annotation_csv(self):
         """
         Read annotation data
+
         :return: pandas data frame with the annotations
         """
 
@@ -138,6 +140,7 @@ class BeeClassification:
        'active day', 'swarming'], new_col='action'):
         """
         Transform boolean columns into one column.
+
         :param old_col: list of column names
         :type old_col: list
         :param new_col: new column name
@@ -160,6 +163,7 @@ class BeeClassification:
     def validate_annotation_csv(self):
         """"
         Validate annotation data
+
         :return: warning if the data is as expected
         """
         dtypes_df = pd.read_csv(self.annotation_dtypes_path)
@@ -233,8 +237,9 @@ class BeeClassification:
     def file_read(self, file_index, output_file_name=False):
         """
         Read a wav file from the acoustic_folder where the name of the file has an index.
+
         :param file_index: index of the file we need to search for
-        :type: int
+        :type file_index: int
         :param output_file_name: boolean indicating if file name should be outputed
         :type output_file_name: bool
         :return: file name, samples and sample rate arrays
@@ -274,6 +279,7 @@ class BeeClassification:
     def dataframe_to_dataset_split_save(self,df, split_type,file_name):
         """
         Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to the datadict_folder.
+
         :param df: pandas data frame which has to be converted
         :type df: pd.DataFrame
         :param split_type: 'train' or 'test' for training and testing sets
@@ -328,6 +334,7 @@ class BeeClassification:
     def dataframe_to_dataset(self,df, split_type, num_chunks=10):
         """
         Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.
+
         :param df: pandas data frame which has to be converted
         :type df: pd.DataFrame
         :param split_type: 'train' or 'test' for training and testing sets
@@ -391,6 +398,7 @@ class BeeClassification:
     def dataframe_to_datadict(self,train_df, test_df):
         """
         Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
+
         :param train_df: data frame for the training set
         :type train_df: pd.DataFrame
         :param test_df: data frame for the testing set
@@ -417,7 +425,6 @@ class BeeClassification:
 
         :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame
         :type arg: tuple
-
         :return: list of lists with the augmented data file index, the augmented data train index, the label of the augmented file and the original train index. If an issue occurs, only the original train and file indices are returned.
         :rtype: list
 
@@ -452,6 +459,7 @@ class BeeClassification:
     def data_augmentation_df(self,N=1):
         """
         A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.
+
         :param N: the number of times the augmentation process should happen
         :type N: int
         :return: the augmented data is saved
@@ -501,9 +509,9 @@ class BeeClassification:
     def data_transformation_row(self, arg):
         """
         A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data with mfcc or mel spec. n_fft is set to 1000 due to the nature of the audio data.
+
         :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable
         :type arg: tuple
-
         :return: list of lists with the transformed data. The non-existent files are returned as None type.
         :rtype: list
         """
@@ -543,13 +551,14 @@ class BeeClassification:
     def data_transformation_df(self, X, func):
         """
         Find the correct file from the annotation data frame and then transform the acoustic data using mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
+
         :param X: pandas data frame with the indices of the acoustic files which need to be transformed
         :type X: pandas.DataFrame
         :param func: function for audio files transformation. One can choose from a list of options ['mfcc','mel spec']
         :type func: function or method
-
         :return: data frame with the transformed data
-        :rtype:pandas.dataFrame
+        :rtype: pandas.dataFrame
+
         """
         func_list = ['mfcc','mel spec']
         if type(X) != pd.core.frame.DataFrame:
@@ -593,21 +602,22 @@ class BeeClassification:
                                    ,wandb=True
                                     ):
         """Execute huggingface transformer pre-trained classification model for audio data. It has been integrated with Weights & Bises for further development and monitoring.
+
         :param data: DataDict for audio data with train and test
         :type data: DataDict
         :param max_duration: maximum duration of the data file
         :type max_duration: int
-        :model_id: the name of the HiggingFace model
+        :param model_id: the name of the HiggingFace model
         :type model_id: str
         :param batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training/testing.
         :type batch_size: int
         :param gradient_accumulation_steps: Number of updates steps to accumulate the gradients for, before performing a backward/update pass.
         :type gradient_accumulation_steps: int
-        :param num_train_epochs:Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).
+        :param num_train_epochs: Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).
         :type num_train_epochs: float
         :param warmup_ratio: Ratio of total training steps used for a linear warmup from 0 to learning_rate.
         :type warmup_ratio: float
-        :param logging_steps:Number of update steps between two logs if logging_strategy="steps". Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.
+        :param logging_steps: Number of update steps between two logs if logging_strategy="steps". Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.
         :type logging_steps: float
         :param learning_rate:  The initial learning rate.
         :type learning_rate: float
@@ -749,7 +759,8 @@ class BeeClassification:
         return trainer
 
     def best_model(self, model, param_dist):
-        """Identify the best model after tuning the hyperparameters
+        """
+        Identify the best model after tuning the hyperparameters
 
         :param model: an initiated machine learning model
         :type model: Any
@@ -774,7 +785,8 @@ class BeeClassification:
         return best_model
 
     def accuracy_metrics(self, y_pred):
-        """ Provide accuracy metrics to compare the different models
+        """
+        Provide accuracy metrics to compare the different models
 
         :param y_pred: predicted dependent values
         :type y_pred: list
@@ -798,7 +810,8 @@ class BeeClassification:
         return acc, precision, recall
 
     def misclassified_analysis(self, y_pred):
-        """Misclassification analysis to understand where the model miscalculates and if any pattern can be found
+        """
+        Misclassification analysis to understand where the model miscalculates and if any pattern can be found
 
         :param y_pred: predicted dependent values
         :type y_pred: list
@@ -821,22 +834,26 @@ class BeeClassification:
 
         return misclassified
 
-    def model_results(self
-                      , model
-                      , param_dist
-                      ,func='mfcc'
-                      ,do_pca=True):
-        """Provide a full picture of the model performance and accuracy
+    def model_results(
+            self
+            , model
+            , param_dist
+            , func='mfcc'
+            , do_pca=True):
+        """
+        Provide a full picture of the model performance and accuracy
+
         :param model: an initiated machine learning model such as Random Forest
         :type model: Any
         :param param_dist: a dictionary with the parameters and their respective ranges for the tuning
         :type param_dist: dict
-        :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
+        :param func: function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
         :type func: str
         :param do_pca: whether to run pca on the data and take the first two dimensions
         :type do_pca: bool
         :return: the best model with its accuracy metrics, misclassified analysis and pca explained variance (do_pca = True)
         :rtype: tuple
+
         """
         if type(param_dist) != dict:
             raise ValueError(
@@ -914,7 +931,9 @@ class BeeClassification:
 
 
     def random_forest_results(self, func='mfcc', do_pca = True):
-        """Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+        """
+        Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
+
         :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
         :type func: str
         :param do_pca: whether to run pca on the data and take the first two dimensions

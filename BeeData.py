@@ -8,8 +8,9 @@ from pydub import AudioSegment
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 class BeeData:
-    """"
+    """
     Class to conduct data manipulation on audio files.
+
     :param annotation_file: name of the .mlf file to be read
     :type annotation_file: str
     :param start_col_name: name of the column with the start time
@@ -90,6 +91,7 @@ class BeeData:
         - each column entry to be separated by a tab
         - each tow to end with a new row sign
         - columns - start, end (in min and seconds format) and label -bee and nobee
+
         :return: a pandas dataframe
         :rtype: pandas.DataFrame
         """
@@ -157,6 +159,7 @@ class BeeData:
     def calc_duration(self, df):
         """
         Calculates the duration between two time periods
+
         :param df: The dataframe to calculate duration in
         :type df: pandas.DataFrame
         :return: pd.Series containing the duration
@@ -173,6 +176,7 @@ class BeeData:
     def create_actions(self, df, dict_actions):
         """
         Creates new columns with labels based on  the provided dictionary
+
         :param df: The dataframe to calculate duration in
         :type df: pandas.DataFrame
         :param dict_actions: dictionary with the new column names as the key and the string match to be searched.Note that each string should be in a list
@@ -244,11 +248,12 @@ class BeeData:
                      , path='data'
                      ,  min_duration=2.0):
         """
+        Ensures quality data
+
         :param path: directory path for the wav and mp3 files
         :type path: str
         :param min_duration: minimum duration of the file segment in order to make sense to work with it
         :type min_duration: float
-
         :return: data frame with data quality annotation_df_quality, stored in the object
         :rtype: pd.DataFrame
         """
@@ -292,6 +297,7 @@ class BeeData:
                    ,end_sliced_col_name='end_sliced'):
         """
         Function to split the annotation data into smaller segments based on the step size
+
         :param nobee: Boolean value to indicate if nobee files to be added in the data set. True means nobee files are included.
         :type nobee: bool
         :param step: time step in miliseconds
@@ -349,9 +355,10 @@ class BeeData:
 
     def split_acoustic_data_sliced(self):
         """
-        Splits the original files based on the annotation data sliced and saves it in the %s
+        Splits the original files based on the annotation data sliced and saves it in the folder
+
         :return: wav files 
-        """ %self.acoustic_folder
+        """
         try:
             clean_directory(self.acoustic_folder)
             logging.info('Old files are deleted.')
@@ -380,6 +387,7 @@ class BeeData:
     def create_validate_data(self, sliced = True, file_name = 'annotation_data_type.csv'):
         """
         Creates validation data set for the data types.
+
         :param sliced: boolean to indicate whether to create validation based on the sliced data or not
         :type sliced: bool
         :param file_name: name of the file to be saved to

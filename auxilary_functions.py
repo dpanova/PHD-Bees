@@ -10,7 +10,8 @@ from fpdf import FPDF
 
 def split_list(row, column_name):
     """
-    The goal of this function is to split a column which consists of a list into several columns
+    The goal of this function is to split a column which consists of a list into several columns.
+
     :param row: row from a data frame
     :type row: pd.Series
     :param column_name: name of the column with the list
@@ -24,6 +25,7 @@ def split_list(row, column_name):
 def file_name_extract(row, column_name1, column_name2):
     """
     The goal of this function is to extract the file name and add it to the DF
+
     :param row: row from a data frame
     :type row: pd.Series
     :param column_name1: column name which has a label
@@ -43,6 +45,7 @@ def file_name_extract(row, column_name1, column_name2):
 def get_file_names(dir_name, specific_extension = False, extension=('.wav','.mp3')):
     """
     Create a list of files in a specific directory with specified extension
+
     :param dir_name: directory which contains the files
     :type dir_name: str
     :param specific_extension: specify if we would be looking for a specific extension files
@@ -81,6 +84,7 @@ def get_file_names(dir_name, specific_extension = False, extension=('.wav','.mp3
 def clean_directory(path, folder=False):
     """
     Clean the directory
+
     :param path: the directory which needs to be cleaned
     :type folder: str
     :param folder: specifies if we need to remove folders
@@ -106,6 +110,7 @@ def clean_directory(path, folder=False):
 def compute_metrics(eval_pred):
     """
     Computes accuracy on a batch of predictions
+
     :param eval_pred: predictions returned by the HuggingFace model
     :type eval_pred: array like
     :return: the computed evaluation metric
@@ -123,6 +128,7 @@ def compute_metrics(eval_pred):
 def preprocess_function(examples,feature_extractor, max_duration=10):
     """
     Function to preprocess the audio data to a predefined sampling rate and duration
+
     :param examples: datadict examples with 'audio' key
     :type examples: datadict
     :param feature_extractor: AutoFeatureExtractor from pretrained model
@@ -150,6 +156,7 @@ def preprocess_function(examples,feature_extractor, max_duration=10):
 def citations(x):
     """
     Function to extract the number of citations from a string
+
     :param x: string which has a key word - Citations to extarct the info from
     :type x: str
     :return: Number of citations
@@ -167,6 +174,7 @@ def citations(x):
 def recommendations(x):
     """
     Function to extract the number of Recommendations from a string
+
     :param x: string which has a key word - Recommendations to extarct the info from
     :type x: str
     :return: Number of Recommendations
@@ -184,6 +192,7 @@ def recommendations(x):
 def reads(x):
     """
     Function to extract the number of Reads from a string
+
     :param x: string which has a key word - Reads to extarct the info from
     :type x: str
     :return: Number of Reads
@@ -201,6 +210,7 @@ def reads(x):
 def cos_func(v1,v2):
     """
     Function to calculate the cosine similiarity between two array-like variables
+
     :param v1: array-like variable
     :type v1: array-like
     :param v2: array-like variable
@@ -222,6 +232,7 @@ def cos_func(v1,v2):
 def cos_sim_func(pair,embedding_list):
     """
     Function to calculate the similarity between two embeddings based on cosine similarity
+
     :param pair: tuple with the index of the two embeddings
     :type pair: tuple
     :param embedding_list: list of the embedding vectors
@@ -246,6 +257,7 @@ def cos_sim_func(pair,embedding_list):
 def include_tuple(element_list, row, t_limit=0.3):
     """
     Return the tuple if at least one of the elements is present
+
     :param element_list: list of elements to include
     :type element_list: list
     :param row: row of a data frame
@@ -272,6 +284,7 @@ def include_tuple(element_list, row, t_limit=0.3):
 def pd_to_tuple(df,col):
     """
     Converts pd.dataframe.value_counts() to tuple for pdf table ingestion.
+
     :param df: pandas dataframe
     :type df: pd.DataFrame
     :param col: column name for the value_counts
@@ -301,6 +314,7 @@ def pd_to_tuple(df,col):
 def normal_text(text, pdf, x=5, italics=False, link_text = None):
     """
     Generates pdf normal multi-line text
+
     :param text: the text
     :type  text: str
     :param pdf: FPDF instance
@@ -339,6 +353,7 @@ def normal_text(text, pdf, x=5, italics=False, link_text = None):
 def start_page(pdf):
     """
     Genrates pdf file
+
     :param pdf: FPDF instance
     :type pdf: FPDF
     :return: pdf file
@@ -353,6 +368,7 @@ def start_page(pdf):
 def h0(text, pdf, x=20):
     """
     Generates h0 title text
+
     :param text: text for the title
     :type text: str
     :param pdf: FPDF instance
@@ -378,6 +394,7 @@ def h0(text, pdf, x=20):
 def h1(text, pdf, x=10):
     """
     Generates h1 title text
+
     :param text: text for the title
     :type text: str
     :param pdf: FPDF instance
@@ -403,6 +420,7 @@ def h1(text, pdf, x=10):
 def h2(text, pdf, x=10):
     """
     Generates h2 title text
+
     :param text: text for the title
     :type text: str
     :param pdf: FPDF instance
@@ -428,6 +446,7 @@ def h2(text, pdf, x=10):
 def pdf_table(table_data, pdf, x=10, width=40, cols=(20, 20)):
     """
     Genrates table to be printed in the pdf file
+
     :param table_data: table data in tuple version
     :type table_data: tuple
     :param pdf: FPDF instance

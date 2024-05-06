@@ -100,6 +100,7 @@
 <span class="k">class</span> <span class="nc">BeeClassification</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;BeeNotBee class ....</span>
 <span class="sd">    Class to conduct modelling based on labeled audio data, using HuggingFace transformers and Random Forest</span>
+
 <span class="sd">    :param annotation_path: path to the annotation data which holds the labeled audio data</span>
 <span class="sd">    :type annotation_path: str</span>
 <span class="sd">    :param y_col: column label for the dependent variable in the annotation file, the label</span>
@@ -201,6 +202,7 @@
     <span class="k">def</span> <span class="nf">read_annotation_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read annotation data</span>
+
 <span class="sd">        :return: pandas data frame with the annotations</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -218,6 +220,7 @@
        <span class="s1">&#39;active day&#39;</span><span class="p">,</span> <span class="s1">&#39;swarming&#39;</span><span class="p">],</span> <span class="n">new_col</span><span class="o">=</span><span class="s1">&#39;action&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Transform boolean columns into one column.</span>
+
 <span class="sd">        :param old_col: list of column names</span>
 <span class="sd">        :type old_col: list</span>
 <span class="sd">        :param new_col: new column name</span>
@@ -243,6 +246,7 @@
     <span class="k">def</span> <span class="nf">validate_annotation_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;&quot;</span>
 <span class="sd">        Validate annotation data</span>
+
 <span class="sd">        :return: warning if the data is as expected</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dtypes_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">annotation_dtypes_path</span><span class="p">)</span>
@@ -322,8 +326,9 @@
     <span class="k">def</span> <span class="nf">file_read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_index</span><span class="p">,</span> <span class="n">output_file_name</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Read a wav file from the acoustic_folder where the name of the file has an index.</span>
+
 <span class="sd">        :param file_index: index of the file we need to search for</span>
-<span class="sd">        :type: int</span>
+<span class="sd">        :type file_index: int</span>
 <span class="sd">        :param output_file_name: boolean indicating if file name should be outputed</span>
 <span class="sd">        :type output_file_name: bool</span>
 <span class="sd">        :return: file name, samples and sample rate arrays</span>
@@ -366,6 +371,7 @@
     <span class="k">def</span> <span class="nf">dataframe_to_dataset_split_save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span> <span class="n">split_type</span><span class="p">,</span><span class="n">file_name</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to the datadict_folder.</span>
+
 <span class="sd">        :param df: pandas data frame which has to be converted</span>
 <span class="sd">        :type df: pd.DataFrame</span>
 <span class="sd">        :param split_type: &#39;train&#39; or &#39;test&#39; for training and testing sets</span>
@@ -423,6 +429,7 @@
     <span class="k">def</span> <span class="nf">dataframe_to_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">df</span><span class="p">,</span> <span class="n">split_type</span><span class="p">,</span> <span class="n">num_chunks</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.</span>
+
 <span class="sd">        :param df: pandas data frame which has to be converted</span>
 <span class="sd">        :type df: pd.DataFrame</span>
 <span class="sd">        :param split_type: &#39;train&#39; or &#39;test&#39; for training and testing sets</span>
@@ -489,6 +496,7 @@
     <span class="k">def</span> <span class="nf">dataframe_to_datadict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">train_df</span><span class="p">,</span> <span class="n">test_df</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.</span>
+
 <span class="sd">        :param train_df: data frame for the training set</span>
 <span class="sd">        :type train_df: pd.DataFrame</span>
 <span class="sd">        :param test_df: data frame for the testing set</span>
@@ -518,7 +526,6 @@
 
 <span class="sd">        :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame</span>
 <span class="sd">        :type arg: tuple</span>
-
 <span class="sd">        :return: list of lists with the augmented data file index, the augmented data train index, the label of the augmented file and the original train index. If an issue occurs, only the original train and file indices are returned.</span>
 <span class="sd">        :rtype: list</span>
 
@@ -556,6 +563,7 @@
     <span class="k">def</span> <span class="nf">data_augmentation_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">N</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.</span>
+
 <span class="sd">        :param N: the number of times the augmentation process should happen</span>
 <span class="sd">        :type N: int</span>
 <span class="sd">        :return: the augmented data is saved</span>
@@ -608,9 +616,9 @@
     <span class="k">def</span> <span class="nf">data_transformation_row</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data with mfcc or mel spec. n_fft is set to 1000 due to the nature of the audio data.</span>
+
 <span class="sd">        :param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable</span>
 <span class="sd">        :type arg: tuple</span>
-
 <span class="sd">        :return: list of lists with the transformed data. The non-existent files are returned as None type.</span>
 <span class="sd">        :rtype: list</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -653,13 +661,14 @@
     <span class="k">def</span> <span class="nf">data_transformation_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find the correct file from the annotation data frame and then transform the acoustic data using mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.</span>
+
 <span class="sd">        :param X: pandas data frame with the indices of the acoustic files which need to be transformed</span>
 <span class="sd">        :type X: pandas.DataFrame</span>
 <span class="sd">        :param func: function for audio files transformation. One can choose from a list of options [&#39;mfcc&#39;,&#39;mel spec&#39;]</span>
 <span class="sd">        :type func: function or method</span>
-
 <span class="sd">        :return: data frame with the transformed data</span>
-<span class="sd">        :rtype:pandas.dataFrame</span>
+<span class="sd">        :rtype: pandas.dataFrame</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">func_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mfcc&#39;</span><span class="p">,</span><span class="s1">&#39;mel spec&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">!=</span> <span class="n">pd</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
@@ -706,21 +715,22 @@
                                    <span class="p">,</span><span class="n">wandb</span><span class="o">=</span><span class="kc">True</span>
                                     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Execute huggingface transformer pre-trained classification model for audio data. It has been integrated with Weights &amp; Bises for further development and monitoring.</span>
+
 <span class="sd">        :param data: DataDict for audio data with train and test</span>
 <span class="sd">        :type data: DataDict</span>
 <span class="sd">        :param max_duration: maximum duration of the data file</span>
 <span class="sd">        :type max_duration: int</span>
-<span class="sd">        :model_id: the name of the HiggingFace model</span>
+<span class="sd">        :param model_id: the name of the HiggingFace model</span>
 <span class="sd">        :type model_id: str</span>
 <span class="sd">        :param batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training/testing.</span>
 <span class="sd">        :type batch_size: int</span>
 <span class="sd">        :param gradient_accumulation_steps: Number of updates steps to accumulate the gradients for, before performing a backward/update pass.</span>
 <span class="sd">        :type gradient_accumulation_steps: int</span>
-<span class="sd">        :param num_train_epochs:Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).</span>
+<span class="sd">        :param num_train_epochs: Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).</span>
 <span class="sd">        :type num_train_epochs: float</span>
 <span class="sd">        :param warmup_ratio: Ratio of total training steps used for a linear warmup from 0 to learning_rate.</span>
 <span class="sd">        :type warmup_ratio: float</span>
-<span class="sd">        :param logging_steps:Number of update steps between two logs if logging_strategy=&quot;steps&quot;. Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.</span>
+<span class="sd">        :param logging_steps: Number of update steps between two logs if logging_strategy=&quot;steps&quot;. Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.</span>
 <span class="sd">        :type logging_steps: float</span>
 <span class="sd">        :param learning_rate:  The initial learning rate.</span>
 <span class="sd">        :type learning_rate: float</span>
@@ -865,7 +875,8 @@
 <div class="viewcode-block" id="BeeClassification.best_model">
 <a class="viewcode-back" href="../BeeClassification.html#BeeClassification.BeeClassification.best_model">[docs]</a>
     <span class="k">def</span> <span class="nf">best_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">param_dist</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Identify the best model after tuning the hyperparameters</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify the best model after tuning the hyperparameters</span>
 
 <span class="sd">        :param model: an initiated machine learning model</span>
 <span class="sd">        :type model: Any</span>
@@ -893,7 +904,8 @@
 <div class="viewcode-block" id="BeeClassification.accuracy_metrics">
 <a class="viewcode-back" href="../BeeClassification.html#BeeClassification.BeeClassification.accuracy_metrics">[docs]</a>
     <span class="k">def</span> <span class="nf">accuracy_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Provide accuracy metrics to compare the different models</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Provide accuracy metrics to compare the different models</span>
 
 <span class="sd">        :param y_pred: predicted dependent values</span>
 <span class="sd">        :type y_pred: list</span>
@@ -920,7 +932,8 @@
 <div class="viewcode-block" id="BeeClassification.misclassified_analysis">
 <a class="viewcode-back" href="../BeeClassification.html#BeeClassification.BeeClassification.misclassified_analysis">[docs]</a>
     <span class="k">def</span> <span class="nf">misclassified_analysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Misclassification analysis to understand where the model miscalculates and if any pattern can be found</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Misclassification analysis to understand where the model miscalculates and if any pattern can be found</span>
 
 <span class="sd">        :param y_pred: predicted dependent values</span>
 <span class="sd">        :type y_pred: list</span>
@@ -946,22 +959,26 @@
 
 <div class="viewcode-block" id="BeeClassification.model_results">
 <a class="viewcode-back" href="../BeeClassification.html#BeeClassification.BeeClassification.model_results">[docs]</a>
-    <span class="k">def</span> <span class="nf">model_results</span><span class="p">(</span><span class="bp">self</span>
-                      <span class="p">,</span> <span class="n">model</span>
-                      <span class="p">,</span> <span class="n">param_dist</span>
-                      <span class="p">,</span><span class="n">func</span><span class="o">=</span><span class="s1">&#39;mfcc&#39;</span>
-                      <span class="p">,</span><span class="n">do_pca</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Provide a full picture of the model performance and accuracy</span>
+    <span class="k">def</span> <span class="nf">model_results</span><span class="p">(</span>
+            <span class="bp">self</span>
+            <span class="p">,</span> <span class="n">model</span>
+            <span class="p">,</span> <span class="n">param_dist</span>
+            <span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="s1">&#39;mfcc&#39;</span>
+            <span class="p">,</span> <span class="n">do_pca</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Provide a full picture of the model performance and accuracy</span>
+
 <span class="sd">        :param model: an initiated machine learning model such as Random Forest</span>
 <span class="sd">        :type model: Any</span>
 <span class="sd">        :param param_dist: a dictionary with the parameters and their respective ranges for the tuning</span>
 <span class="sd">        :type param_dist: dict</span>
-<span class="sd">        :param func:function to transform the input variables. Possible values are &#39;mfcc&#39; and &#39;mel spec&#39;</span>
+<span class="sd">        :param func: function to transform the input variables. Possible values are &#39;mfcc&#39; and &#39;mel spec&#39;</span>
 <span class="sd">        :type func: str</span>
 <span class="sd">        :param do_pca: whether to run pca on the data and take the first two dimensions</span>
 <span class="sd">        :type do_pca: bool</span>
 <span class="sd">        :return: the best model with its accuracy metrics, misclassified analysis and pca explained variance (do_pca = True)</span>
 <span class="sd">        :rtype: tuple</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">param_dist</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">dict</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -1042,7 +1059,9 @@
 <div class="viewcode-block" id="BeeClassification.random_forest_results">
 <a class="viewcode-back" href="../BeeClassification.html#BeeClassification.BeeClassification.random_forest_results">[docs]</a>
     <span class="k">def</span> <span class="nf">random_forest_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="s1">&#39;mfcc&#39;</span><span class="p">,</span> <span class="n">do_pca</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance</span>
+
 <span class="sd">        :param func:function to transform the input variables. Possible values are &#39;mfcc&#39; and &#39;mel spec&#39;</span>
 <span class="sd">        :type func: str</span>
 <span class="sd">        :param do_pca: whether to run pca on the data and take the first two dimensions</span>

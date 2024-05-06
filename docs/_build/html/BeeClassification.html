@@ -110,26 +110,30 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">BeeClassification.</span></span><span class="sig-name descname"><span class="pre">BeeClassification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annotation_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'beeAnnotations_enhanced.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotation_dtypes_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'annotation_data_types.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'index'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'label'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bee_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'label'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bee.log'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acoustic_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data/SplitData/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">augment_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data/augment/'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">datadict_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'data/DataDict/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>BeeNotBee class ….
-Class to conduct modelling based on labeled audio data, using HuggingFace transformers and Random Forest
-:param annotation_path: path to the annotation data which holds the labeled audio data
-:type annotation_path: str
-:param y_col: column label for the dependent variable in the annotation file, the label
-:type y_col: str
-:param x_col: column label for the independent variable in the annotation file. It is used to read the wav file.
-:type x_col: str
-:param acoustic_folder: folder name where acoustic files are stored
-:type acoustic_folder: str
-:bee_col: column which indicates the dependent variable in the annotation. In the beginning bothe bee_col and y_col are the same, but y_col can be updated during specific actions.
-:type bee_col: str
-:param acoustic_folder: folder name where the split files are stored
-:type acoustic_folder: str
-:param augment_folder: folder name where the augment files are stored
-:type augment_folder: str
-:param datadict_folder: folder name where the datadict files are stored
-:param logname: path to the log file
-:type logname: str
-:return: BeeClassification object
-:rtype: BeeClassification</p>
+Class to conduct modelling based on labeled audio data, using HuggingFace transformers and Random Forest</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>annotation_path</strong> (<em>str</em>) – path to the annotation data which holds the labeled audio data</p></li>
+<li><p><strong>y_col</strong> (<em>str</em>) – column label for the dependent variable in the annotation file, the label</p></li>
+<li><p><strong>x_col</strong> (<em>str</em>) – column label for the independent variable in the annotation file. It is used to read the wav file.</p></li>
+<li><p><strong>acoustic_folder</strong> (<em>str</em>) – folder name where acoustic files are stored</p></li>
+<li><p><strong>acoustic_folder</strong> – folder name where the split files are stored</p></li>
+<li><p><strong>augment_folder</strong> (<em>str</em>) – folder name where the augment files are stored</p></li>
+<li><p><strong>datadict_folder</strong> – folder name where the datadict files are stored</p></li>
+<li><p><strong>logname</strong> (<em>str</em>) – path to the log file</p></li>
+</ul>
+</dd>
+<dt class="field-even">Bee_col<span class="colon">:</span></dt>
+<dd class="field-even"><p>column which indicates the dependent variable in the annotation. In the beginning bothe bee_col and y_col are the same, but y_col can be updated during specific actions.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>BeeClassification object</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#BeeClassification.BeeClassification" title="BeeClassification.BeeClassification">BeeClassification</a></p>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.accuracy_metrics">
 <span class="sig-name descname"><span class="pre">accuracy_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_pred</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.accuracy_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.accuracy_metrics" title="Link to this definition"></a></dt>
@@ -170,10 +174,15 @@ Class to conduct modelling based on labeled audio data, using HuggingFace transf
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.data_augmentation_df">
 <span class="sig-name descname"><span class="pre">data_augmentation_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.data_augmentation_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.data_augmentation_df" title="Link to this definition"></a></dt>
-<dd><p>A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.
-:param N: the number of times the augmentation process should happen
-:type N: int
-:return: the augmented data is saved</p>
+<dd><p>A function which augments the train data and saves it in the augmented folder (initially cleans the folder); replaces the train data by adding the augmented files information; stores the information in augmented_df; and saves the names of the augmented files in augmented_files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>N</strong> (<em>int</em>) – the number of times the augmentation process should happen</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the augmented data is saved</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -196,31 +205,36 @@ Class to conduct modelling based on labeled audio data, using HuggingFace transf
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.data_transformation_df">
 <span class="sig-name descname"><span class="pre">data_transformation_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.data_transformation_df"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.data_transformation_df" title="Link to this definition"></a></dt>
-<dd><p>Find the correct file from the annotation data frame and then transform the acoustic data using mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.
-:param X: pandas data frame with the indices of the acoustic files which need to be transformed
-:type X: pandas.DataFrame
-:param func: function for audio files transformation. One can choose from a list of options [‘mfcc’,’mel spec’]
-:type func: function or method</p>
+<dd><p>Find the correct file from the annotation data frame and then transform the acoustic data using mfcc or mel spec methods. Store the index from the annotation data frame (the key) and the df index to track the associated y values.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>data frame with the transformed data</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<em>pandas.DataFrame</em>) – pandas data frame with the indices of the acoustic files which need to be transformed</p></li>
+<li><p><strong>func</strong> (<em>function</em><em> or </em><em>method</em>) – function for audio files transformation. One can choose from a list of options [‘mfcc’,’mel spec’]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>data frame with the transformed data</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas.dataFrame</p>
 </dd>
 </dl>
-<p>:rtype:pandas.dataFrame</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.data_transformation_row">
 <span class="sig-name descname"><span class="pre">data_transformation_row</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arg</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.data_transformation_row"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.data_transformation_row" title="Link to this definition"></a></dt>
-<dd><p>A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data with mfcc or mel spec. n_fft is set to 1000 due to the nature of the audio data.
-:param arg: tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable
-:type arg: tuple</p>
+<dd><p>A row-wise function which finds the correct file from the annotation data frame and then transforms the acoustic data with mfcc or mel spec. n_fft is set to 1000 due to the nature of the audio data.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list of lists with the transformed data. The non-existent files are returned as None type.</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>arg</strong> (<em>tuple</em>) – tuple with first argument the index of each row of a data frame, second argument - the actual row of the data frame and third argument - data frame with the dependant variable</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>list</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list of lists with the transformed data. The non-existent files are returned as None type.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
 </dd>
 </dl>
 </dd></dl>
@@ -228,51 +242,80 @@ Class to conduct modelling based on labeled audio data, using HuggingFace transf
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.dataframe_to_datadict">
 <span class="sig-name descname"><span class="pre">dataframe_to_datadict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.dataframe_to_datadict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.dataframe_to_datadict" title="Link to this definition"></a></dt>
-<dd><p>Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.
-:param train_df: data frame for the training set
-:type train_df: pd.DataFrame
-:param test_df: data frame for the testing set
-:type test_df: pd.DataFrame
-:return: datadict_data, stored in the object
-:rtype: datadict</p>
+<dd><p>Converts two data frames (test and train) into a data dict which will be used for HuggingFace transformers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>train_df</strong> (<em>pd.DataFrame</em>) – data frame for the training set</p></li>
+<li><p><strong>test_df</strong> (<em>pd.DataFrame</em>) – data frame for the testing set</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>datadict_data, stored in the object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>datadict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.dataframe_to_dataset">
 <span class="sig-name descname"><span class="pre">dataframe_to_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_chunks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.dataframe_to_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.dataframe_to_dataset" title="Link to this definition"></a></dt>
-<dd><p>Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.
-:param df: pandas data frame which has to be converted
-:type df: pd.DataFrame
-:param split_type: ‘train’ or ‘test’ for training and testing sets
-:type split_type: str
-:param num_chunks: number of chunks to split the data
-:rtype num_chunks: int
-:return: Dataset
-:rtype: Dataset</p>
+<dd><p>Splits a dataframe in specific number of chunks. Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves those chunks into files, reads them and returns the train data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas data frame which has to be converted</p></li>
+<li><p><strong>split_type</strong> (<em>str</em>) – ‘train’ or ‘test’ for training and testing sets</p></li>
+<li><p><strong>num_chunks</strong> – number of chunks to split the data</p></li>
+</ul>
+</dd>
+<dt class="field-even">Rtype num_chunks<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dataset</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dataset</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.dataframe_to_dataset_split_save">
 <span class="sig-name descname"><span class="pre">dataframe_to_dataset_split_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">split_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.dataframe_to_dataset_split_save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.dataframe_to_dataset_split_save" title="Link to this definition"></a></dt>
-<dd><p>Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to the datadict_folder.
-:param df: pandas data frame which has to be converted
-:type df: pd.DataFrame
-:param split_type: ‘train’ or ‘test’ for training and testing sets
-:type split_type: str
-:param file_name: name of the file to be saved
-:type file_name: str</p>
+<dd><p>Converts a pandas dataframe to data dict which is used in hugging face transformers. Then saves the data to the datadict_folder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas data frame which has to be converted</p></li>
+<li><p><strong>split_type</strong> (<em>str</em>) – ‘train’ or ‘test’ for training and testing sets</p></li>
+<li><p><strong>file_name</strong> (<em>str</em>) – name of the file to be saved</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.file_read">
 <span class="sig-name descname"><span class="pre">file_read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.file_read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.file_read" title="Link to this definition"></a></dt>
-<dd><p>Read a wav file from the acoustic_folder where the name of the file has an index.
-:param file_index: index of the file we need to search for
-:type: int
-:param output_file_name: boolean indicating if file name should be outputed
-:type output_file_name: bool
-:return: file name, samples and sample rate arrays
-:rtype: string, numpy.ndarray and int</p>
+<dd><p>Read a wav file from the acoustic_folder where the name of the file has an index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_index</strong> (<em>int</em>) – index of the file we need to search for</p></li>
+<li><p><strong>output_file_name</strong> (<em>bool</em>) – boolean indicating if file name should be outputed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>file name, samples and sample rate arrays</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string, numpy.ndarray and int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -295,35 +338,47 @@ Class to conduct modelling based on labeled audio data, using HuggingFace transf
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.model_results">
 <span class="sig-name descname"><span class="pre">model_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">param_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mfcc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_pca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.model_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.model_results" title="Link to this definition"></a></dt>
-<dd><p>Provide a full picture of the model performance and accuracy
-:param model: an initiated machine learning model such as Random Forest
-:type model: Any
-:param param_dist: a dictionary with the parameters and their respective ranges for the tuning
-:type param_dist: dict
-:param func:function to transform the input variables. Possible values are ‘mfcc’ and ‘mel spec’
-:type func: str
-:param do_pca: whether to run pca on the data and take the first two dimensions
-:type do_pca: bool
-:return: the best model with its accuracy metrics, misclassified analysis and pca explained variance (do_pca = True)
-:rtype: tuple</p>
+<dd><p>Provide a full picture of the model performance and accuracy</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>Any</em>) – an initiated machine learning model such as Random Forest</p></li>
+<li><p><strong>param_dist</strong> (<em>dict</em>) – a dictionary with the parameters and their respective ranges for the tuning</p></li>
+<li><p><strong>func</strong> (<em>str</em>) – function to transform the input variables. Possible values are ‘mfcc’ and ‘mel spec’</p></li>
+<li><p><strong>do_pca</strong> (<em>bool</em>) – whether to run pca on the data and take the first two dimensions</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the best model with its accuracy metrics, misclassified analysis and pca explained variance (do_pca = True)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.new_y_label_creation">
 <span class="sig-name descname"><span class="pre">new_y_label_creation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['missing</span> <span class="pre">queen',</span> <span class="pre">'queen',</span> <span class="pre">'active</span> <span class="pre">day',</span> <span class="pre">'swarming']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'action'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.new_y_label_creation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.new_y_label_creation" title="Link to this definition"></a></dt>
-<dd><p>Transform boolean columns into one column.
-:param old_col: list of column names
-:type old_col: list
-:param new_col: new column name
-:type new_col: str
-:return: updated annotation dataframe with a new column and updated y_col in the class</p>
+<dd><p>Transform boolean columns into one column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>old_col</strong> (<em>list</em>) – list of column names</p></li>
+<li><p><strong>new_col</strong> (<em>str</em>) – new column name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>updated annotation dataframe with a new column and updated y_col in the class</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.random_forest_results">
 <span class="sig-name descname"><span class="pre">random_forest_results</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mfcc'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_pca</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.random_forest_results"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.random_forest_results" title="Link to this definition"></a></dt>
-<dd><p>Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
-:param func:function to transform the input variables. Possible values are ‘mfcc’ and ‘mel spec’
+<dd><p>Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance</p>
+<p>:param func:function to transform the input variables. Possible values are ‘mfcc’ and ‘mel spec’
 :type func: str
 :param do_pca: whether to run pca on the data and take the first two dimensions
 :type do_pca: bool
@@ -334,8 +389,12 @@ Class to conduct modelling based on labeled audio data, using HuggingFace transf
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.read_annotation_csv">
 <span class="sig-name descname"><span class="pre">read_annotation_csv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.read_annotation_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.read_annotation_csv" title="Link to this definition"></a></dt>
-<dd><p>Read annotation data
-:return: pandas data frame with the annotations</p>
+<dd><p>Read annotation data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pandas data frame with the annotations</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -352,39 +411,42 @@ Class to conduct modelling based on labeled audio data, using HuggingFace transf
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.transformer_classification">
 <span class="sig-name descname"><span class="pre">transformer_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'facebook/hubert-base-ls960'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gradient_accumulation_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_train_epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logging_steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">learning_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'finetuned-bee'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wandb</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.transformer_classification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.transformer_classification" title="Link to this definition"></a></dt>
-<dd><p>Execute huggingface transformer pre-trained classification model for audio data. It has been integrated with Weights &amp; Bises for further development and monitoring.
-:param data: DataDict for audio data with train and test
-:type data: DataDict
-:param max_duration: maximum duration of the data file
-:type max_duration: int
-:model_id: the name of the HiggingFace model
-:type model_id: str
-:param batch_size: The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training/testing.
-:type batch_size: int
-:param gradient_accumulation_steps: Number of updates steps to accumulate the gradients for, before performing a backward/update pass.
-:type gradient_accumulation_steps: int
-:param num_train_epochs:Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).
-:type num_train_epochs: float
-:param warmup_ratio: Ratio of total training steps used for a linear warmup from 0 to learning_rate.
-:type warmup_ratio: float
-:param logging_steps:Number of update steps between two logs if logging_strategy=”steps”. Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.
-:type logging_steps: float
-:param learning_rate:  The initial learning rate.
-:type learning_rate: float
-:param name: name of the newly created model
-:type name: str
-:param wandb: indicates if the is Weights &amp; Biases connected profile.
-:type wandb: bool
-:return: trained model
-:rtype: HuggingFace.models</p>
+<dd><p>Execute huggingface transformer pre-trained classification model for audio data. It has been integrated with Weights &amp; Bises for further development and monitoring.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DataDict</em>) – DataDict for audio data with train and test</p></li>
+<li><p><strong>max_duration</strong> (<em>int</em>) – maximum duration of the data file</p></li>
+<li><p><strong>model_id</strong> (<em>str</em>) – the name of the HiggingFace model</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>) – The batch size per GPU/XPU/TPU/MPS/NPU core/CPU for training/testing.</p></li>
+<li><p><strong>gradient_accumulation_steps</strong> (<em>int</em>) – Number of updates steps to accumulate the gradients for, before performing a backward/update pass.</p></li>
+<li><p><strong>num_train_epochs</strong> (<em>float</em>) – Total number of training epochs to perform (if not an integer, will perform the decimal part percents of the last epoch before stopping training).</p></li>
+<li><p><strong>warmup_ratio</strong> (<em>float</em>) – Ratio of total training steps used for a linear warmup from 0 to learning_rate.</p></li>
+<li><p><strong>logging_steps</strong> (<em>float</em>) – Number of update steps between two logs if logging_strategy=”steps”. Should be an integer or a float in range [0,1). If smaller than 1, will be interpreted as ratio of total training steps.</p></li>
+<li><p><strong>learning_rate</strong> (<em>float</em>) – The initial learning rate.</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – name of the newly created model</p></li>
+<li><p><strong>wandb</strong> (<em>bool</em>) – indicates if the is Weights &amp; Biases connected profile.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>trained model</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>HuggingFace.models</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeClassification.BeeClassification.validate_annotation_csv">
 <span class="sig-name descname"><span class="pre">validate_annotation_csv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeClassification.html#BeeClassification.validate_annotation_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeClassification.BeeClassification.validate_annotation_csv" title="Link to this definition"></a></dt>
 <dd><p>”
-Validate annotation data
-:return: warning if the data is as expected</p>
+Validate annotation data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>warning if the data is as expected</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

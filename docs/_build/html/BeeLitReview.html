@@ -101,47 +101,68 @@
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">BeeLitReview.</span></span><span class="sig-name descname"><span class="pre">BeeLitReview</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BeeLitReview.log'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">already_scraped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bee</span> <span class="pre">acoustic</span> <span class="pre">machine</span> <span class="pre">learning'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scraped_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scraped_articles.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scraped_file_validation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scraped_articles_validation.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to_review_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'to_review.xlsx'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Class to create an automated pdf report to help facilitate depth and breadth of literature research.
-:param logname: name of the log to save the results
-:type logname: str
-:param already_scraped: whether the data needs to be scraped or already exists locally
-:type already_scraped: bool
-:param query: query to be scraped from the website
-:type query: str
-:param scraped_file_name: name of the file to store the scraped data or where the data exists
-:type scraped_file_name: str
-:param scraped_file_validation: name of the file to validate the existent data in terms of format
-:type scraped_file_validation: str
-:param to_review_file_name: name of the file to validate TSP results
-:type to_review_file_name: excel
-:return: BeeLitReview object
-:rtype: BeeLitReview</p>
+<p>Class to create an automated pdf report to help facilitate depth and breadth of literature research.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logname</strong> (<em>str</em>) – name of the log to save the results</p></li>
+<li><p><strong>already_scraped</strong> (<em>bool</em>) – whether the data needs to be scraped or already exists locally</p></li>
+<li><p><strong>query</strong> (<em>str</em>) – query to be scraped from the website</p></li>
+<li><p><strong>scraped_file_name</strong> (<em>str</em>) – name of the file to store the scraped data or where the data exists</p></li>
+<li><p><strong>scraped_file_validation</strong> (<em>str</em>) – name of the file to validate the existent data in terms of format</p></li>
+<li><p><strong>to_review_file_name</strong> (<em>excel</em>) – name of the file to validate TSP results</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>BeeLitReview object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#BeeLitReview.BeeLitReview" title="BeeLitReview.BeeLitReview">BeeLitReview</a></p>
+</dd>
+</dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.article_scrape">
 <span class="sig-name descname"><span class="pre">article_scrape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">article</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.article_scrape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.article_scrape" title="Link to this definition"></a></dt>
-<dd><p>Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract
-:param article: article result
-:type article: undetected_chromedriver.webelement.WebElement
-:return: scraped date in the df object
-:rtype: dataframe</p>
+<dd><p>Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>article</strong> (<em>undetected_chromedriver.webelement.WebElement</em>) – article result</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>scraped date in the df object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dataframe</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.calculate_TSP">
 <span class="sig-name descname"><span class="pre">calculate_TSP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_articles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'path.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.calculate_TSP"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.calculate_TSP" title="Link to this definition"></a></dt>
-<dd><p>Calculates the Travel Salesmen Path based on the similarity between the abstracts.
-:param num_articles: number of articles to bee looked into
-:type num_articles: int
-:param path_file_name: name of the file to store the path
-:type path_file_name: str
-:return: Returns dataframe with the first num_articles and saves to data to to_review_file_name.csv for further inspection</p>
+<dd><p>Calculates the Travel Salesmen Path based on the similarity between the abstracts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_articles</strong> (<em>int</em>) – number of articles to bee looked into</p></li>
+<li><p><strong>path_file_name</strong> (<em>str</em>) – name of the file to store the path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Returns dataframe with the first num_articles and saves to data to to_review_file_name.csv for further inspection</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.calculate_similarity">
 <span class="sig-name descname"><span class="pre">calculate_similarity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.calculate_similarity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.calculate_similarity" title="Link to this definition"></a></dt>
-<dd><p>Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings
-:return: similarity dataframe with columns pair0, pair1 and cos. Saves the data to similarity_df.csv</p>
+<dd><p>Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>similarity dataframe with columns pair0, pair1 and cos. Saves the data to similarity_df.csv</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -152,63 +173,66 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.encode_with_transformers">
 <span class="sig-name descname"><span class="pre">encode_with_transformers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sentence-transformers/all-mpnet-base-v2'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abstract_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Abstract'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.encode_with_transformers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.encode_with_transformers" title="Link to this definition"></a></dt>
-<dd><p>Function to encode the abstract text with HuggingFace transformers. Embeddings are saved to embeddings
-:param model_id: HuggingFace transformers’ model
-:type model_id: str
-:param abstract_col: Column indicating the abstract
-:type abstract_col: str
-:return: embeddings in a list format</p>
+<dd><p>Function to encode the abstract text with HuggingFace transformers. Embeddings are saved to embeddings</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_id</strong> (<em>str</em>) – HuggingFace transformers’ model</p></li>
+<li><p><strong>abstract_col</strong> (<em>str</em>) – Column indicating the abstract</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>embeddings in a list format</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.pdf_graph">
 <span class="sig-name descname"><span class="pre">pdf_graph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_code</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_code</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.pdf_graph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.pdf_graph" title="Link to this definition"></a></dt>
-<dd><p>Generates in the pdf file
-:param pdf: FPDF instance
-:type pdf: FPDF
-:param x: x-coordinate of the plot
-:type x: int
-:param y: y-coordinate of the plot
-:type y: int
-:param w: w-coordinate of the plot
-:type w: int0
-:param h: h-coordinate of the plot
-:type h: int
-:param with_code: if code will be executed for teh plot to be created or the plot is saved as a picture
-:type with_code:  bool
-:param plot_code: code to be executed for the plot to be created
-:type plot_code: str
-:param filename: name of the saved picture
-:type filename: str
-:return: a graph in the pdf file</p>
+<dd><p>Generates in the pdf file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – x-coordinate of the plot</p></li>
+<li><p><strong>y</strong> (<em>int</em>) – y-coordinate of the plot</p></li>
+<li><p><strong>w</strong> (<em>int0</em>) – w-coordinate of the plot</p></li>
+<li><p><strong>h</strong> (<em>int</em>) – h-coordinate of the plot</p></li>
+<li><p><strong>with_code</strong> (<em>bool</em>) – if code will be executed for teh plot to be created or the plot is saved as a picture</p></li>
+<li><p><strong>plot_code</strong> (<em>str</em>) – code to be executed for the plot to be created</p></li>
+<li><p><strong>filename</strong> (<em>str</em>) – name of the saved picture</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a graph in the pdf file</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.pdf_report_generate">
 <span class="sig-name descname"><span class="pre">pdf_report_generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">report_file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'lit_report.pdf'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.pdf_report_generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.pdf_report_generate" title="Link to this definition"></a></dt>
-<dd><p>Generate automated pdf report based on the results from the class
-The report has:
-- INTRO: Report title, author, data of the report and disclaimer and dependant variable distribution
-- DATA OVERVIEW - Time, word, result type, language distributions
-- Optimal ML Path</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>Travelling Salesman Problem Solution</p></li>
-<li><p>Similarity Difference</p></li>
-<li><p>Time Saved</p></li>
-<li><p>TSP Results of Interest and graph visual representation</p></li>
-<li><p>Clustering Results</p></li>
-</ul>
-</div></blockquote>
-<ul class="simple">
-<li><p>Suggested Reads</p></li>
-</ul>
+<dd><p>Generate automated pdf report based on the results from the class</p>
+<p>The report has:
+INTRO - Report title, author, data of the report and disclaimer and dependant variable distribution
+DATA OVERVIEW - Time, word, result type, language distributions
+Optimal ML Path
+- Travelling Salesman Problem Solution
+- Similarity Difference
+- Time Saved
+- TSP Results of Interest and graph visual representation
+- Clustering Results
+Suggested Reads</p>
 <dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pdf file</p>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>report_file_name</strong> (<em>str</em>) – name of the report file</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>pdf</p>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf file</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pdf</p>
 </dd>
 </dl>
 </dd></dl>
@@ -216,40 +240,54 @@ The report has:
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.researchgate_scraper">
 <span class="sig-name descname"><span class="pre">researchgate_scraper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'https://www.researchgate.net/login?_sg=ITbsht6C-ko8ZSF49e9deV1BNgFqKApIltdEguj_4uiZ9K_WzI6gYtnTL5xsgogphkn5Z2RJTNuYqd9fMiGJfg'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.researchgate_scraper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.researchgate_scraper" title="Link to this definition"></a></dt>
-<dd><p>Function to scrape the articles from ResearchGate
-:param username: username in the website
-:type username: str
-:param password: password in the website
-:type password: str
-:param url: url of the website
-:type url: str
-:return: scraped date in the df object and saved csv
-:rtype: dataframe</p>
+<dd><p>Function to scrape the articles from ResearchGate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>username</strong> (<em>str</em>) – username in the website</p></li>
+<li><p><strong>password</strong> (<em>str</em>) – password in the website</p></li>
+<li><p><strong>url</strong> (<em>str</em>) – url of the website</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>scraped date in the df object and saved csv</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dataframe</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.scraped_data_enhancement">
 <span class="sig-name descname"><span class="pre">scraped_data_enhancement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stats_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Right</span> <span class="pre">Category'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cat_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Left</span> <span class="pre">Category'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Title'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abstract_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Abstract'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date_col</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Date'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.scraped_data_enhancement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.scraped_data_enhancement" title="Link to this definition"></a></dt>
-<dd><p>Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text.
-:param stats_col: Column which has the stats data
-:type stats_col: str
-:param cat_col:Column which has the result type
-:type cat_col: str
-:param key_col: Column which will be used for the duplication reduction (last entry is kept in the data)
-:type key_col: str
-:param abstract_col: Column which has the abstract of the text
-:type abstract_col: str
-:param date_col: Colum which has the date information
-:type date_col: str
-:return: Returns pandas with new columns with the extracted information, refer to the df in the object. Additionally, the data is saved locally to _enhanced file</p>
+<dd><p>Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>stats_col</strong> (<em>str</em>) – Column which has the stats data</p></li>
+<li><p><strong>cat_col</strong> (<em>str</em>) – Column which has the result type</p></li>
+<li><p><strong>key_col</strong> (<em>str</em>) – Column which will be used for the duplication reduction (last entry is kept in the data)</p></li>
+<li><p><strong>abstract_col</strong> (<em>str</em>) – Column which has the abstract of the text</p></li>
+<li><p><strong>date_col</strong> (<em>str</em>) – Colum which has the date information</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Returns pandas with new columns with the extracted information, refer to the df in the object. Additionally, the data is saved locally to _enhanced file</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BeeLitReview.BeeLitReview.validate_scraped_csv">
 <span class="sig-name descname"><span class="pre">validate_scraped_csv</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/BeeLitReview.html#BeeLitReview.validate_scraped_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#BeeLitReview.BeeLitReview.validate_scraped_csv" title="Link to this definition"></a></dt>
 <dd><p>”
-Validate scraped data
-:return: error if the data is not as expected</p>
+Validate scraped data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>error if the data is not as expected</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

@@ -105,234 +105,354 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.citations">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">citations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#citations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.citations" title="Link to this definition"></a></dt>
-<dd><p>Function to extract the number of citations from a string
-:param x: string which has a key word - Citations to extarct the info from
-:type x: str
-:return: Number of citations
-:rtype: int</p>
+<dd><p>Function to extract the number of citations from a string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em>) – string which has a key word - Citations to extarct the info from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of citations</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.clean_directory">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">clean_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#clean_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.clean_directory" title="Link to this definition"></a></dt>
-<dd><p>Clean the directory
-:param path: the directory which needs to be cleaned
-:type folder: str
-:param folder: specifies if we need to remove folders
-:type folder: bool</p>
+<dd><p>Clean the directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – the directory which needs to be cleaned</p></li>
+<li><p><strong>folder</strong> (<em>bool</em>) – specifies if we need to remove folders</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.compute_metrics">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">compute_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eval_pred</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#compute_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.compute_metrics" title="Link to this definition"></a></dt>
-<dd><p>Computes accuracy on a batch of predictions
-:param eval_pred: predictions returned by the HuggingFace model
-:type eval_pred: array like
-:return: the computed evaluation metric
-:rtype: float</p>
+<dd><p>Computes accuracy on a batch of predictions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>eval_pred</strong> (<em>array like</em>) – predictions returned by the HuggingFace model</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the computed evaluation metric</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.cos_func">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">cos_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#cos_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.cos_func" title="Link to this definition"></a></dt>
-<dd><p>Function to calculate the cosine similiarity between two array-like variables
-:param v1: array-like variable
-:type v1: array-like
-:param v2: array-like variable
-:type v2: array-like
-:return: cosine similarity between teh two
-:rtype: float</p>
+<dd><p>Function to calculate the cosine similiarity between two array-like variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v1</strong> (<em>array-like</em>) – array-like variable</p></li>
+<li><p><strong>v2</strong> (<em>array-like</em>) – array-like variable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>cosine similarity between teh two</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.cos_sim_func">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">cos_sim_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pair</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#cos_sim_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.cos_sim_func" title="Link to this definition"></a></dt>
-<dd><p>Function to calculate the similarity between two embeddings based on cosine similarity
-:param pair: tuple with the index of the two embeddings
-:type pair: tuple
-:param embedding_list: list of the embedding vectors
-:type embedding_list: array-like
-:return: dictionary with pair0, pair1 and cos
-:rtype: dict</p>
+<dd><p>Function to calculate the similarity between two embeddings based on cosine similarity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pair</strong> (<em>tuple</em>) – tuple with the index of the two embeddings</p></li>
+<li><p><strong>embedding_list</strong> (<em>array-like</em>) – list of the embedding vectors</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary with pair0, pair1 and cos</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.file_name_extract">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">file_name_extract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#file_name_extract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.file_name_extract" title="Link to this definition"></a></dt>
-<dd><p>The goal of this function is to extract the file name and add it to the DF
-:param row: row from a data frame
-:type row: pd.Series
-:param column_name1: column name which has a label
-:type column_name1: str
-:param column_name2: another column which has a label
-:type column_name2: str
-:return: extracted file name
-:rtype: str</p>
+<dd><p>The goal of this function is to extract the file name and add it to the DF</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>pd.Series</em>) – row from a data frame</p></li>
+<li><p><strong>column_name1</strong> (<em>str</em>) – column name which has a label</p></li>
+<li><p><strong>column_name2</strong> (<em>str</em>) – another column which has a label</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>extracted file name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.get_file_names">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">get_file_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specific_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('.wav',</span> <span class="pre">'.mp3')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#get_file_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.get_file_names" title="Link to this definition"></a></dt>
-<dd><p>Create a list of files in a specific directory with specified extension
-:param dir_name: directory which contains the files
-:type dir_name: str
-:param specific_extension: specify if we would be looking for a specific extension files
-:param extension: tuple with strings indicating the file extension
-:type extension: tuple
-:return: a list of files
-:rtype: list</p>
+<dd><p>Create a list of files in a specific directory with specified extension</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dir_name</strong> (<em>str</em>) – directory which contains the files</p></li>
+<li><p><strong>specific_extension</strong> – specify if we would be looking for a specific extension files</p></li>
+<li><p><strong>extension</strong> (<em>tuple</em>) – tuple with strings indicating the file extension</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a list of files</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.h0">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">h0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#h0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.h0" title="Link to this definition"></a></dt>
-<dd><p>Generates h0 title text
-:param text: text for the title
-:type text: str
-:param pdf: FPDF instance
-:type pdf: FPDF
-:param x: line space after the text
-:type x: int
-:return: text</p>
+<dd><p>Generates h0 title text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text for the title</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – line space after the text</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>text</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.h1">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">h1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#h1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.h1" title="Link to this definition"></a></dt>
-<dd><p>Generates h1 title text
-:param text: text for the title
-:type text: str
-:param pdf: FPDF instance
-:type pdf: FPDF
-:param x: line space after the text
-:type x: int
-:return: text</p>
+<dd><p>Generates h1 title text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text for the title</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – line space after the text</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>text</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.h2">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">h2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#h2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.h2" title="Link to this definition"></a></dt>
-<dd><p>Generates h2 title text
-:param text: text for the title
-:type text: str
-:param pdf: FPDF instance
-:type pdf: FPDF
-:param x: line space after the text
-:type x: int
-:return: text</p>
+<dd><p>Generates h2 title text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text for the title</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – line space after the text</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>text</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.include_tuple">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">include_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#include_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.include_tuple" title="Link to this definition"></a></dt>
-<dd><p>Return the tuple if at least one of the elements is present
-:param element_list: list of elements to include
-:type element_list: list
-:param row: row of a data frame
-:type row: pd.Series
-:param t_limit: threshold to exclude elements if they don’t have good cosine similarity with the include list
-:type t_limit: float
-:return: boolean indicating if the tuple should be included or not
-:rtype: bool</p>
+<dd><p>Return the tuple if at least one of the elements is present</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element_list</strong> (<em>list</em>) – list of elements to include</p></li>
+<li><p><strong>row</strong> (<em>pd.Series</em>) – row of a data frame</p></li>
+<li><p><strong>t_limit</strong> (<em>float</em>) – threshold to exclude elements if they don’t have good cosine similarity with the include list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>boolean indicating if the tuple should be included or not</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.normal_text">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">normal_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">italics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">link_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#normal_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.normal_text" title="Link to this definition"></a></dt>
-<dd><p>Generates pdf normal multi-line text
-:param text: the text
-:type  text: str
-:param pdf: FPDF instance
-:type  pdf: FPDF
-:param x: space after the text
-:type  x: int
-:param italics: boolean to indicate if text should be italics
-:type  italics: bool
-:return: pdf generated text</p>
+<dd><p>Generates pdf normal multi-line text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – the text</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – space after the text</p></li>
+<li><p><strong>italics</strong> (<em>bool</em>) – boolean to indicate if text should be italics</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf generated text</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.pd_to_tuple">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">pd_to_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#pd_to_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.pd_to_tuple" title="Link to this definition"></a></dt>
-<dd><p>Converts pd.dataframe.value_counts() to tuple for pdf table ingestion.
-:param df: pandas dataframe
-:type df: pd.DataFrame
-:param col: column name for the value_counts
-:type col: str
-:return: tuple of tuples
-:rtype: tuple</p>
+<dd><p>Converts pd.dataframe.value_counts() to tuple for pdf table ingestion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas dataframe</p></li>
+<li><p><strong>col</strong> (<em>str</em>) – column name for the value_counts</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of tuples</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.pdf_table">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">pdf_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(20,</span> <span class="pre">20)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#pdf_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.pdf_table" title="Link to this definition"></a></dt>
-<dd><p>Genrates table to be printed in the pdf file
-:param table_data: table data in tuple version
-:type table_data: tuple
-:param pdf: FPDF instance
-:type pdf: FPDF
-:param x: lines after the text
-:type x: int
-:param width: width of the table
-:type width: int
-:param cols: tuple with teh width of the columns
-:type cols: tuple
-:return: pdf table</p>
+<dd><p>Genrates table to be printed in the pdf file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table_data</strong> (<em>tuple</em>) – table data in tuple version</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – lines after the text</p></li>
+<li><p><strong>width</strong> (<em>int</em>) – width of the table</p></li>
+<li><p><strong>cols</strong> (<em>tuple</em>) – tuple with teh width of the columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf table</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.preprocess_function">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">preprocess_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">examples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_extractor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#preprocess_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.preprocess_function" title="Link to this definition"></a></dt>
-<dd><p>Function to preprocess the audio data to a predefined sampling rate and duration
-:param examples: datadict examples with ‘audio’ key
-:type examples: datadict
-:param feature_extractor: AutoFeatureExtractor from pretrained model
-:type feature_extractor: AutoFeatureExtractor
-:param max_duration: maximum seconds recording
-:type max_duration: int
-:return: the preprocessed data as AutoFeatureExtractor
-:rtype: AutoFeatureExtractor</p>
+<dd><p>Function to preprocess the audio data to a predefined sampling rate and duration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>examples</strong> (<em>datadict</em>) – datadict examples with ‘audio’ key</p></li>
+<li><p><strong>feature_extractor</strong> (<em>AutoFeatureExtractor</em>) – AutoFeatureExtractor from pretrained model</p></li>
+<li><p><strong>max_duration</strong> (<em>int</em>) – maximum seconds recording</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the preprocessed data as AutoFeatureExtractor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>AutoFeatureExtractor</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.reads">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">reads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#reads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.reads" title="Link to this definition"></a></dt>
-<dd><p>Function to extract the number of Reads from a string
-:param x: string which has a key word - Reads to extarct the info from
-:type x: str
-:return: Number of Reads
-:rtype: int</p>
+<dd><p>Function to extract the number of Reads from a string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em>) – string which has a key word - Reads to extarct the info from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of Reads</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.recommendations">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">recommendations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#recommendations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.recommendations" title="Link to this definition"></a></dt>
-<dd><p>Function to extract the number of Recommendations from a string
-:param x: string which has a key word - Recommendations to extarct the info from
-:type x: str
-:return: Number of Recommendations
-:rtype: int</p>
+<dd><p>Function to extract the number of Recommendations from a string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em>) – string which has a key word - Recommendations to extarct the info from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of Recommendations</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.split_list">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">split_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#split_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.split_list" title="Link to this definition"></a></dt>
-<dd><p>The goal of this function is to split a column which consists of a list into several columns
-:param row: row from a data frame
-:type row: pd.Series
-:param column_name: name of the column with the list
-:type column_name: str
-:return: pd.Series with the unpacked list
-:rtype: pd.Series</p>
+<dd><p>The goal of this function is to split a column which consists of a list into several columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>pd.Series</em>) – row from a data frame</p></li>
+<li><p><strong>column_name</strong> (<em>str</em>) – name of the column with the list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.Series with the unpacked list</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Series</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="auxilary_functions.start_page">
 <span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">start_page</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#start_page"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.start_page" title="Link to this definition"></a></dt>
-<dd><p>Genrates pdf file
-:param pdf: FPDF instance
-:type pdf: FPDF
-:return: pdf file</p>
+<dd><p>Genrates pdf file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf file</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>

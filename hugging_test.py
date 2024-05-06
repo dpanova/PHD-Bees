@@ -6,7 +6,7 @@ from auxilary_functions import preprocess_function, compute_metrics
 import os
 #%%
 # set the wandb project where this run will be logged
-os.environ["WANDB_PROJECT"]="hubert-animals -project"
+os.environ["WANDB_PROJECT"]="wave2vec-animals -project"
 
 # save your trained model checkpoint to wandb
 os.environ["WANDB_LOG_MODEL"]="true"
@@ -21,7 +21,7 @@ num_train_epochs = 10
 warmup_ratio=0.1
 logging_steps = 10
 learning_rate = 3e-5
-name='finetuned-bee-wandb'
+name='finetuned-wav2vec-bee-wandb'
 #%%
 
 feature_extractor = AutoFeatureExtractor.from_pretrained(
