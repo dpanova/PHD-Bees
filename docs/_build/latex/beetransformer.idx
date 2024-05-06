@@ -1,0 +1,66 @@
+\indexentry{module@\spxentry{module}!BeeLitReview@\spxentry{BeeLitReview}|hyperpage}{1}
+\indexentry{BeeLitReview@\spxentry{BeeLitReview}!module@\spxentry{module}|hyperpage}{1}
+\indexentry{BeeLitReview (class in BeeLitReview)@\spxentry{BeeLitReview}\spxextra{class in BeeLitReview}|hyperpage}{1}
+\indexentry{article\_scrape() (BeeLitReview.BeeLitReview method)@\spxentry{article\_scrape()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{1}
+\indexentry{calculate\_TSP() (BeeLitReview.BeeLitReview method)@\spxentry{calculate\_TSP()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{1}
+\indexentry{calculate\_similarity() (BeeLitReview.BeeLitReview method)@\spxentry{calculate\_similarity()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{2}
+\indexentry{clustering\_evaluation() (BeeLitReview.BeeLitReview method)@\spxentry{clustering\_evaluation()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{2}
+\indexentry{encode\_with\_transformers() (BeeLitReview.BeeLitReview method)@\spxentry{encode\_with\_transformers()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{2}
+\indexentry{pdf\_graph() (BeeLitReview.BeeLitReview method)@\spxentry{pdf\_graph()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{2}
+\indexentry{pdf\_report\_generate() (BeeLitReview.BeeLitReview method)@\spxentry{pdf\_report\_generate()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{2}
+\indexentry{researchgate\_scraper() (BeeLitReview.BeeLitReview method)@\spxentry{researchgate\_scraper()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{3}
+\indexentry{scraped\_data\_enhancement() (BeeLitReview.BeeLitReview method)@\spxentry{scraped\_data\_enhancement()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{3}
+\indexentry{validate\_scraped\_csv() (BeeLitReview.BeeLitReview method)@\spxentry{validate\_scraped\_csv()}\spxextra{BeeLitReview.BeeLitReview method}|hyperpage}{3}
+\indexentry{module@\spxentry{module}!BeeData@\spxentry{BeeData}|hyperpage}{4}
+\indexentry{BeeData@\spxentry{BeeData}!module@\spxentry{module}|hyperpage}{4}
+\indexentry{BeeData (class in BeeData)@\spxentry{BeeData}\spxextra{class in BeeData}|hyperpage}{4}
+\indexentry{annotation\_data\_creation() (BeeData.BeeData method)@\spxentry{annotation\_data\_creation()}\spxextra{BeeData.BeeData method}|hyperpage}{4}
+\indexentry{calc\_duration() (BeeData.BeeData method)@\spxentry{calc\_duration()}\spxextra{BeeData.BeeData method}|hyperpage}{4}
+\indexentry{create\_actions() (BeeData.BeeData method)@\spxentry{create\_actions()}\spxextra{BeeData.BeeData method}|hyperpage}{4}
+\indexentry{create\_validate\_data() (BeeData.BeeData method)@\spxentry{create\_validate\_data()}\spxextra{BeeData.BeeData method}|hyperpage}{5}
+\indexentry{data\_quality() (BeeData.BeeData method)@\spxentry{data\_quality()}\spxextra{BeeData.BeeData method}|hyperpage}{5}
+\indexentry{mlf\_data\_read() (BeeData.BeeData method)@\spxentry{mlf\_data\_read()}\spxextra{BeeData.BeeData method}|hyperpage}{5}
+\indexentry{split\_acoustic\_data\_sliced() (BeeData.BeeData method)@\spxentry{split\_acoustic\_data\_sliced()}\spxextra{BeeData.BeeData method}|hyperpage}{5}
+\indexentry{time\_slice() (BeeData.BeeData method)@\spxentry{time\_slice()}\spxextra{BeeData.BeeData method}|hyperpage}{5}
+\indexentry{module@\spxentry{module}!BeeClassification@\spxentry{BeeClassification}|hyperpage}{6}
+\indexentry{BeeClassification@\spxentry{BeeClassification}!module@\spxentry{module}|hyperpage}{6}
+\indexentry{BeeClassification (class in BeeClassification)@\spxentry{BeeClassification}\spxextra{class in BeeClassification}|hyperpage}{6}
+\indexentry{accuracy\_metrics() (BeeClassification.BeeClassification method)@\spxentry{accuracy\_metrics()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{6}
+\indexentry{best\_model() (BeeClassification.BeeClassification method)@\spxentry{best\_model()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{7}
+\indexentry{data\_augmentation\_df() (BeeClassification.BeeClassification method)@\spxentry{data\_augmentation\_df()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{7}
+\indexentry{data\_augmentation\_row() (BeeClassification.BeeClassification method)@\spxentry{data\_augmentation\_row()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{7}
+\indexentry{data\_transformation\_df() (BeeClassification.BeeClassification method)@\spxentry{data\_transformation\_df()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{7}
+\indexentry{data\_transformation\_row() (BeeClassification.BeeClassification method)@\spxentry{data\_transformation\_row()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{8}
+\indexentry{dataframe\_to\_datadict() (BeeClassification.BeeClassification method)@\spxentry{dataframe\_to\_datadict()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{8}
+\indexentry{dataframe\_to\_dataset() (BeeClassification.BeeClassification method)@\spxentry{dataframe\_to\_dataset()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{8}
+\indexentry{dataframe\_to\_dataset\_split\_save() (BeeClassification.BeeClassification method)@\spxentry{dataframe\_to\_dataset\_split\_save()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{8}
+\indexentry{file\_read() (BeeClassification.BeeClassification method)@\spxentry{file\_read()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{8}
+\indexentry{misclassified\_analysis() (BeeClassification.BeeClassification method)@\spxentry{misclassified\_analysis()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{9}
+\indexentry{model\_results() (BeeClassification.BeeClassification method)@\spxentry{model\_results()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{9}
+\indexentry{new\_y\_label\_creation() (BeeClassification.BeeClassification method)@\spxentry{new\_y\_label\_creation()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{9}
+\indexentry{random\_forest\_results() (BeeClassification.BeeClassification method)@\spxentry{random\_forest\_results()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{9}
+\indexentry{read\_annotation\_csv() (BeeClassification.BeeClassification method)@\spxentry{read\_annotation\_csv()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{10}
+\indexentry{split\_annotation\_data() (BeeClassification.BeeClassification method)@\spxentry{split\_annotation\_data()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{10}
+\indexentry{transformer\_classification() (BeeClassification.BeeClassification method)@\spxentry{transformer\_classification()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{10}
+\indexentry{validate\_annotation\_csv() (BeeClassification.BeeClassification method)@\spxentry{validate\_annotation\_csv()}\spxextra{BeeClassification.BeeClassification method}|hyperpage}{10}
+\indexentry{module@\spxentry{module}!auxilary\_functions@\spxentry{auxilary\_functions}|hyperpage}{11}
+\indexentry{auxilary\_functions@\spxentry{auxilary\_functions}!module@\spxentry{module}|hyperpage}{11}
+\indexentry{citations() (in module auxilary\_functions)@\spxentry{citations()}\spxextra{in module auxilary\_functions}|hyperpage}{11}
+\indexentry{clean\_directory() (in module auxilary\_functions)@\spxentry{clean\_directory()}\spxextra{in module auxilary\_functions}|hyperpage}{11}
+\indexentry{compute\_metrics() (in module auxilary\_functions)@\spxentry{compute\_metrics()}\spxextra{in module auxilary\_functions}|hyperpage}{11}
+\indexentry{cos\_func() (in module auxilary\_functions)@\spxentry{cos\_func()}\spxextra{in module auxilary\_functions}|hyperpage}{11}
+\indexentry{cos\_sim\_func() (in module auxilary\_functions)@\spxentry{cos\_sim\_func()}\spxextra{in module auxilary\_functions}|hyperpage}{11}
+\indexentry{file\_name\_extract() (in module auxilary\_functions)@\spxentry{file\_name\_extract()}\spxextra{in module auxilary\_functions}|hyperpage}{12}
+\indexentry{get\_file\_names() (in module auxilary\_functions)@\spxentry{get\_file\_names()}\spxextra{in module auxilary\_functions}|hyperpage}{12}
+\indexentry{h0() (in module auxilary\_functions)@\spxentry{h0()}\spxextra{in module auxilary\_functions}|hyperpage}{12}
+\indexentry{h1() (in module auxilary\_functions)@\spxentry{h1()}\spxextra{in module auxilary\_functions}|hyperpage}{12}
+\indexentry{h2() (in module auxilary\_functions)@\spxentry{h2()}\spxextra{in module auxilary\_functions}|hyperpage}{13}
+\indexentry{include\_tuple() (in module auxilary\_functions)@\spxentry{include\_tuple()}\spxextra{in module auxilary\_functions}|hyperpage}{13}
+\indexentry{normal\_text() (in module auxilary\_functions)@\spxentry{normal\_text()}\spxextra{in module auxilary\_functions}|hyperpage}{13}
+\indexentry{pd\_to\_tuple() (in module auxilary\_functions)@\spxentry{pd\_to\_tuple()}\spxextra{in module auxilary\_functions}|hyperpage}{13}
+\indexentry{pdf\_table() (in module auxilary\_functions)@\spxentry{pdf\_table()}\spxextra{in module auxilary\_functions}|hyperpage}{14}
+\indexentry{preprocess\_function() (in module auxilary\_functions)@\spxentry{preprocess\_function()}\spxextra{in module auxilary\_functions}|hyperpage}{14}
+\indexentry{reads() (in module auxilary\_functions)@\spxentry{reads()}\spxextra{in module auxilary\_functions}|hyperpage}{14}
+\indexentry{recommendations() (in module auxilary\_functions)@\spxentry{recommendations()}\spxextra{in module auxilary\_functions}|hyperpage}{14}
+\indexentry{split\_list() (in module auxilary\_functions)@\spxentry{split\_list()}\spxextra{in module auxilary\_functions}|hyperpage}{14}
+\indexentry{start\_page() (in module auxilary\_functions)@\spxentry{start\_page()}\spxextra{in module auxilary\_functions}|hyperpage}{15}
