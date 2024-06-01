@@ -208,14 +208,13 @@ class BeeData:
                                  ,dict_actions = {'missing queen': ['missing queen', 'no_queen'],'active day': ['active - day'],'swarming': ['swarming']}
                                  ):
         """
-        Function to create the dataset for annotation and save it locally under the specified file name.
+        Function to create the dataset for annotation and save it locally under the specified file name. Update annotation_df containing the filename, start time, end time, duration between both, bee/nobee label and action columns. The data is stores in the object.
 
         :param special_action_column: boolean which indicates if the special action column will be calculated
         :type special_action_column: bool
         :param dict_actions: dictionary with the new column names as the key and the string match to be searched.Note that each string should be in a list
         :type dict_actions: dict
-        :return: pandas.DataFrame containing the filename, start time, end time, duration between both, bee/nobee label and action columns. The data is stores in the object.
-        :rtype: pandas.DataFrame
+        :return: None
         """
 
         if type(dict_actions) != dict:
@@ -248,14 +247,14 @@ class BeeData:
                      , path='data'
                      ,  min_duration=2.0):
         """
-        Ensures quality data
+        Ensures quality data. Update annotation_df_data_quality with the data of a good quality.
 
         :param path: directory path for the wav and mp3 files
         :type path: str
         :param min_duration: minimum duration of the file segment in order to make sense to work with it
         :type min_duration: float
-        :return: data frame with data quality annotation_df_quality, stored in the object
-        :rtype: pd.DataFrame
+        :return: None
+
         """
         if type(path) != str:
             raise ValueError(
@@ -296,7 +295,7 @@ class BeeData:
                    ,start_sliced_col_name='start_sliced'
                    ,end_sliced_col_name='end_sliced'):
         """
-        Function to split the annotation data into smaller segments based on the step size
+        Function to split the annotation data into smaller segments based on the step size. Update annotation_df_sliced which is sliced.
 
         :param nobee: Boolean value to indicate if nobee files to be added in the data set. True means nobee files are included.
         :type nobee: bool
@@ -306,8 +305,7 @@ class BeeData:
         :type start_sliced_col_name: str
         :param end_sliced_col_name: name of the column for the end sliced
         :type end_sliced_col_name: str
-        :return: pd.DataFrame with an annotation data which is sliced, stored in self.annotation_df_sliced
-        :rtype: pd.DataFrame
+        :return: None
 
         """
         if type(nobee) != bool:
@@ -355,9 +353,9 @@ class BeeData:
 
     def split_acoustic_data_sliced(self):
         """
-        Splits the original files based on the annotation data sliced and saves it in the folder
+        Splits the original files based on the annotation data sliced and saves then in wav format in the folder
 
-        :return: wav files 
+        :return: None
         """
         try:
             clean_directory(self.acoustic_folder)
@@ -386,13 +384,13 @@ class BeeData:
 
     def create_validate_data(self, sliced = True, file_name = 'annotation_data_type.csv'):
         """
-        Creates validation data set for the data types.
+        Creates validation data set for the data types and saves it in csv format.
 
         :param sliced: boolean to indicate whether to create validation based on the sliced data or not
         :type sliced: bool
         :param file_name: name of the file to be saved to
         :type file_name: basestring
-        :return: csv file with the validation data
+        :return: None
         """
 
         if type(sliced) != bool:

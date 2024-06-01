@@ -124,9 +124,9 @@ class BeeClassification:
 
     def read_annotation_csv(self):
         """
-        Read annotation data
+        Read annotation data. Updates annotation_df.
 
-        :return: pandas data frame with the annotations
+        :return: None
         """
 
         try:
@@ -139,13 +139,13 @@ class BeeClassification:
     def new_y_label_creation(self, old_col=['missing queen', 'queen',
        'active day', 'swarming'], new_col='action'):
         """
-        Transform boolean columns into one column.
+        Transform boolean columns into one column. Update annotation dataframe with a new column and updated y_col in the class
 
         :param old_col: list of column names
         :type old_col: list
         :param new_col: new column name
         :type new_col: str
-        :return: updated annotation dataframe with a new column and updated y_col in the class
+        :return: None
         """
 
         if type(old_col) != list:
@@ -161,7 +161,7 @@ class BeeClassification:
 
 
     def validate_annotation_csv(self):
-        """"
+        """
         Validate annotation data
 
         :return: warning if the data is as expected
@@ -193,12 +193,13 @@ class BeeClassification:
 
     def split_annotation_data(self,perc=0.25, stratified = True):
         """
-        Split the annotation data into train and test based on the y_col and x_col values. Save the csv files.
+        Split the annotation data into train and test based on the y_col and x_col values. Save the csv files. Update annotation_df_updated with the final data which is split. X train, X test, y train and y test pandas data frames
+
         :param perc: test split percentage, a number between 0.0 and 1.0
         :type perc: float
         :param stratified: Boolean value to indicate if the split should be stratified
         :type stratified: bool
-        :return:annotation_df_updated with the final data which is split. X train, X test, y train and y test pandas data frames
+        :return: None
         """
         if type(perc) != float:
             raise ValueError(
@@ -286,6 +287,7 @@ class BeeClassification:
         :type split_type: str
         :param file_name: name of the file to be saved
         :type file_name: str
+        :return: None
         """
         split_type_list = ['train','test']
         if type(df) != pd.core.frame.DataFrame:
@@ -462,7 +464,7 @@ class BeeClassification:
 
         :param N: the number of times the augmentation process should happen
         :type N: int
-        :return: the augmented data is saved
+        :return: None
         """
 
         if type(N) != int:
@@ -643,8 +645,6 @@ class BeeClassification:
             raise ValueError('Invalid arg type. arg is type %s and expected type is int.' % type(gradient_accumulation_steps).__name__)
         if type(num_train_epochs) != float:
             raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(num_train_epochs).__name__)
-        if type(warmup_ratio) != float:
-            raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(warmup_ratio).__name__)
         if type(logging_steps) != float:
             raise ValueError('Invalid arg type. arg is type %s and expected type is float.' % type(logging_steps).__name__)
         if type(learning_rate) != float:
@@ -934,7 +934,7 @@ class BeeClassification:
         """
         Run Random Forest and conduct hyperparameter tuning, accuracy measurement and feature importance
 
-        :param func:function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
+        :param func: function to transform the input variables. Possible values are 'mfcc' and 'mel spec'
         :type func: str
         :param do_pca: whether to run pca on the data and take the first two dimensions
         :type do_pca: bool

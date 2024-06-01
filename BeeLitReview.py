@@ -149,12 +149,12 @@ class BeeLitReview:
 
     def article_scrape(self, article):
         """
-        Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract
+        Function to scrape the important aspects from an article result - title, category, date, reads, citations, authors, url and abstract. Updates df.
 
         :param article: article result
         :type article: undetected_chromedriver.webelement.WebElement
         :return: scraped date in the df object
-        :rtype: dataframe
+        :rtype: None
         """
         if type(article) != uc.webelement.WebElement:
             raise ValueError(
@@ -221,6 +221,7 @@ class BeeLitReview:
                      }
         page_df = pd.DataFrame(page_dict)
         self.df = pd.concat([self.df, page_df], ignore_index=True)
+
     def researchgate_scraper(self
                 , username = ''
                 ,password = ''
@@ -228,7 +229,7 @@ class BeeLitReview:
 
                  ):
         """
-        Function to scrape the articles from ResearchGate
+        Function to scrape the articles from ResearchGate. Updates df.
 
         :param username: username in the website
         :type username: str
@@ -237,7 +238,7 @@ class BeeLitReview:
         :param url: url of the website
         :type url: str
         :return: scraped date in the df object and saved csv
-        :rtype: dataframe
+        :rtype: None
         """
 
         if type(username) != str:
@@ -315,7 +316,7 @@ class BeeLitReview:
                                  ,abstract_col ='Abstract'
                                  ,date_col='Date'):
         """
-        Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text.
+        Function to extract dates, result type - article/ etc, tokenize the abstract, split the important stats such as citations and keep only the English text. Update df with with new columns with the extracted information, refer to the df in the object. Additionally, the data is saved locally to _enhanced file.
 
         :param stats_col: Column which has the stats data
         :type stats_col: str
@@ -327,7 +328,7 @@ class BeeLitReview:
         :type abstract_col: str
         :param date_col: Colum which has the date information
         :type date_col: str
-        :return: Returns pandas with new columns with the extracted information, refer to the df in the object. Additionally, the data is saved locally to _enhanced file
+        :return: None
         """
         if type(stats_col) != str:
             raise ValueError(
@@ -385,13 +386,13 @@ class BeeLitReview:
                                  ,model_id='sentence-transformers/all-mpnet-base-v2'
                                  ,abstract_col='Abstract'):
         """
-        Function to encode the abstract text with HuggingFace transformers. Embeddings are saved to embeddings
+        Function to encode the abstract text with HuggingFace transformers. Update embeddings.
 
         :param model_id: HuggingFace transformers' model
         :type model_id: str
         :param abstract_col: Column indicating the abstract
         :type abstract_col: str
-        :return: embeddings in a list format
+        :return: None
         """
         if type(model_id) != str:
             raise ValueError(
@@ -411,9 +412,9 @@ class BeeLitReview:
 
     def calculate_similarity(self):
         """
-        Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings
+        Calculate the pairwise cosine similarity between each abstract based on the already calculated embeddings. Update similarity_df with columns pair0, pair1 and cos. Saves the data to similarity_df.csv.
 
-        :return: similarity dataframe with columns pair0, pair1 and cos. Saves the data to similarity_df.csv
+        :return: None
         """
         #initiate the multiprocessing
         pool = mp.Pool(processes=mp.cpu_count())
@@ -453,13 +454,13 @@ class BeeLitReview:
                       ,num_articles = 50
                       ,path_file_name = 'path.csv'):
         """
-        Calculates the Travel Salesmen Path based on the similarity between the abstracts.
+        Calculates the Travel Salesmen Path based on the similarity between the abstracts. Create an excel file with the first num_articles and saves to data to to_review_file_name.csv for further inspection.
 
         :param num_articles: number of articles to bee looked into
         :type num_articles: int
         :param path_file_name: name of the file to store the path
         :type path_file_name: str
-        :return: Returns dataframe with the first num_articles and saves to data to to_review_file_name.csv for further inspection
+        :return: None
         """
         if type(num_articles) != int:
             raise ValueError(
@@ -522,21 +523,20 @@ class BeeLitReview:
                         ,citation = 1):
 
         """
-        Create two types of clustering - HDBSCAN and agglomerative. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover we can choose those are highly correlated with the originally chosen abstracts.  
+        Create two types of clustering - HDBSCAN and agglomerative. Additionally, we can filter the abstracts with specific text type, reads and citations. Moreover, we can choose those are highly correlated with the originally chosen abstracts. Updates the ce_hdbscan_results and ce_agg_results.
         
         :param cosine_threshold: threshold for cosine similarity with the chosen articles. The value is between 0 and 1 
         :type cosine_threshold: float
         :param year: year of the abstract to filter
         :type year: int
-        :param type: type of the abstract to filter. You can choose from  %s
+        :param type: type of the abstract to filter.
         :type type: list
         :param read: number of reads an abstract should be associated with 
         :type read: int
         :param citation: number of citations an abstract should be associated with
         :type citation: int
-        :return: pandas data frame with the results (labeled abstracts) 
-        :rtype: pandas data frame
-        """ % ';'.join(list(self.df['Text Type'].unique()))
+        :return: None
+        """
         self.cosine_clustering_threshold = cosine_threshold
         self.year = year
         self.type = type
