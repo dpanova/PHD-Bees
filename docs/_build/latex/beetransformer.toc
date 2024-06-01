@@ -1,9 +1,0 @@
-\babel@toc {english}{}\relax 
-\contentsline {chapter}{\numberline {1}Bee Transformer}{1}{chapter.1}%
-\contentsline {section}{\numberline {1.1}Bee Literature Review module}{1}{section.1.1}%
-\contentsline {section}{\numberline {1.2}Bee Data module}{4}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Bee Classification module}{6}{section.1.3}%
-\contentsline {section}{\numberline {1.4}Auxiliary Functions module}{11}{section.1.4}%
-\contentsline {chapter}{\numberline {2}Indices and tables}{17}{chapter.2}%
-\contentsline {chapter}{Python Module Index}{19}{section*.61}%
-\contentsline {chapter}{Index}{21}{section*.62}%
