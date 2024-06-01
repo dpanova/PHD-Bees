@@ -1,4 +1,6 @@
 # PHD-Bees
 
-### author: DP
+### Author: Denitsa Panova
+
+[Documentation](https://dpanova.github.io/PHD-Bees/)
 
