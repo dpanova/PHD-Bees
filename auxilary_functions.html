@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auxiliary Functions module &mdash; Bee Transformer  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Bee Classification module" href="BeeClassification.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Bee Transformer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Bee Transformer</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BeeLitReview.html">Bee Literature Review module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="BeeData.html">Bee Data module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="BeeClassification.html">Bee Classification module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Auxiliary Functions module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.citations"><code class="docutils literal notranslate"><span class="pre">citations()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.clean_directory"><code class="docutils literal notranslate"><span class="pre">clean_directory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.compute_metrics"><code class="docutils literal notranslate"><span class="pre">compute_metrics()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.cos_func"><code class="docutils literal notranslate"><span class="pre">cos_func()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.cos_sim_func"><code class="docutils literal notranslate"><span class="pre">cos_sim_func()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.file_name_extract"><code class="docutils literal notranslate"><span class="pre">file_name_extract()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.get_file_names"><code class="docutils literal notranslate"><span class="pre">get_file_names()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.h0"><code class="docutils literal notranslate"><span class="pre">h0()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.h1"><code class="docutils literal notranslate"><span class="pre">h1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.h2"><code class="docutils literal notranslate"><span class="pre">h2()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.include_tuple"><code class="docutils literal notranslate"><span class="pre">include_tuple()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.normal_text"><code class="docutils literal notranslate"><span class="pre">normal_text()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.pd_to_tuple"><code class="docutils literal notranslate"><span class="pre">pd_to_tuple()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.pdf_table"><code class="docutils literal notranslate"><span class="pre">pdf_table()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.preprocess_function"><code class="docutils literal notranslate"><span class="pre">preprocess_function()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.reads"><code class="docutils literal notranslate"><span class="pre">reads()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.recommendations"><code class="docutils literal notranslate"><span class="pre">recommendations()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.split_list"><code class="docutils literal notranslate"><span class="pre">split_list()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#auxilary_functions.start_page"><code class="docutils literal notranslate"><span class="pre">start_page()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Bee Transformer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Bee Transformer</a></li>
+      <li class="breadcrumb-item active">Auxiliary Functions module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/auxilary_functions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-auxilary_functions">
+<span id="auxiliary-functions-module"></span><h1>Auxiliary Functions module<a class="headerlink" href="#module-auxilary_functions" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.citations">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">citations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#citations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.citations" title="Link to this definition"></a></dt>
+<dd><p>Function to extract the number of citations from a string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em>) – string which has a key word - Citations to extarct the info from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of citations</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.clean_directory">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">clean_directory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#clean_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.clean_directory" title="Link to this definition"></a></dt>
+<dd><p>Clean the directory</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – the directory which needs to be cleaned</p></li>
+<li><p><strong>folder</strong> (<em>bool</em>) – specifies if we need to remove folders</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.compute_metrics">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">compute_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eval_pred</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#compute_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.compute_metrics" title="Link to this definition"></a></dt>
+<dd><p>Computes accuracy on a batch of predictions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>eval_pred</strong> (<em>array like</em>) – predictions returned by the HuggingFace model</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the computed evaluation metric</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.cos_func">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">cos_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#cos_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.cos_func" title="Link to this definition"></a></dt>
+<dd><p>Function to calculate the cosine similiarity between two array-like variables</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>v1</strong> (<em>array-like</em>) – array-like variable</p></li>
+<li><p><strong>v2</strong> (<em>array-like</em>) – array-like variable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>cosine similarity between teh two</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.cos_sim_func">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">cos_sim_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pair</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#cos_sim_func"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.cos_sim_func" title="Link to this definition"></a></dt>
+<dd><p>Function to calculate the similarity between two embeddings based on cosine similarity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pair</strong> (<em>tuple</em>) – tuple with the index of the two embeddings</p></li>
+<li><p><strong>embedding_list</strong> (<em>array-like</em>) – list of the embedding vectors</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary with pair0, pair1 and cos</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.file_name_extract">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">file_name_extract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#file_name_extract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.file_name_extract" title="Link to this definition"></a></dt>
+<dd><p>The goal of this function is to extract the file name and add it to the DF</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>pd.Series</em>) – row from a data frame</p></li>
+<li><p><strong>column_name1</strong> (<em>str</em>) – column name which has a label</p></li>
+<li><p><strong>column_name2</strong> (<em>str</em>) – another column which has a label</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>extracted file name</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.get_file_names">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">get_file_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specific_extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('.wav',</span> <span class="pre">'.mp3')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#get_file_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.get_file_names" title="Link to this definition"></a></dt>
+<dd><p>Create a list of files in a specific directory with specified extension</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dir_name</strong> (<em>str</em>) – directory which contains the files</p></li>
+<li><p><strong>specific_extension</strong> – specify if we would be looking for a specific extension files</p></li>
+<li><p><strong>extension</strong> (<em>tuple</em>) – tuple with strings indicating the file extension</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>a list of files</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.h0">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">h0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#h0"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.h0" title="Link to this definition"></a></dt>
+<dd><p>Generates h0 title text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text for the title</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – line space after the text</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>text</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.h1">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">h1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#h1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.h1" title="Link to this definition"></a></dt>
+<dd><p>Generates h1 title text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text for the title</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – line space after the text</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>text</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.h2">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">h2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#h2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.h2" title="Link to this definition"></a></dt>
+<dd><p>Generates h2 title text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – text for the title</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – line space after the text</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>text</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.include_tuple">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">include_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#include_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.include_tuple" title="Link to this definition"></a></dt>
+<dd><p>Return the tuple if at least one of the elements is present</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>element_list</strong> (<em>list</em>) – list of elements to include</p></li>
+<li><p><strong>row</strong> (<em>pd.Series</em>) – row of a data frame</p></li>
+<li><p><strong>t_limit</strong> (<em>float</em>) – threshold to exclude elements if they don’t have good cosine similarity with the include list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>boolean indicating if the tuple should be included or not</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.normal_text">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">normal_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">italics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">link_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#normal_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.normal_text" title="Link to this definition"></a></dt>
+<dd><p>Generates pdf normal multi-line text</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – the text</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – space after the text</p></li>
+<li><p><strong>italics</strong> (<em>bool</em>) – boolean to indicate if text should be italics</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf generated text</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.pd_to_tuple">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">pd_to_tuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#pd_to_tuple"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.pd_to_tuple" title="Link to this definition"></a></dt>
+<dd><p>Converts pd.dataframe.value_counts() to tuple for pdf table ingestion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – pandas dataframe</p></li>
+<li><p><strong>col</strong> (<em>str</em>) – column name for the value_counts</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of tuples</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.pdf_table">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">pdf_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">40</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(20,</span> <span class="pre">20)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#pdf_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.pdf_table" title="Link to this definition"></a></dt>
+<dd><p>Genrates table to be printed in the pdf file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table_data</strong> (<em>tuple</em>) – table data in tuple version</p></li>
+<li><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p></li>
+<li><p><strong>x</strong> (<em>int</em>) – lines after the text</p></li>
+<li><p><strong>width</strong> (<em>int</em>) – width of the table</p></li>
+<li><p><strong>cols</strong> (<em>tuple</em>) – tuple with teh width of the columns</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf table</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.preprocess_function">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">preprocess_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">examples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feature_extractor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#preprocess_function"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.preprocess_function" title="Link to this definition"></a></dt>
+<dd><p>Function to preprocess the audio data to a predefined sampling rate and duration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>examples</strong> (<em>datadict</em>) – datadict examples with ‘audio’ key</p></li>
+<li><p><strong>feature_extractor</strong> (<em>AutoFeatureExtractor</em>) – AutoFeatureExtractor from pretrained model</p></li>
+<li><p><strong>max_duration</strong> (<em>int</em>) – maximum seconds recording</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the preprocessed data as AutoFeatureExtractor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>AutoFeatureExtractor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.reads">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">reads</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#reads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.reads" title="Link to this definition"></a></dt>
+<dd><p>Function to extract the number of Reads from a string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em>) – string which has a key word - Reads to extarct the info from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of Reads</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.recommendations">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">recommendations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#recommendations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.recommendations" title="Link to this definition"></a></dt>
+<dd><p>Function to extract the number of Recommendations from a string</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<em>str</em>) – string which has a key word - Recommendations to extarct the info from</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of Recommendations</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.split_list">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">split_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#split_list"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.split_list" title="Link to this definition"></a></dt>
+<dd><p>The goal of this function is to split a column which consists of a list into several columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row</strong> (<em>pd.Series</em>) – row from a data frame</p></li>
+<li><p><strong>column_name</strong> (<em>str</em>) – name of the column with the list</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pd.Series with the unpacked list</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.Series</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="auxilary_functions.start_page">
+<span class="sig-prename descclassname"><span class="pre">auxilary_functions.</span></span><span class="sig-name descname"><span class="pre">start_page</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pdf</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/auxilary_functions.html#start_page"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#auxilary_functions.start_page" title="Link to this definition"></a></dt>
+<dd><p>Genrates pdf file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pdf</strong> (<em>FPDF</em>) – FPDF instance</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pdf file</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="BeeClassification.html" class="btn btn-neutral float-left" title="Bee Classification module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Denitsa Panova.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
